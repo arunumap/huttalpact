@@ -19,7 +19,7 @@ jobs:
           bundler-cache: true
 
       - name: Scan for common Rails security vulnerabilities using static analysis
-        run: bin/brakeman --no-pager
+        run: bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error
       
       - name: Scan for known security vulnerabilities in gems used
         run: bin/bundler-audit
@@ -93,3 +93,9 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/sagebadger_test
           # RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
         run: bin/rails db:test:prepare test
+
+      - name: Test seed data
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/sagebadger_test
+        run: bin/rails db:seed:replant
