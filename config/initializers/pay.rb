@@ -5,19 +5,9 @@ Pay.setup do |config|
   config.support_email = "support@huttalpact.com"
 end
 
-# Sync organization plan when Pay subscription changes
-ActiveSupport.on_load(:active_record) do
-  Pay::Subscription.after_commit on: %i[create update] do
-    owner = customer&.owner
-    owner&.sync_plan_from_subscription! if owner.is_a?(Organization)
-  rescue => e
-    Rails.logger.error("Pay subscription sync error (create/update): #{e.message}")
-  end
-
-  Pay::Subscription.after_commit on: :destroy do
-    owner = customer&.owner
-    owner&.sync_plan_from_subscription! if owner.is_a?(Organization)
-  rescue => e
-    Rails.logger.error("Pay subscription sync error (destroy): #{e.message}")
-  end
+# Sync organization plan when Pay subscription changes.
+# Uses to_prepare + concern (idempotent include) to avoid circular
+# dependency during eager loading that occurs with on_load(:active_record).
+Rails.application.config.to_prepare do
+  Pay::Subscription.include(PaySubscriptionCallbacks) unless Pay::Subscription.include?(PaySubscriptionCallbacks)
 end
