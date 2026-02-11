@@ -14,24 +14,16 @@ test:
 production:
   primary:
     <<: *default
-    database: sagebadger_production
-    username: sagebadger
-    password: <%= ENV["SAGEBADGER_DATABASE_PASSWORD"] %>
+    url: <%= ENV["DATABASE_URL"] %>
   cache:
     <<: *default
-    database: sagebadger_production_cache
-    username: sagebadger
-    password: <%= ENV["SAGEBADGER_DATABASE_PASSWORD"] %>
+    url: <%= ENV["DATABASE_URL"] %>
     migrations_paths: db/cache_migrate
   queue:
     <<: *default
-    database: sagebadger_production_queue
-    username: sagebadger
-    password: <%= ENV["SAGEBADGER_DATABASE_PASSWORD"] %>
+    url: <%= ENV["DATABASE_URL"] %>
     migrations_paths: db/queue_migrate
   cable:
     <<: *default
-    database: sagebadger_production_cable
-    username: sagebadger
-    password: <%= ENV["SAGEBADGER_DATABASE_PASSWORD"] %>
+    url: <%= ENV["DATABASE_URL"] %>
     migrations_paths: db/cable_migrate

@@ -15,5 +15,6 @@ module Auditable
     )
   rescue => e
     Rails.logger.error("Audit log failed: #{e.message}")
+    Sentry.capture_exception(e) if Sentry.initialized?
   end
 end

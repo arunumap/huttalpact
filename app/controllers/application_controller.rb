@@ -15,6 +15,7 @@ class ApplicationController < ActionController::Base
 
   set_current_tenant_through_filter
   before_action :set_tenant
+  before_action :set_sentry_context
   before_action :set_unread_alert_count
   before_action :redirect_to_onboarding
 
@@ -76,6 +77,17 @@ class ApplicationController < ActionController::Base
     else
       redirect_to onboarding_invite_path
     end
+  end
+
+  def set_sentry_context
+    return unless Sentry.initialized?
+    return unless Current.user
+
+    Sentry.set_user(id: Current.user.id, email: Current.user.email_address)
+    Sentry.set_tags(
+      organization_id: Current.organization&.id,
+      plan: Current.organization&.plan
+    )
   end
 
   def record_not_found

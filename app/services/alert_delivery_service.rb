@@ -49,6 +49,7 @@ class AlertDeliveryService
     recipient.mark_as_sent!
   rescue => e
     Rails.logger.error("Failed to deliver alert #{@alert.id} to #{recipient.user.email_address}: #{e.message}")
+    Sentry.capture_exception(e) if Sentry.initialized?
   end
 
   def preference_for(user)

@@ -31,15 +31,15 @@ module SeoHelper
   #   <%= structured_data(type: :faq, items: [...]) %>
   def structured_data(type:, **options)
     data = case type
-           when :organization
-             organization_schema
-           when :software_application
-             software_application_schema
-           when :faq
-             faq_schema(options[:items] || [])
-           when :breadcrumb
-             breadcrumb_schema(options[:items] || [])
-           end
+    when :organization
+      organization_schema
+    when :software_application
+      software_application_schema
+    when :faq
+      faq_schema(options[:items] || [])
+    when :breadcrumb
+      breadcrumb_schema(options[:items] || [])
+    end
 
     return unless data
 

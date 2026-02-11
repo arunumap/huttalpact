@@ -47,6 +47,10 @@ gem "postmark-rails"
 gem "pay", "~> 11.4"
 gem "stripe", "~> 18.0"
 
+# Error tracking
+gem "sentry-ruby"
+gem "sentry-rails"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
@@ -63,6 +67,9 @@ gem "kamal", require: false
 
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", require: false
+
+# AWS S3 for Active Storage in production
+gem "aws-sdk-s3", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 1.2"

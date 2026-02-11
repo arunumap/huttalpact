@@ -6,6 +6,7 @@ class DailyAlertCheckJob < ApplicationJob
       AlertDeliveryService.new(alert).call
     rescue => e
       Rails.logger.error("Failed to deliver alert #{alert.id}: #{e.message}")
+      Sentry.capture_exception(e) if Sentry.initialized?
     end
   end
 end
