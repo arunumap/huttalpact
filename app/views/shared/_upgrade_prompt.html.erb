@@ -1,0 +1,28 @@
+<%# Contextual upgrade prompt - pass `message` and optional `compact` local %>
+<% message ||= "You're approaching your plan limit." %>
+<% compact ||= false %>
+
+<% if compact %>
+  <div class="rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-amber-200">
+    <div class="flex items-center gap-2">
+      <svg class="h-4 w-4 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+      </svg>
+      <p class="text-xs text-amber-700"><%= message %> <%= link_to "Upgrade →", pricing_path, class: "font-semibold underline" %></p>
+    </div>
+  </div>
+<% else %>
+  <div class="rounded-lg bg-amber-50 p-4 ring-1 ring-amber-200">
+    <div class="flex items-start gap-3">
+      <svg class="h-5 w-5 text-amber-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+      </svg>
+      <div>
+        <p class="text-sm text-amber-700"><%= message %></p>
+        <div class="mt-2">
+          <%= link_to "View Plans →", pricing_path, class: "text-sm font-semibold text-amber-700 hover:text-amber-800" %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

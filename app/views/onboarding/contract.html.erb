@@ -1,0 +1,21 @@
+<% content_for :title, "Upload your first contract" %>
+
+<div class="space-y-6">
+  <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-900/5">
+    <h1 class="text-2xl font-bold text-gray-900">Upload your first contract</h1>
+    <p class="mt-2 text-sm text-gray-600">Start with a contract and we will auto-fill the details using AI.</p>
+
+    <div class="mt-6">
+      <%= render "contracts/draft_upload", form_url: onboarding_contract_path %>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-between rounded-2xl bg-white px-6 py-5 shadow-sm ring-1 ring-gray-900/5">
+    <div>
+      <p class="text-sm font-medium text-gray-900">Prefer to add contracts later?</p>
+      <p class="text-xs text-gray-500">You can always upload from the Contracts page.</p>
+    </div>
+    <%= button_to "Skip for now", onboarding_contract_skip_path, method: :post,
+        class: "rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50" %>
+  </div>
+</div>

@@ -1,0 +1,8 @@
+This is a sample contract document for testing purposes.
+
+AGREEMENT between Acme Properties ("Client") and CoolAir Services ("Vendor")
+
+Term: January 1, 2025 through December 31, 2026
+Monthly Fee: $1,200.00
+Auto-Renewal: Yes, annually
+Notice Period: 30 days written notice required

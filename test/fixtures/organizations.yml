@@ -1,0 +1,15 @@
+one:
+  name: Acme Properties
+  slug: acme-properties
+  plan: free
+  contracts_count: 0
+  onboarding_step: 2
+  onboarding_completed_at: <%= 1.day.ago %>
+
+two:
+  name: Pinnacle Management
+  slug: pinnacle-management
+  plan: starter
+  contracts_count: 0
+  onboarding_step: 2
+  onboarding_completed_at: <%= 1.day.ago %>

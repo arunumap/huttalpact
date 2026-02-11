@@ -1,0 +1,40 @@
+<p>Hi <%= @user.first_name.presence || @user.full_name %>,</p>
+
+<% case @alert.alert_type %>
+<% when "renewal_upcoming" %>
+  <p>
+    Your contract <strong><%= @contract.title %></strong>
+    <% if @contract.vendor_name.present? %>with <strong><%= @contract.vendor_name %></strong><% end %>
+    is coming up for renewal on <strong><%= @contract.next_renewal_date.strftime("%B %d, %Y") %></strong>.
+  </p>
+
+  <% if @contract.auto_renews? %>
+    <p>⚠️ This contract is set to <strong>auto-renew</strong><%= " (#{@contract.renewal_term})" if @contract.renewal_term.present? %>. Take action before the renewal date if you want to make changes.</p>
+  <% end %>
+
+<% when "expiry_warning" %>
+  <p>
+    Your contract <strong><%= @contract.title %></strong>
+    <% if @contract.vendor_name.present? %>with <strong><%= @contract.vendor_name %></strong><% end %>
+    is expiring on <strong><%= @contract.end_date.strftime("%B %d, %Y") %></strong>.
+  </p>
+
+<% when "notice_period_start" %>
+  <p>
+    The notice period for <strong><%= @contract.title %></strong>
+    <% if @contract.vendor_name.present? %>with <strong><%= @contract.vendor_name %></strong><% end %>
+    has begun. You have <strong><%= @contract.notice_period_days %> days</strong> to provide notice.
+  </p>
+<% end %>
+
+<% if @contract.monthly_value.present? %>
+  <p>Monthly value: <strong><%= number_to_currency(@contract.monthly_value) %></strong></p>
+<% end %>
+
+<p>
+  <%= link_to "View contract details", contract_url(@contract) %>
+</p>
+
+<p>
+  — HuttalPact 🦡
+</p>

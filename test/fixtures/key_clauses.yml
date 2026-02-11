@@ -1,0 +1,20 @@
+termination_clause:
+  contract: hvac_maintenance
+  clause_type: termination
+  content: "Either party may terminate this agreement with 30 days written notice."
+  page_reference: "Section 8.1, Page 3"
+  confidence_score: 92
+
+renewal_clause:
+  contract: hvac_maintenance
+  clause_type: renewal
+  content: "This agreement shall automatically renew for successive one-year terms unless either party provides written notice of non-renewal at least 30 days prior to the expiration of the then-current term."
+  page_reference: "Section 9.2, Page 4"
+  confidence_score: 88
+
+penalty_clause:
+  contract: landscaping
+  clause_type: penalty
+  content: "Late payment shall incur a fee of 1.5% per month on the outstanding balance."
+  page_reference: "Page 2"
+  confidence_score: 75

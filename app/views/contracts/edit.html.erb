@@ -1,0 +1,27 @@
+<% content_for :page_title, @contract.draft? ? "Finalize Contract" : "Edit Contract" %>
+
+<div class="mx-auto max-w-3xl">
+  <% if @contract.draft? %>
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold text-gray-900">Finalize Contract</h2>
+      <p class="mt-1 text-sm text-gray-500">Review the AI-extracted details and save your contract.</p>
+    </div>
+
+    <%# Turbo stream subscription for live updates %>
+    <%= turbo_stream_from "contract_#{@contract.id}" %>
+
+    <%# Extraction progress %>
+    <div class="mb-6" id="draft_extraction_status">
+      <%= render "draft_extraction_status", contract: @contract %>
+    </div>
+
+    <%= render "form", contract: @contract, show_upload: false, draft_mode: true %>
+  <% else %>
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold text-gray-900">Edit Contract</h2>
+      <p class="mt-1 text-sm text-gray-500">Update the details for "<%= @contract.title %>".</p>
+    </div>
+
+    <%= render "form", contract: @contract %>
+  <% end %>
+</div>

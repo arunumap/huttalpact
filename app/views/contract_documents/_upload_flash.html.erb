@@ -1,0 +1,6 @@
+<% if message.present? %>
+  <% bg_class = type == "error" ? "bg-red-50 text-red-700 ring-red-600/10" : "bg-green-50 text-green-700 ring-green-600/10" %>
+  <div class="rounded-md p-3 <%= bg_class %> ring-1 ring-inset">
+    <p class="text-sm"><%= message %></p>
+  </div>
+<% end %>

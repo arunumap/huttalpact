@@ -1,0 +1,211 @@
+<% draft_mode = local_assigns.fetch(:draft_mode, false) %>
+<div id="draft_contract_form">
+<%= form_with model: contract, class: "space-y-8", multipart: true do |form| %>
+  <% if contract.errors.any? %>
+    <div class="rounded-md bg-red-50 p-4">
+      <div class="text-sm text-red-700">
+        <ul class="list-disc space-y-1 pl-5">
+          <% contract.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  <% end %>
+
+  <% if local_assigns.fetch(:show_upload, false) %>
+    <%# Document upload section inside the form %>
+    <div class="rounded-xl bg-gradient-to-br from-amber-50 to-orange-50 shadow-sm ring-1 ring-amber-200/60">
+      <div class="px-6 py-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100">
+            <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="text-base font-semibold text-gray-900">Quick start with AI</h3>
+            <p class="text-sm text-gray-600">Upload your contract and we'll auto-extract all the details</p>
+          </div>
+        </div>
+        <p class="text-xs text-gray-500 mb-4">Upload one or more PDF, DOCX, or TXT files (main contract, exhibits, addendums, etc.). After creating the contract, AI will extract the details from each document automatically.</p>
+
+        <div data-controller="new-contract-upload">
+          <div data-new-contract-upload-target="dropzone"
+               data-action="click->new-contract-upload#browse dragenter->new-contract-upload#dragenter dragleave->new-contract-upload#dragleave dragover->new-contract-upload#dragover drop->new-contract-upload#drop"
+               class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-amber-300 bg-white/60 px-6 py-8 transition hover:border-amber-400 hover:bg-white/80">
+            <svg class="mx-auto h-10 w-10 text-amber-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+            </svg>
+            <p data-new-contract-upload-target="label" class="mt-2 text-sm font-medium text-gray-700">Drop your contract files here or click to browse</p>
+            <p class="mt-1 text-xs text-gray-400">PDF, DOCX, or TXT up to 25MB each</p>
+          </div>
+          <input data-new-contract-upload-target="input"
+                 data-action="change->new-contract-upload#fileSelected"
+                 type="file"
+                 name="contract_documents[]"
+                 accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                 multiple
+                 class="hidden">
+
+          <%# File list preview (hidden initially) %>
+          <div data-new-contract-upload-target="fileList" class="hidden mt-3 space-y-2">
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <%# Basic Info %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h3 class="text-base font-semibold text-gray-900">Basic Information</h3>
+    </div>
+    <div class="px-6 py-5 space-y-5">
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+          <%= form.label :title, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_field :title, required: true, placeholder: "e.g., HVAC Maintenance - Building A",
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+
+        <div>
+          <%= form.label :vendor_name, "Vendor / Counterparty", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_field :vendor_name, placeholder: "e.g., CoolAir Services Inc.",
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+
+        <div>
+          <%= form.label :contract_type, "Type", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.select :contract_type, options_for_select(Contract::CONTRACT_TYPES.map { |t| [t.titleize.gsub("_", " "), t] }, contract.contract_type),
+              { include_blank: "Select a type..." },
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+
+        <div>
+          <%= form.label :direction, "Direction", class: "block text-sm font-medium text-gray-700" %>
+          <p class="text-xs text-gray-500 mt-0.5">Are you paying or being paid?</p>
+          <%= form.select :direction, options_for_select([["Expense (you pay)", "outbound"], ["Revenue (you're paid)", "inbound"]], contract.direction),
+              {},
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+
+        <div>
+          <%= form.label :status, class: "block text-sm font-medium text-gray-700" %>
+          <% status_options = Contract::STATUSES.reject { |s| s == "draft" } %>
+          <% selected_status = contract.draft? ? "active" : contract.status %>
+          <%= form.select :status, options_for_select(status_options.map { |s| [s.titleize.gsub("_", " "), s] }, selected_status),
+              {},
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Dates %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h3 class="text-base font-semibold text-gray-900">Key Dates</h3>
+    </div>
+    <div class="px-6 py-5">
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <div>
+          <%= form.label :start_date, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.date_field :start_date,
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+
+        <div>
+          <%= form.label :end_date, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.date_field :end_date,
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+
+        <div>
+          <%= form.label :next_renewal_date, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.date_field :next_renewal_date,
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Financial %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h3 class="text-base font-semibold text-gray-900">Financial Details</h3>
+    </div>
+    <div class="px-6 py-5">
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <%= form.label :monthly_value, "Monthly Value ($)", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.number_field :monthly_value, step: "0.01", min: "0", placeholder: "0.00",
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+
+        <div>
+          <%= form.label :total_value, "Total Contract Value ($)", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.number_field :total_value, step: "0.01", min: "0", placeholder: "0.00",
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Renewal Settings %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h3 class="text-base font-semibold text-gray-900">Renewal Settings</h3>
+    </div>
+    <div class="px-6 py-5 space-y-5">
+      <div class="flex items-center gap-3">
+        <%= form.check_box :auto_renews, class: "h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600" %>
+        <%= form.label :auto_renews, "This contract auto-renews", class: "text-sm font-medium text-gray-700" %>
+      </div>
+
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <%= form.label :renewal_term, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.select :renewal_term, options_for_select(Contract::RENEWAL_TERMS.map { |t| [t.titleize, t] }, contract.renewal_term),
+              { include_blank: "Select..." },
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+
+        <div>
+          <%= form.label :notice_period_days, "Notice Period (days)", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.number_field :notice_period_days, min: "0", placeholder: "e.g., 30",
+              class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Notes %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h3 class="text-base font-semibold text-gray-900">Notes</h3>
+    </div>
+    <div class="px-6 py-5">
+      <%= form.text_area :notes, rows: 4, placeholder: "Any additional notes about this contract...",
+          class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+    </div>
+  </div>
+
+  <%# Actions %>
+  <div class="flex items-center justify-end gap-3">
+    <% if draft_mode %>
+      <%= link_to "Cancel", contracts_path,
+          class: "rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900" %>
+      <%= form.submit "Save Contract",
+          data: { turbo_submits_with: "Saving..." },
+          class: "rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 cursor-pointer" %>
+    <% else %>
+      <%= link_to "Cancel", (contract.persisted? ? contract_path(contract) : contracts_path),
+          class: "rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900" %>
+      <%= form.submit (contract.persisted? ? "Update Contract" : "Create Contract"),
+          data: { turbo_submits_with: contract.persisted? ? "Updating..." : "Creating..." },
+          class: "rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 cursor-pointer" %>
+    <% end %>
+  </div>
+<% end %>
+</div>

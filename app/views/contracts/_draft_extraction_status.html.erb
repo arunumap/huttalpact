@@ -1,0 +1,54 @@
+<% extraction = contract.extraction_status %>
+<% docs = contract.contract_documents %>
+<% total_docs = docs.count %>
+<% completed_docs = docs.completed.count %>
+<% failed_docs = docs.failed.count %>
+
+<% if extraction == "processing" || (extraction == "pending" && total_docs > 0) %>
+  <div class="rounded-xl bg-blue-50 ring-1 ring-blue-200 px-6 py-5">
+    <div class="flex items-start gap-3">
+      <svg class="h-6 w-6 animate-spin text-blue-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <div class="flex-1">
+        <p class="text-sm font-semibold text-blue-800">AI is extracting your contract details...</p>
+        <p class="text-xs text-blue-600 mt-1">This usually takes 15-45 seconds. The form below will update automatically when ready.</p>
+        <% if total_docs > 0 %>
+          <div class="mt-3">
+            <div class="flex items-center gap-2">
+              <div class="flex-1 bg-blue-200 rounded-full h-1.5">
+                <div class="bg-blue-600 h-1.5 rounded-full transition-all duration-500" style="width: <%= total_docs > 0 ? (completed_docs * 100 / total_docs) : 0 %>%"></div>
+              </div>
+              <span class="text-xs text-blue-700 font-medium"><%= completed_docs %>/<%= total_docs %> documents</span>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% elsif extraction == "completed" %>
+  <div class="rounded-xl bg-green-50 ring-1 ring-green-200 px-6 py-5">
+    <div class="flex items-center gap-3">
+      <svg class="h-6 w-6 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div>
+        <p class="text-sm font-semibold text-green-800">AI extraction complete!</p>
+        <p class="text-xs text-green-600 mt-0.5">Review the details below and click "Save Contract" when ready.</p>
+      </div>
+    </div>
+  </div>
+<% elsif extraction == "failed" %>
+  <div class="rounded-xl bg-red-50 ring-1 ring-red-200 px-6 py-5">
+    <div class="flex items-center gap-3">
+      <svg class="h-6 w-6 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+      </svg>
+      <div>
+        <p class="text-sm font-semibold text-red-800">AI extraction failed</p>
+        <p class="text-xs text-red-600 mt-0.5">You can still fill in the details manually below.</p>
+      </div>
+    </div>
+  </div>
+<% end %>

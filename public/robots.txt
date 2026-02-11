@@ -1,0 +1,13 @@
+# See https://www.robotstxt.org/robotstxt.html for documentation on how to use the robots.txt file
+
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /contracts
+Disallow: /alerts
+Disallow: /audit_logs
+Disallow: /billing
+Disallow: /onboarding
+Disallow: /pay
+
+# Sitemap: https://huttalpact.com/sitemap.xml

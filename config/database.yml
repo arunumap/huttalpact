@@ -1,0 +1,37 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  database: sagebadger_development
+
+test:
+  <<: *default
+  database: sagebadger_test
+
+production:
+  primary:
+    <<: *default
+    database: sagebadger_production
+    username: sagebadger
+    password: <%= ENV["SAGEBADGER_DATABASE_PASSWORD"] %>
+  cache:
+    <<: *default
+    database: sagebadger_production_cache
+    username: sagebadger
+    password: <%= ENV["SAGEBADGER_DATABASE_PASSWORD"] %>
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *default
+    database: sagebadger_production_queue
+    username: sagebadger
+    password: <%= ENV["SAGEBADGER_DATABASE_PASSWORD"] %>
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *default
+    database: sagebadger_production_cable
+    username: sagebadger
+    password: <%= ENV["SAGEBADGER_DATABASE_PASSWORD"] %>
+    migrations_paths: db/cable_migrate

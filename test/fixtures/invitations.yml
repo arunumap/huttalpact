@@ -1,0 +1,16 @@
+pending:
+  organization: one
+  inviter: one
+  email: invitee@example.com
+  role: member
+  token: pending-token
+  expires_at: <%= 14.days.from_now %>
+
+accepted:
+  organization: one
+  inviter: one
+  email: accepted@example.com
+  role: admin
+  token: accepted-token
+  accepted_at: <%= 1.day.ago %>
+  expires_at: <%= 14.days.from_now %>

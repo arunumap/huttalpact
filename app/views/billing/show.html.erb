@@ -1,0 +1,112 @@
+<% content_for :page_title, "Billing" %>
+
+<div class="mx-auto max-w-3xl space-y-8">
+  <%# Current Plan %>
+  <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-900">Current Plan</h2>
+        <p class="mt-1 text-sm text-gray-500">Manage your subscription and usage.</p>
+      </div>
+      <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold
+        <%= @organization.plan == 'pro' ? 'bg-gray-900 text-white' : @organization.plan == 'starter' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700' %>">
+        <%= @organization.plan_display_name %>
+      </span>
+    </div>
+
+    <% if @subscription %>
+      <div class="mt-4 rounded-lg bg-gray-50 p-4">
+        <dl class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <dt class="font-medium text-gray-500">Status</dt>
+            <dd class="mt-1 text-gray-900"><%= @subscription.status.titleize %></dd>
+          </div>
+          <div>
+            <dt class="font-medium text-gray-500">Next billing date</dt>
+            <dd class="mt-1 text-gray-900"><%= @subscription.current_period_end&.strftime("%B %d, %Y") || "—" %></dd>
+          </div>
+        </dl>
+      </div>
+    <% end %>
+
+    <div class="mt-6 flex gap-3">
+      <% if @organization.paid_plan? %>
+        <%= button_to "Manage Subscription", portal_billing_path, method: :get,
+            class: "inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
+      <% end %>
+      <%= link_to "View Plans", pricing_path,
+          class: "inline-flex items-center rounded-lg #{@organization.free_plan? ? 'bg-amber-600 text-white hover:bg-amber-500' : 'bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'} px-4 py-2 text-sm font-semibold shadow-sm" %>
+    </div>
+  </div>
+
+  <%# Usage %>
+  <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
+    <h2 class="text-lg font-semibold text-gray-900">Usage</h2>
+    <p class="mt-1 text-sm text-gray-500">Your current resource usage against plan limits.</p>
+
+    <div class="mt-6 space-y-6">
+      <%# Contracts %>
+      <div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium text-gray-700">Contracts</span>
+          <span class="text-gray-500">
+            <%= @organization.active_contracts_count %> / <%= @organization.plan_contract_limit == Float::INFINITY ? "∞" : @organization.plan_contract_limit %>
+          </span>
+        </div>
+        <% contract_pct = @organization.plan_contract_limit == Float::INFINITY ? 0 : (@organization.active_contracts_count.to_f / @organization.plan_contract_limit * 100).clamp(0, 100) %>
+        <div class="mt-2 overflow-hidden rounded-full bg-gray-200 h-2">
+          <div class="h-2 rounded-full <%= contract_pct >= 90 ? 'bg-red-500' : contract_pct >= 70 ? 'bg-amber-500' : 'bg-green-500' %>" style="width: <%= contract_pct %>%"></div>
+        </div>
+      </div>
+
+      <%# AI Extractions %>
+      <div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium text-gray-700">AI Extractions (this month)</span>
+          <span class="text-gray-500">
+            <%= @organization.ai_extractions_count %> / <%= @organization.plan_extraction_limit == Float::INFINITY ? "∞" : @organization.plan_extraction_limit %>
+          </span>
+        </div>
+        <% extraction_pct = @organization.plan_extraction_limit == Float::INFINITY ? 0 : (@organization.ai_extractions_count.to_f / @organization.plan_extraction_limit * 100).clamp(0, 100) %>
+        <div class="mt-2 overflow-hidden rounded-full bg-gray-200 h-2">
+          <div class="h-2 rounded-full <%= extraction_pct >= 90 ? 'bg-red-500' : extraction_pct >= 70 ? 'bg-amber-500' : 'bg-green-500' %>" style="width: <%= extraction_pct %>%"></div>
+        </div>
+        <p class="mt-1 text-xs text-gray-400">Resets on <%= Date.current.next_month.beginning_of_month.strftime("%B %-d, %Y") %></p>
+      </div>
+
+      <%# Team Members %>
+      <div>
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium text-gray-700">Team Members</span>
+          <span class="text-gray-500">
+            <%= @organization.memberships.count %> / <%= @organization.plan_user_limit == Float::INFINITY ? "∞" : @organization.plan_user_limit %>
+          </span>
+        </div>
+        <% user_pct = @organization.plan_user_limit == Float::INFINITY ? 0 : (@organization.memberships.count.to_f / @organization.plan_user_limit * 100).clamp(0, 100) %>
+        <div class="mt-2 overflow-hidden rounded-full bg-gray-200 h-2">
+          <div class="h-2 rounded-full <%= user_pct >= 90 ? 'bg-red-500' : user_pct >= 70 ? 'bg-amber-500' : 'bg-green-500' %>" style="width: <%= user_pct %>%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Upgrade CTA for free users %>
+  <% if @organization.free_plan? %>
+    <div class="rounded-xl bg-gradient-to-r from-amber-50 to-amber-100 p-6 ring-1 ring-amber-200">
+      <div class="flex items-start gap-4">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-200">
+          <svg class="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-base font-semibold text-amber-900">Unlock more with a paid plan</h3>
+          <p class="mt-1 text-sm text-amber-700">Upgrade to Starter for 100 contracts and 50 AI extractions/month, or go Pro for unlimited everything.</p>
+          <div class="mt-4">
+            <%= link_to "View Plans →", pricing_path, class: "text-sm font-semibold text-amber-700 hover:text-amber-800" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

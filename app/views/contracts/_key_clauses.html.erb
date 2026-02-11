@@ -1,0 +1,36 @@
+<div id="contract_key_clauses">
+  <% clauses = contract.key_clauses.order(:clause_type) %>
+  <% if clauses.any? %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-semibold text-gray-900">Key Clauses</h3>
+          <span class="text-xs text-gray-400"><%= pluralize(clauses.size, "clause") %> identified</span>
+        </div>
+      </div>
+      <div class="divide-y divide-gray-100">
+        <% clauses.each do |clause| %>
+          <div class="px-6 py-4">
+            <div class="flex items-start justify-between gap-4">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 mb-1.5">
+                  <%= clause_type_badge(clause.clause_type) %>
+                  <% if clause.page_reference.present? %>
+                    <span class="text-xs text-gray-400"><%= clause.page_reference %></span>
+                  <% end %>
+                  <% if clause.contract_document.present? %>
+                    <span class="text-xs text-gray-400" title="Source document">📄 <%= clause.contract_document.filename %></span>
+                  <% end %>
+                </div>
+                <p class="text-sm text-gray-700 leading-relaxed"><%= clause.content %></p>
+              </div>
+              <% if clause.confidence_score %>
+                <%= confidence_badge(clause.confidence_score) %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

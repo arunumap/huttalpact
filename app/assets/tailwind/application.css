@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+/* Turbo Drive progress bar */
+.turbo-progress-bar {
+  background-color: var(--color-amber-600);
+}
+
+/* Turbo Frame busy state — dims content during navigation */
+turbo-frame[busy] {
+  opacity: 0.6;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}

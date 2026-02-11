@@ -1,0 +1,22 @@
+<% content_for :heading, "Set your new password" %>
+
+<%= form_with url: password_path(params[:token]), method: :put, class: "space-y-5" do |form| %>
+  <div>
+    <%= form.label :password, "New password", class: "block text-sm font-medium text-gray-700" %>
+    <%= form.password_field :password, required: true, autocomplete: "new-password", maxlength: 72,
+        class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm",
+        placeholder: "Enter new password" %>
+  </div>
+
+  <div>
+    <%= form.label :password_confirmation, "Confirm new password", class: "block text-sm font-medium text-gray-700" %>
+    <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password", maxlength: 72,
+        class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm",
+        placeholder: "Confirm your new password" %>
+  </div>
+
+  <div>
+    <%= form.submit "Update password",
+        class: "flex w-full justify-center rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 cursor-pointer" %>
+  </div>
+<% end %>

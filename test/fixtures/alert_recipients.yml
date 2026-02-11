@@ -1,0 +1,55 @@
+one_expiry:
+  alert: expiry_warning
+  user: one
+  channel: email
+  sent_at:
+  read_at:
+
+one_renewal:
+  alert: renewal_upcoming
+  user: one
+  channel: email
+  sent_at:
+  read_at:
+
+one_acknowledged:
+  alert: acknowledged_alert
+  user: one
+  channel: email
+  sent_at: <%= 3.days.ago %>
+  read_at: <%= 3.days.ago %>
+
+two_alert:
+  alert: other_org_alert
+  user: two
+  channel: email
+  sent_at:
+  read_at:
+
+one_overdue:
+  alert: overdue_alert
+  user: one
+  channel: email
+  sent_at:
+  read_at:
+
+one_sent:
+  alert: sent_alert
+  user: one
+  channel: email
+  sent_at: <%= 1.day.ago %>
+  read_at:
+
+one_snoozed:
+  alert: snoozed_alert
+  user: one
+  channel: in_app
+  sent_at:
+  read_at:
+
+one_scheduled_far_future:
+  alert: scheduled_far_future
+  user: one
+  channel: email
+  sent_at:
+  read_at:

@@ -1,0 +1,127 @@
+<% content_for :page_title, "Activity Log" %>
+
+<div class="space-y-6">
+  <%# Header %>
+  <div>
+    <h2 class="text-2xl font-bold text-gray-900">Activity Log</h2>
+    <p class="mt-1 text-sm text-gray-500">Track all actions across your contracts.</p>
+  </div>
+
+  <%# Plan-based history limit banner %>
+  <% if @audit_log_days_limit.present? %>
+    <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex items-center justify-between">
+      <p class="text-sm text-amber-800">
+        <svg class="inline-block h-4 w-4 mr-1 -mt-0.5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        Showing activity from the last <strong><%= pluralize(@audit_log_days_limit, "day") %></strong>.
+        Upgrade for more history.
+      </p>
+      <%= link_to "View plans →", pricing_path, class: "ml-4 whitespace-nowrap text-sm font-semibold text-amber-700 hover:text-amber-600" %>
+    </div>
+  <% end %>
+
+  <%# Filters %>
+  <%= form_with url: audit_logs_path, method: :get, class: "flex flex-wrap items-end gap-4" do |form| %>
+    <div class="w-48">
+      <%= form.label :action_type, "Action", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.select :action_type,
+          options_for_select(AuditLog::ACTIONS.map { |a| [a == "alert_sent" ? "Alert Sent" : a.titleize, a] }, params[:action_type]),
+          { include_blank: "All actions" },
+          class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+    </div>
+
+    <div class="w-56">
+      <%= form.label :contract_id, "Contract", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.select :contract_id,
+          options_for_select(Contract.order(:title).pluck(:title, :id), params[:contract_id]),
+          { include_blank: "All contracts" },
+          class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+    </div>
+
+    <div class="flex gap-2">
+      <%= form.submit "Filter",
+          class: "rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 cursor-pointer" %>
+      <% if params[:action_type].present? || params[:contract_id].present? %>
+        <%= link_to "Clear", audit_logs_path,
+            class: "rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900" %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%# Audit log table %>
+  <% if @audit_logs.any? %>
+    <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5 overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Timestamp</th>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">User</th>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Action</th>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Contract</th>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Details</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          <% @audit_logs.each do |log| %>
+            <tr class="hover:bg-gray-50 transition-colors">
+              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                <span title="<%= log.created_at.strftime('%b %d, %Y %I:%M %p') %>">
+                  <%= time_ago_in_words(log.created_at) %> ago
+                </span>
+              </td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                <% if log.user %>
+                  <div class="flex items-center gap-2">
+                    <div class="flex h-6 w-6 items-center justify-center rounded-full bg-amber-600 text-[10px] font-bold text-white">
+                      <%= log.user.initials %>
+                    </div>
+                    <span><%= log.user.full_name %></span>
+                  </div>
+                <% else %>
+                  <span class="text-gray-400">System</span>
+                <% end %>
+              </td>
+              <td class="whitespace-nowrap px-6 py-4">
+                <%= audit_log_action_badge(log.action) %>
+              </td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm">
+                <% if log.contract %>
+                  <%= link_to log.contract.title, log.contract, class: "font-medium text-amber-600 hover:text-amber-500" %>
+                <% else %>
+                  <span class="text-gray-400">—</span>
+                <% end %>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                <%= log.details || "—" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <%# Pagination %>
+    <div class="flex items-center justify-between pt-2">
+      <p class="text-sm text-gray-500">
+        Showing <span class="font-medium"><%= @pagy.from %></span> to <span class="font-medium"><%= @pagy.to %></span> of <span class="font-medium"><%= @pagy.count %></span> entries
+      </p>
+      <nav class="flex gap-1">
+        <% if @pagy.prev %>
+          <%= link_to "← Previous", audit_logs_path(page: @pagy.prev, action_type: params[:action_type]),
+              class: "rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
+        <% end %>
+        <% if @pagy.next %>
+          <%= link_to "Next →", audit_logs_path(page: @pagy.next, action_type: params[:action_type]),
+              class: "rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
+        <% end %>
+      </nav>
+    </div>
+  <% else %>
+    <div class="rounded-xl bg-white px-6 py-16 text-center shadow-sm ring-1 ring-gray-900/5">
+      <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <h3 class="mt-2 text-sm font-semibold text-gray-900">No activity yet</h3>
+      <p class="mt-1 text-sm text-gray-500">Activity will appear here as you work with contracts.</p>
+    </div>
+  <% end %>
+</div>

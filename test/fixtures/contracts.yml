@@ -1,0 +1,64 @@
+hvac_maintenance:
+  organization: one
+  title: HVAC Maintenance - Building A
+  vendor_name: CoolAir Services
+  status: active
+  contract_type: maintenance
+  direction: outbound
+  start_date: <%= Date.new(2025, 1, 1) %>
+  end_date: <%= Date.new(2026, 12, 31) %>
+  next_renewal_date: <%= Date.new(2026, 11, 30) %>
+  notice_period_days: 30
+  monthly_value: 1200.00
+  total_value: 28800.00
+  auto_renews: true
+  renewal_term: annual
+  notes: Annual HVAC maintenance contract for Building A
+  extraction_status: pending
+  uploaded_by: one
+
+landscaping:
+  organization: one
+  title: Landscaping Services
+  vendor_name: Green Thumb LLC
+  status: expiring_soon
+  contract_type: service_agreement
+  direction: inbound
+  start_date: <%= Date.new(2025, 3, 1) %>
+  end_date: <%= 15.days.from_now.to_date %>
+  monthly_value: 800.00
+  total_value: 9600.00
+  auto_renews: false
+  extraction_status: pending
+  uploaded_by: one
+
+expired_insurance:
+  organization: one
+  title: Property Insurance - Portfolio
+  vendor_name: SafeGuard Insurance
+  status: expired
+  contract_type: insurance
+  direction: outbound
+  start_date: <%= Date.new(2024, 1, 1) %>
+  end_date: <%= 10.days.ago.to_date %>
+  monthly_value: 2500.00
+  total_value: 30000.00
+  auto_renews: false
+  extraction_status: completed
+  uploaded_by: one
+
+other_org_contract:
+  organization: two
+  title: Office Lease
+  vendor_name: Pinnacle Realty
+  status: active
+  contract_type: lease
+  direction: outbound
+  start_date: <%= Date.new(2025, 6, 1) %>
+  end_date: <%= Date.new(2027, 5, 31) %>
+  monthly_value: 5000.00
+  total_value: 120000.00
+  auto_renews: true
+  renewal_term: annual
+  extraction_status: pending
+  uploaded_by: two

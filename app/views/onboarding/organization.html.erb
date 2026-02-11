@@ -1,0 +1,31 @@
+<% content_for :title, "Set up your organization" %>
+
+<div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-900/5">
+  <h1 class="text-2xl font-bold text-gray-900">Tell us about your organization</h1>
+  <p class="mt-2 text-sm text-gray-600">We will use this name across your workspace and billing.</p>
+
+  <%= form_with model: @organization, url: onboarding_organization_path, method: :patch, class: "mt-6 space-y-5" do |form| %>
+    <% if @organization.errors.any? %>
+      <div class="rounded-md bg-red-50 p-4 text-sm text-red-700">
+        <ul class="list-disc space-y-1 pl-5">
+          <% @organization.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div>
+      <%= form.label :name, "Organization name", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.text_field :name,
+          class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm",
+          placeholder: "e.g., Sage Property Management" %>
+    </div>
+
+    <div class="flex items-center justify-end gap-3">
+      <%= form.submit "Continue",
+          data: { turbo_submits_with: "Saving..." },
+          class: "rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600" %>
+    </div>
+  <% end %>
+</div>

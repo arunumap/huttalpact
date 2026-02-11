@@ -1,0 +1,5 @@
+<h1>You are invited to HuttalPact</h1>
+<p><strong><%= @inviter.full_name %></strong> invited you to join <strong><%= @organization.name %></strong> on HuttalPact.</p>
+<p>Use the link below to create your account and get started:</p>
+<p><a href="<%= @signup_url %>">Accept invitation</a></p>
+<p>This invitation expires on <%= l(@invitation.expires_at.to_date, format: :long) if @invitation.expires_at %>.</p>

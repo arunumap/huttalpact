@@ -1,0 +1,26 @@
+contract_created:
+  organization: one
+  user: one
+  contract: hvac_maintenance
+  action: created
+  details: "Created contract: HVAC Maintenance - Building A"
+
+contract_viewed:
+  organization: one
+  user: one
+  contract: hvac_maintenance
+  action: viewed
+
+contract_updated:
+  organization: one
+  user: one
+  contract: landscaping
+  action: updated
+  details: "Updated fields: end_date, status"
+
+other_org_log:
+  organization: two
+  user: two
+  contract: other_org_contract
+  action: created
+  details: "Created contract in other org"

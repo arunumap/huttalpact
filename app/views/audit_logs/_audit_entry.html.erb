@@ -1,0 +1,18 @@
+<div class="flex gap-3">
+  <div class="flex flex-col items-center">
+    <div class="flex h-6 w-6 items-center justify-center rounded-full <%= audit_log_icon_bg(audit_log.action) %>">
+      <%= audit_log_icon(audit_log.action) %>
+    </div>
+    <div class="w-px flex-1 bg-gray-200"></div>
+  </div>
+  <div class="pb-4 flex-1 min-w-0">
+    <p class="text-sm text-gray-900">
+      <span class="font-medium"><%= audit_log.user&.full_name || "System" %></span>
+      <span class="text-gray-500"><%= audit_log.action_label.downcase %></span>
+    </p>
+    <% if audit_log.details.present? %>
+      <p class="mt-0.5 text-xs text-gray-500 truncate"><%= audit_log.details %></p>
+    <% end %>
+    <p class="mt-0.5 text-xs text-gray-400"><%= time_ago_in_words(audit_log.created_at) %> ago</p>
+  </div>
+</div>

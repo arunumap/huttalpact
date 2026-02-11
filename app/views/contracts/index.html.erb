@@ -1,0 +1,259 @@
+<% content_for :page_title, "Contracts" %>
+
+<div class="space-y-6">
+  <%# Header with action %>
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Contracts</h2>
+      <p class="mt-1 text-sm text-gray-500">
+        <%= @pagy.count %> total contracts
+        <% if current_organization && current_organization.plan_contract_limit != Float::INFINITY %>
+          <span class="text-gray-400">·</span>
+          <span class="<%= current_organization.near_contract_limit? ? 'text-amber-600 font-medium' : '' %>">
+            <%= current_organization.active_contracts_count %> of <%= current_organization.plan_contract_limit %> used
+          </span>
+          <% if current_organization.near_contract_limit? %>
+            <%= link_to "Upgrade", pricing_path, class: "ml-1 text-amber-600 font-semibold hover:text-amber-500 underline" %>
+          <% end %>
+        <% end %>
+      </p>
+    </div>
+    <div class="flex items-center gap-3">
+      <%= link_to contracts_path(format: :csv, search: params[:search], status: params[:status], contract_type: params[:contract_type], direction: params[:direction]),
+          class: "inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" do %>
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+        </svg>
+        Export CSV
+      <% end %>
+      <%= link_to new_contract_path,
+          class: "inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600" do %>
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Add Contract
+      <% end %>
+    </div>
+  </div>
+
+  <%# Filters %>
+  <%= form_with url: contracts_path, method: :get, class: "flex flex-wrap items-end gap-4", data: { turbo_frame: "contracts" } do |form| %>
+    <div class="flex-1 min-w-[200px]">
+      <%= form.label :search, "Search", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.search_field :search, value: params[:search], placeholder: "Search by title or vendor...",
+          class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+    </div>
+
+    <div class="w-44">
+      <%= form.label :status, "Status", class: "block text-sm font-medium text-gray-700" %>
+      <% filter_statuses = Contract::STATUSES.reject { |s| s == "draft" } %>
+      <%= form.select :status, options_for_select(filter_statuses.map { |s| [s.titleize.gsub("_", " "), s] }, params[:status]),
+          { include_blank: "All statuses" },
+          class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+    </div>
+
+    <div class="w-52">
+      <%= form.label :contract_type, "Type", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.select :contract_type, options_for_select(Contract::CONTRACT_TYPES.map { |t| [t.titleize.gsub("_", " "), t] }, params[:contract_type]),
+          { include_blank: "All types" },
+          class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+    </div>
+
+    <div class="w-40">
+      <%= form.label :direction, "Direction", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.select :direction, options_for_select(Contract::DIRECTIONS.map { |d| [d.titleize, d] }, params[:direction]),
+          { include_blank: "All" },
+          class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+    </div>
+
+    <div class="flex gap-2">
+      <%= form.submit "Filter",
+          class: "rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 cursor-pointer" %>
+      <% if params[:search].present? || params[:status].present? || params[:contract_type].present? %>
+        <%= link_to "Clear", contracts_path,
+            class: "rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900" %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <%# Drafts panel %>
+  <% if @drafts.any? %>
+    <div class="rounded-xl bg-amber-50/50 ring-1 ring-amber-200/60 overflow-hidden">
+      <div class="px-6 py-4 border-b border-amber-200/60">
+        <div class="flex items-center gap-2">
+          <svg class="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+          </svg>
+          <h3 class="text-sm font-semibold text-amber-800">Drafts</h3>
+          <span class="ml-1 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"><%= @drafts.count %></span>
+        </div>
+      </div>
+      <div class="divide-y divide-amber-200/40">
+        <% @drafts.each do |draft| %>
+          <div class="px-6 py-3 flex items-center justify-between hover:bg-amber-50 transition-colors">
+            <div class="flex items-center gap-3 min-w-0">
+              <% case draft.extraction_status %>
+              <% when "processing", "pending" %>
+                <svg class="h-4 w-4 animate-spin text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              <% when "completed" %>
+                <svg class="h-4 w-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              <% when "failed" %>
+                <svg class="h-4 w-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+              <% end %>
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-gray-900 truncate">
+                  <%= draft.title == "Untitled Draft" ? "Draft — #{draft.contract_documents.count} #{'document'.pluralize(draft.contract_documents.count)}" : draft.title %>
+                </p>
+                <p class="text-xs text-gray-500">
+                  Created <%= time_ago_in_words(draft.created_at) %> ago
+                  <% if draft.extraction_status == "processing" || draft.extraction_status == "pending" %>
+                    · <span class="text-blue-600">Extracting...</span>
+                  <% elsif draft.extraction_status == "completed" %>
+                    · <span class="text-green-600">Ready to finalize</span>
+                  <% elsif draft.extraction_status == "failed" %>
+                    · <span class="text-red-600">Extraction failed</span>
+                  <% end %>
+                </p>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 ml-4">
+              <%= link_to edit_contract_path(draft),
+                  class: "inline-flex items-center gap-1 rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm ring-1 ring-inset ring-amber-300 hover:bg-amber-50" do %>
+                Continue
+                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              <% end %>
+              <%= button_to contract_path(draft), method: :delete,
+                  data: { turbo_confirm: "Delete this draft?" },
+                  class: "inline-flex items-center rounded-md p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50" do %>
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <%# Contracts table %>
+  <turbo-frame id="contracts" target="_top">
+    <% if @contracts.any? %>
+      <div data-controller="bulk-select">
+        <%# Bulk action toolbar - hidden until selections made %>
+        <div data-bulk-select-target="toolbar" class="hidden mb-4 flex items-center gap-3 rounded-lg bg-amber-50 px-4 py-3 ring-1 ring-inset ring-amber-200">
+          <span data-bulk-select-target="count" class="text-sm font-medium text-amber-800">0 selected</span>
+          <div class="flex-1"></div>
+          <%= form_with url: "#", method: :post, data: { bulk_select_target: "form", turbo: false } do %>
+            <div class="flex items-center gap-2">
+              <button type="button" data-action="click->bulk-select#submitBulk" data-bulk-action="<%= bulk_export_contracts_path %>"
+                      class="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                Export
+              </button>
+              <button type="button" data-action="click->bulk-select#submitBulk" data-bulk-action="<%= bulk_archive_contracts_path %>"
+                      class="inline-flex items-center gap-1.5 rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-purple-500">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" /></svg>
+                Archive
+              </button>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5 overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="w-10 px-4 py-3">
+                  <input type="checkbox" data-bulk-select-target="selectAll" data-action="change->bulk-select#toggleAll"
+                         class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600">
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Contract</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Vendor</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Direction</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">End Date</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Value</th>
+                <th class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+              <% @contracts.each do |contract| %>
+                <tr class="hover:bg-gray-50 transition-colors">
+                  <td class="w-10 px-4 py-4">
+                    <input type="checkbox" value="<%= contract.id %>" data-bulk-select-target="checkbox" data-action="change->bulk-select#toggle"
+                           class="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600">
+                  </td>
+                  <td class="px-6 py-4">
+                    <%= link_to contract.title, contract, class: "text-sm font-medium text-amber-600 hover:text-amber-500" %>
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-500"><%= contract.vendor_name.presence || "—" %></td>
+                  <td class="px-6 py-4"><%= contract_type_badge(contract.contract_type) %></td>
+                  <td class="px-6 py-4"><%= direction_badge(contract.direction) %></td>
+                  <td class="px-6 py-4"><%= contract_status_badge(contract.status) %></td>
+                  <td class="px-6 py-4 text-sm text-gray-500"><%= format_date(contract.end_date) %></td>
+                  <td class="px-6 py-4 text-sm text-gray-900 font-medium"><%= format_currency(contract.monthly_value) %><span class="text-gray-400 font-normal">/mo</span></td>
+                  <td class="px-6 py-4 text-right">
+                    <%= link_to "View", contract, class: "text-sm font-medium text-gray-600 hover:text-gray-900" %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <%# Pagination %>
+      <div class="flex items-center justify-between pt-2">
+        <p class="text-sm text-gray-500">
+          Showing <span class="font-medium"><%= @pagy.from %></span> to <span class="font-medium"><%= @pagy.to %></span> of <span class="font-medium"><%= @pagy.count %></span> contracts
+        </p>
+        <nav class="flex gap-1">
+          <% if @pagy.prev %>
+            <%= link_to "← Previous", contracts_path(page: @pagy.prev, search: params[:search], status: params[:status], contract_type: params[:contract_type], direction: params[:direction]),
+                class: "rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
+          <% end %>
+          <% if @pagy.next %>
+            <%= link_to "Next →", contracts_path(page: @pagy.next, search: params[:search], status: params[:status], contract_type: params[:contract_type], direction: params[:direction]),
+                class: "rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
+          <% end %>
+        </nav>
+      </div>
+    <% else %>
+      <div class="rounded-xl bg-white px-6 py-16 text-center shadow-sm ring-1 ring-gray-900/5">
+        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">No contracts found</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          <% if params[:search].present? || params[:status].present? || params[:contract_type].present? || params[:direction].present? %>
+            Try adjusting your filters or <%= link_to "clear all filters", contracts_path, class: "text-amber-600 hover:text-amber-500" %>.
+          <% else %>
+            Get started by adding your first contract.
+          <% end %>
+        </p>
+        <% unless params[:search].present? || params[:status].present? || params[:contract_type].present? || params[:direction].present? %>
+          <div class="mt-6">
+            <%= link_to new_contract_path,
+                class: "inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500" do %>
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add Contract
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </turbo-frame>
+</div>

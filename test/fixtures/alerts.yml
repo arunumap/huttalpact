@@ -1,0 +1,63 @@
+expiry_warning:
+  organization: one
+  contract: landscaping
+  alert_type: expiry_warning
+  trigger_date: <%= Date.current %>
+  status: pending
+  message: "Landscaping Services expires soon"
+
+renewal_upcoming:
+  organization: one
+  contract: hvac_maintenance
+  alert_type: renewal_upcoming
+  trigger_date: <%= 5.days.from_now.to_date %>
+  status: pending
+  message: "HVAC Maintenance - Building A renews soon"
+
+acknowledged_alert:
+  organization: one
+  contract: hvac_maintenance
+  alert_type: notice_period_start
+  trigger_date: <%= 3.days.ago.to_date %>
+  status: acknowledged
+  message: "Notice period for HVAC Maintenance - Building A"
+
+other_org_alert:
+  organization: two
+  contract: other_org_contract
+  alert_type: renewal_upcoming
+  trigger_date: <%= 10.days.from_now.to_date %>
+  status: pending
+  message: "Office Lease renewal upcoming"
+
+overdue_alert:
+  organization: one
+  contract: hvac_maintenance
+  alert_type: expiry_warning
+  trigger_date: <%= 3.days.ago.to_date %>
+  status: pending
+  message: "HVAC Maintenance overdue alert"
+
+sent_alert:
+  organization: one
+  contract: landscaping
+  alert_type: renewal_upcoming
+  trigger_date: <%= 1.day.ago.to_date %>
+  status: sent
+  message: "Landscaping Services renewal already sent"
+
+snoozed_alert:
+  organization: one
+  contract: hvac_maintenance
+  alert_type: renewal_upcoming
+  trigger_date: <%= 10.days.from_now.to_date %>
+  status: snoozed
+  message: "HVAC Maintenance snoozed alert"
+
+scheduled_far_future:
+  organization: one
+  contract: hvac_maintenance
+  alert_type: expiry_warning
+  trigger_date: <%= 180.days.from_now.to_date %>
+  status: pending
+  message: "HVAC Maintenance — far future alert"

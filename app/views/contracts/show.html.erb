@@ -1,0 +1,223 @@
+<% content_for :page_title, @contract.title %>
+
+<%= turbo_stream_from "contract_#{@contract.id}" %>
+
+<div class="space-y-6">
+  <%# Header %>
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <h2 class="text-2xl font-bold text-gray-900"><%= @contract.title %></h2>
+        <%= contract_status_badge(@contract.status) %>
+        <%= direction_badge(@contract.direction) %>
+      </div>
+      <% if @contract.vendor_name.present? %>
+        <p class="mt-1 text-sm text-gray-500"><%= @contract.vendor_name %></p>
+      <% end %>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <%= link_to edit_contract_path(@contract),
+          class: "inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" do %>
+        <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+        </svg>
+        Edit
+      <% end %>
+
+      <%= button_to contract_path(@contract), method: :delete,
+          data: { turbo_confirm: "Are you sure you want to delete this contract? This action cannot be undone." },
+          class: "inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-red-50" do %>
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+        </svg>
+        Delete
+      <% end %>
+    </div>
+  </div>
+
+  <%# Details grid %>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <%# Main info %>
+    <div class="lg:col-span-2 space-y-6">
+      <%# Key Details %>
+      <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+        <div class="border-b border-gray-200 px-6 py-4">
+          <h3 class="text-base font-semibold text-gray-900">Contract Details</h3>
+        </div>
+        <dl class="divide-y divide-gray-200">
+          <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+            <dt class="text-sm font-medium text-gray-500">Type</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= @contract.contract_type_label || "—" %></dd>
+          </div>
+          <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+            <dt class="text-sm font-medium text-gray-500">Start Date</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= format_date(@contract.start_date) %></dd>
+          </div>
+          <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+            <dt class="text-sm font-medium text-gray-500">End Date</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+              <%= format_date(@contract.end_date) %>
+              <% if @contract.days_until_expiry && @contract.days_until_expiry > 0 %>
+                <span class="ml-2 text-xs text-gray-400">(<%= @contract.days_until_expiry %> days remaining)</span>
+              <% elsif @contract.days_until_expiry && @contract.days_until_expiry <= 0 %>
+                <span class="ml-2 text-xs text-red-500">(expired <%= @contract.days_until_expiry.abs %> days ago)</span>
+              <% end %>
+            </dd>
+          </div>
+          <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+            <dt class="text-sm font-medium text-gray-500">Next Renewal</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= format_date(@contract.next_renewal_date) %></dd>
+          </div>
+          <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+            <dt class="text-sm font-medium text-gray-500">Auto-Renews</dt>
+            <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= @contract.auto_renews? ? "Yes" : "No" %></dd>
+          </div>
+          <% if @contract.auto_renews? %>
+            <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+              <dt class="text-sm font-medium text-gray-500">Renewal Term</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= @contract.renewal_term&.titleize || "—" %></dd>
+            </div>
+          <% end %>
+          <% if @contract.notice_period_days.present? %>
+            <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+              <dt class="text-sm font-medium text-gray-500">Notice Period</dt>
+              <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= pluralize(@contract.notice_period_days, "day") %></dd>
+            </div>
+          <% end %>
+        </dl>
+      </div>
+
+      <%# Notes %>
+      <% if @contract.notes.present? %>
+        <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+          <div class="border-b border-gray-200 px-6 py-4">
+            <h3 class="text-base font-semibold text-gray-900">Notes</h3>
+          </div>
+          <div class="px-6 py-5">
+            <p class="text-sm text-gray-700 whitespace-pre-wrap"><%= @contract.notes %></p>
+          </div>
+        </div>
+      <% end %>
+
+      <%# AI Extraction Status %>
+      <%= render "contracts/ai_status", contract: @contract %>
+
+      <%# Key Clauses %>
+      <%= render "contracts/key_clauses", contract: @contract %>
+
+      <%# Documents %>
+      <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+        <div class="border-b border-gray-200 px-6 py-4">
+          <h3 class="text-base font-semibold text-gray-900">Documents</h3>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+          <%# Upload flash %>
+          <div id="document_upload_flash"></div>
+
+          <%# Drag-and-drop upload zone %>
+          <div data-controller="file-upload" data-upload-url="<%= contract_documents_path(@contract) %>">
+            <div class="flex items-center gap-3 mb-3">
+              <label for="document_type_select" class="text-sm font-medium text-gray-700">Document type:</label>
+              <select id="document_type_select" data-file-upload-target="documentType"
+                      class="rounded-md border-0 py-1.5 pl-3 pr-8 text-sm text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600">
+                <% ContractDocument::DOCUMENT_TYPES.each do |dt| %>
+                  <option value="<%= dt %>" <%= "selected" if dt == "addendum" && @contract.contract_documents.any? %>><%= dt.titleize.gsub("_", " ") %></option>
+                <% end %>
+              </select>
+            </div>
+            <div data-file-upload-target="dropzone"
+                 data-action="click->file-upload#browse dragenter->file-upload#dragenter dragleave->file-upload#dragleave dragover->file-upload#dragover drop->file-upload#drop"
+                 class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-8 transition hover:border-indigo-400 hover:bg-indigo-50/50">
+              <svg class="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+              </svg>
+              <p data-file-upload-target="label" class="mt-2 text-sm text-gray-600">Drop files here or click to browse</p>
+              <p class="mt-1 text-xs text-gray-400">PDF, DOCX, or TXT up to 25MB each</p>
+            </div>
+            <input data-file-upload-target="input"
+                   data-action="change->file-upload#fileSelected"
+                   type="file"
+                   accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                   multiple
+                   class="hidden">
+          </div>
+
+          <%# Document list %>
+          <%= turbo_stream_from "contract_#{@contract.id}_documents" %>
+          <div id="contract_documents" class="space-y-2">
+            <%= render partial: "contract_documents/contract_document", collection: @contract.contract_documents.ordered, as: :contract_document %>
+          </div>
+          <div id="empty_documents_state">
+            <% if @contract.contract_documents.empty? %>
+              <%= render "contract_documents/empty_state" %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <%# Extracted Text Preview %>
+      <%= render "contract_documents/extracted_text", contract: @contract %>
+    </div>
+
+    <%# Sidebar %>
+    <div class="space-y-6">
+      <%# Financial Summary %>
+      <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+        <div class="border-b border-gray-200 px-6 py-4">
+          <h3 class="text-base font-semibold text-gray-900">Financial</h3>
+        </div>
+        <div class="px-6 py-5 space-y-4">
+          <div>
+            <p class="text-sm text-gray-500"><%= @contract.inbound? ? "Monthly Revenue" : "Monthly Cost" %></p>
+            <p class="text-2xl font-bold <%= @contract.inbound? ? 'text-emerald-600' : 'text-gray-900' %>"><%= format_currency(@contract.monthly_value) %></p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Total Contract Value</p>
+            <p class="text-lg font-semibold text-gray-900"><%= format_currency(@contract.total_value) %></p>
+          </div>
+        </div>
+      </div>
+
+      <%# Meta info %>
+      <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+        <div class="border-b border-gray-200 px-6 py-4">
+          <h3 class="text-base font-semibold text-gray-900">Info</h3>
+        </div>
+        <div class="px-6 py-5 space-y-3 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Created</span>
+            <span class="text-gray-900"><%= @contract.created_at.strftime("%b %d, %Y") %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Last updated</span>
+            <span class="text-gray-900"><%= @contract.updated_at.strftime("%b %d, %Y") %></span>
+          </div>
+          <% if @contract.uploaded_by %>
+            <div class="flex justify-between">
+              <span class="text-gray-500">Added by</span>
+              <span class="text-gray-900"><%= @contract.uploaded_by.full_name %></span>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <%# Activity Timeline %>
+      <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+        <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+          <h3 class="text-base font-semibold text-gray-900">Activity</h3>
+          <%= link_to "View all", audit_logs_path(contract_id: @contract.id), class: "text-xs font-medium text-amber-600 hover:text-amber-500" %>
+        </div>
+        <div class="px-6 py-4">
+          <% if @audit_logs.any? %>
+            <% @audit_logs.each do |audit_log| %>
+              <%= render "audit_logs/audit_entry", audit_log: audit_log %>
+            <% end %>
+          <% else %>
+            <p class="text-sm text-gray-500 text-center py-4">No activity recorded yet.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

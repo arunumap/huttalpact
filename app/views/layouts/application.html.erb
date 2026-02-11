@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html class="h-full bg-gray-50">
+  <head>
+    <title><%= content_for(:title) || "HuttalPact" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="HuttalPact">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="robots" content="noindex, nofollow">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="h-full">
+    <div class="min-h-full" data-controller="sidebar">
+      <%# ===== Mobile overlay ===== %>
+      <div data-sidebar-target="overlay" data-action="click->sidebar#close"
+           class="hidden fixed inset-0 z-20 bg-gray-900/50 lg:hidden"></div>
+
+      <%# ===== Sidebar ===== %>
+      <aside data-sidebar-target="sidebar"
+             class="fixed inset-y-0 left-0 z-30 w-64 bg-gray-900 flex flex-col -translate-x-full transition-transform duration-200 ease-in-out lg:translate-x-0">
+        <%# Logo %>
+        <div class="flex h-16 items-center gap-2 px-6">
+          <span class="text-2xl">🦡</span>
+          <span class="text-lg font-bold text-white tracking-tight">HuttalPact</span>
+        </div>
+
+        <%# Navigation %>
+        <nav class="flex-1 space-y-1 px-3 py-4">
+          <%= sidebar_link_to "Dashboard", dashboard_path, icon: :home %>
+          <%= sidebar_link_to "Contracts", contracts_path, icon: :document %>
+          <%= sidebar_link_to "Alerts", alerts_path, icon: :bell %>
+          <%= sidebar_link_to "Activity Log", audit_logs_path, icon: :clock %>
+          <% if current_organization&.memberships&.find_by(user: Current.user)&.role == Membership::OWNER_ROLE %>
+            <%= sidebar_link_to "Billing", billing_path, icon: :credit_card %>
+          <% end %>
+        </nav>
+
+        <%# Organization & User %>
+        <div class="border-t border-gray-700 p-4">
+          <% if current_organization %>
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Organization</p>
+            <p class="text-sm font-medium text-white truncate"><%= current_organization.name %></p>
+            <div class="mt-1">
+              <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                <%= current_organization.plan == 'pro' ? 'bg-gray-700 text-white' : current_organization.plan == 'starter' ? 'bg-amber-900/50 text-amber-300' : 'bg-gray-800 text-gray-400' %>">
+                <%= current_organization.plan_display_name %> plan
+              </span>
+              <% unless current_organization.plan == 'pro' %>
+                <%= link_to "Upgrade", pricing_path, class: "ml-1 text-xs text-amber-400 hover:text-amber-300" %>
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="mt-4 flex items-center gap-3">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">
+              <%= Current.user&.initials %>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-white truncate"><%= Current.user&.full_name %></p>
+              <p class="text-xs text-gray-400 truncate"><%= Current.user&.email_address %></p>
+            </div>
+          </div>
+
+          <%= button_to "Sign out", session_path, method: :delete,
+              class: "mt-3 flex w-full items-center justify-center rounded-md bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-gray-700 hover:text-white" %>
+        </div>
+      </aside>
+
+      <%# ===== Main content ===== %>
+      <div class="lg:pl-64">
+        <%# Top bar %>
+        <header class="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:px-6">
+          <%# Hamburger menu (mobile only) %>
+          <button data-action="click->sidebar#toggle" type="button"
+                  class="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 lg:hidden">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+
+          <h1 class="text-lg font-semibold text-gray-900">
+            <%= content_for?(:page_title) ? yield(:page_title) : "Dashboard" %>
+          </h1>
+
+          <div class="ml-auto flex items-center gap-4">
+            <%# Notification bell %>
+            <div data-controller="notifications" class="relative">
+              <button data-action="click->notifications#toggle" data-notifications-target="button" type="button" class="relative rounded-full p-1.5 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2">
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                </svg>
+                <% if @unread_alert_count && @unread_alert_count > 0 %>
+                  <span class="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                    <%= @unread_alert_count > 9 ? "9+" : @unread_alert_count %>
+                  </span>
+                <% end %>
+              </button>
+
+              <div data-notifications-target="dropdown" class="hidden absolute right-0 top-full mt-2 w-96 rounded-lg bg-white shadow-lg ring-1 ring-black/5 z-50">
+                <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                  <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
+                  <%= link_to "View all", alerts_path, class: "text-xs font-medium text-amber-600 hover:text-amber-700" %>
+                </div>
+                <div data-notifications-target="list" class="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                  <% if @unread_alert_count && @unread_alert_count > 0 %>
+                    <%= render partial: "alerts/notification_items" %>
+                  <% else %>
+                    <div class="px-4 py-8 text-center">
+                      <p class="text-sm text-gray-500">No new notifications</p>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <%# Flash messages %>
+        <% if flash[:notice] %>
+          <div data-controller="flash" role="alert" aria-live="polite" class="mx-4 sm:mx-6 mt-4 flex items-start gap-3 rounded-md bg-green-50 p-4">
+            <svg class="h-5 w-5 shrink-0 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
+            </svg>
+            <p class="flex-1 text-sm text-green-700"><%= sanitize flash[:notice], tags: %w[a strong], attributes: %w[href class] %></p>
+            <button data-action="click->flash#dismiss" type="button" class="shrink-0 rounded-md text-green-500 hover:text-green-700 focus:outline-none">
+              <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
+            </button>
+          </div>
+        <% end %>
+
+        <% if flash[:alert] %>
+          <div data-controller="flash" role="alert" aria-live="assertive" class="mx-4 sm:mx-6 mt-4 flex items-start gap-3 rounded-md bg-red-50 p-4">
+            <svg class="h-5 w-5 shrink-0 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+            </svg>
+            <p class="flex-1 text-sm text-red-700"><%= sanitize flash[:alert], tags: %w[a strong], attributes: %w[href class] %></p>
+            <button data-action="click->flash#dismiss" type="button" class="shrink-0 rounded-md text-red-500 hover:text-red-700 focus:outline-none">
+              <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
+            </button>
+          </div>
+        <% end %>
+
+        <%# Page content %>
+        <main class="p-4 sm:p-6">
+          <%= yield %>
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

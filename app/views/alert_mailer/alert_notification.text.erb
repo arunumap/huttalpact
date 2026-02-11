@@ -1,0 +1,16 @@
+Hi <%= @user.first_name.presence || @user.full_name %>,
+
+<% case @alert.alert_type %>
+<% when "renewal_upcoming" %>
+Your contract "<%= @contract.title %>"<%= " with #{@contract.vendor_name}" if @contract.vendor_name.present? %> is coming up for renewal on <%= @contract.next_renewal_date.strftime("%B %d, %Y") %>.
+<%= "⚠️ This contract is set to auto-renew#{" (#{@contract.renewal_term})" if @contract.renewal_term.present?}. Take action before the renewal date if you want to make changes." if @contract.auto_renews? %>
+<% when "expiry_warning" %>
+Your contract "<%= @contract.title %>"<%= " with #{@contract.vendor_name}" if @contract.vendor_name.present? %> is expiring on <%= @contract.end_date.strftime("%B %d, %Y") %>.
+<% when "notice_period_start" %>
+The notice period for "<%= @contract.title %>"<%= " with #{@contract.vendor_name}" if @contract.vendor_name.present? %> has begun. You have <%= @contract.notice_period_days %> days to provide notice.
+<% end %>
+<%= "Monthly value: #{number_to_currency(@contract.monthly_value)}" if @contract.monthly_value.present? %>
+
+View contract details: <%= contract_url(@contract) %>
+
+— HuttalPact

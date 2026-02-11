@@ -1,0 +1,79 @@
+<% content_for :title, "Sign Up Free — HuttalPact" %>
+<% content_for :meta_description, "Create your free HuttalPact account. Track up to 10 contracts with 5 AI extractions per month. No credit card required." %>
+<% content_for :heading, @invitation ? "Join your team" : "Create your account" %>
+<% content_for :subheading do %>
+  Already have an account? <%= link_to "Sign in", new_session_path, class: "font-semibold text-amber-600 hover:text-amber-500" %>
+<% end %>
+
+<%= form_with model: @user, url: registration_path, class: "space-y-5" do |form| %>
+  <% if @invitation %>
+    <div class="rounded-md bg-amber-50 p-4 text-sm text-amber-700">
+      You are joining <strong><%= @invitation.organization.name %></strong> on HuttalPact.
+    </div>
+    <%= hidden_field_tag :token, @invitation.token %>
+  <% end %>
+  <% if @user.errors.any? %>
+    <div class="rounded-md bg-red-50 p-4">
+      <div class="flex">
+        <div class="text-sm text-red-700">
+          <ul class="list-disc space-y-1 pl-5">
+            <% @user.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <%= form.label :first_name, class: "block text-sm font-medium text-gray-700" %>
+      <%= form.text_field :first_name, autocomplete: "given-name",
+          class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+    </div>
+
+    <div>
+      <%= form.label :last_name, class: "block text-sm font-medium text-gray-700" %>
+      <%= form.text_field :last_name, autocomplete: "family-name",
+          class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+    </div>
+  </div>
+
+  <% unless @invitation %>
+    <div>
+      <%= form.label :organization_name, "Company / Organization name", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.text_field :organization_name, autocomplete: "organization",
+          class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm",
+          placeholder: "Your company name" %>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :email_address, "Email", class: "block text-sm font-medium text-gray-700" %>
+    <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "email",
+        class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm",
+        placeholder: "you@example.com",
+        disabled: @invitation.present? %>
+  </div>
+
+  <div>
+    <%= form.label :password, class: "block text-sm font-medium text-gray-700" %>
+    <%= form.password_field :password, required: true, autocomplete: "new-password", maxlength: 72,
+        class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm",
+        placeholder: "At least 8 characters" %>
+  </div>
+
+  <div>
+    <%= form.label :password_confirmation, "Confirm password", class: "block text-sm font-medium text-gray-700" %>
+    <%= form.password_field :password_confirmation, required: true, autocomplete: "new-password", maxlength: 72,
+        class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm",
+        placeholder: "Confirm your password" %>
+  </div>
+
+  <div>
+    <%= form.submit (@invitation ? "Join workspace" : "Create account"),
+        data: { turbo_submits_with: "Creating account..." },
+        class: "flex w-full justify-center rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 cursor-pointer" %>
+  </div>
+<% end %>

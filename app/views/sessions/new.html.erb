@@ -1,0 +1,35 @@
+<% content_for :title, "Sign In — HuttalPact" %>
+<% content_for :meta_description, "Sign in to your HuttalPact account to manage contracts, track renewals, and stay on top of deadlines." %>
+<% content_for :heading, "Sign in to your account" %>
+<% content_for :subheading do %>
+  Don't have an account? <%= link_to "Create one", new_registration_path, class: "font-semibold text-amber-600 hover:text-amber-500" %>
+<% end %>
+
+<%= form_with url: session_path, class: "space-y-5" do |form| %>
+  <div>
+    <%= form.label :email_address, "Email", class: "block text-sm font-medium text-gray-700" %>
+    <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username",
+        class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm",
+        placeholder: "Enter your email address",
+        value: params[:email_address] %>
+  </div>
+
+  <div>
+    <%= form.label :password, class: "block text-sm font-medium text-gray-700" %>
+    <%= form.password_field :password, required: true, autocomplete: "current-password", maxlength: 72,
+        class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm",
+        placeholder: "Enter your password" %>
+  </div>
+
+  <div class="flex items-center justify-between">
+    <div class="text-sm">
+      <%= link_to "Forgot password?", new_password_path, class: "font-semibold text-amber-600 hover:text-amber-500" %>
+    </div>
+  </div>
+
+  <div>
+    <%= form.submit "Sign in",
+        data: { turbo_submits_with: "Signing in..." },
+        class: "flex w-full justify-center rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 cursor-pointer" %>
+  </div>
+<% end %>

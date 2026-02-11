@@ -1,0 +1,7 @@
+one:
+  user: one
+  organization: one
+  email_enabled: true
+  in_app_enabled: true
+  days_before_renewal: 30
+  days_before_expiry: 14

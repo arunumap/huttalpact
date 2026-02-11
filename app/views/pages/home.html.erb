@@ -1,0 +1,245 @@
+<% content_for :title, "HuttalPact — Smart Contract Tracking That Won't Let You Forget" %>
+<% content_for :meta_description, "AI-powered contract tracking for SMBs. Upload PDF or DOCX contracts, auto-extract key dates, values, and clauses with AI, and get automated renewal and expiration alerts. Free plan available." %>
+<% content_for :canonical_url, root_url %>
+
+<%= structured_data(type: :organization) %>
+<%= structured_data(type: :software_application) %>
+
+<%# ===== HERO ===== %>
+<section class="relative overflow-hidden bg-white">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
+    <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+      <%# Left — copy %>
+      <div>
+        <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
+          Smart contract tracking that <span class="text-amber-600">won't let you forget</span>
+        </h1>
+        <p class="mt-6 text-lg leading-8 text-gray-600">
+          Upload your contracts, and AI automatically extracts key dates, values, and clauses.
+          Get automated alerts before renewals and expirations — so you never miss a deadline again.
+        </p>
+        <div class="mt-10 flex items-center gap-4">
+          <%= link_to "Get Started Free", new_registration_path,
+              class: "rounded-lg bg-amber-600 px-5 py-3 text-base font-semibold text-white shadow-sm hover:bg-amber-500 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600" %>
+          <%= link_to "See Pricing", pricing_path,
+              class: "rounded-lg border border-gray-300 px-5 py-3 text-base font-semibold text-gray-700 hover:bg-gray-50 transition" %>
+        </div>
+        <p class="mt-4 text-sm text-gray-500">Free plan includes 10 contracts and 5 AI extractions/month. No credit card required.</p>
+      </div>
+
+      <%# Right — dashboard screenshot %>
+      <div class="relative">
+        <div class="rounded-xl shadow-2xl ring-1 ring-gray-900/10 overflow-hidden">
+          <%= image_tag "screenshots/dashboard.png",
+              alt: "HuttalPact dashboard showing contract overview, revenue, spend, and expiring contracts",
+              class: "w-full",
+              loading: "eager" %>
+        </div>
+        <%# Decorative glow behind screenshot %>
+        <div class="absolute -inset-4 -z-10 rounded-2xl bg-gradient-to-tr from-amber-100 to-orange-50 opacity-60 blur-2xl"></div>
+      </div>
+    </div>
+  </div>
+  <div class="absolute inset-x-0 top-0 -z-10 transform-gpu overflow-hidden blur-3xl" aria-hidden="true">
+    <div class="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-amber-200 to-orange-100 opacity-30 sm:left-[calc(50%-30rem)] sm:w-[72rem]"></div>
+  </div>
+</section>
+
+<%# ===== FEATURES ===== %>
+<section class="bg-gray-50 py-20 sm:py-24">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl text-center">
+      <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Everything you need to manage contracts</h2>
+      <p class="mt-4 text-lg text-gray-600">Stop tracking contracts in spreadsheets. HuttalPact gives you a single source of truth with AI-powered intelligence.</p>
+    </div>
+
+    <div class="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      <%# Feature 1 — AI Extraction %>
+      <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+        <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100">
+          <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+          </svg>
+        </div>
+        <h3 class="mt-4 text-base font-semibold text-gray-900">AI-Powered Extraction</h3>
+        <p class="mt-2 text-sm text-gray-600">Upload a PDF, DOCX, or TXT file and AI automatically extracts dates, values, vendors, and key clauses.</p>
+      </div>
+
+      <%# Feature 2 — Automated Alerts %>
+      <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+        <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100">
+          <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+          </svg>
+        </div>
+        <h3 class="mt-4 text-base font-semibold text-gray-900">Automated Alerts</h3>
+        <p class="mt-2 text-sm text-gray-600">Get email and in-app notifications before renewals, expirations, and notice periods so nothing slips through.</p>
+      </div>
+
+      <%# Feature 3 — Key Clauses %>
+      <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+        <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100">
+          <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+        </div>
+        <h3 class="mt-4 text-base font-semibold text-gray-900">Key Clause Detection</h3>
+        <p class="mt-2 text-sm text-gray-600">AI highlights termination clauses, penalty terms, price escalations, SLAs, and other critical provisions.</p>
+      </div>
+
+      <%# Feature 4 — Dashboard %>
+      <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+        <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-100">
+          <svg class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5M9 11.25v1.5M12 9v3.75m3-6v6" />
+          </svg>
+        </div>
+        <h3 class="mt-4 text-base font-semibold text-gray-900">Full Visibility Dashboard</h3>
+        <p class="mt-2 text-sm text-gray-600">See revenue, spend, upcoming renewals, and expiring contracts at a glance. Track everything in one place.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%# ===== HOW IT WORKS ===== %>
+<section class="bg-white py-20 sm:py-24">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl text-center">
+      <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Up and running in minutes</h2>
+      <p class="mt-4 text-lg text-gray-600">Three simple steps to smarter contract management.</p>
+    </div>
+
+    <div class="mt-16 grid grid-cols-1 gap-12 sm:grid-cols-3">
+      <%# Step 1 %>
+      <div class="text-center">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-600 text-xl font-bold text-white">1</div>
+        <h3 class="mt-5 text-lg font-semibold text-gray-900">Upload your contracts</h3>
+        <p class="mt-3 text-sm leading-6 text-gray-600">Drop in your PDF, DOCX, or TXT files. Drag and drop or browse — upload as many as you need.</p>
+        <div class="mt-6 rounded-lg shadow-lg ring-1 ring-gray-900/10 overflow-hidden">
+          <%= image_tag "screenshots/upload.png",
+              alt: "Contract upload interface with drag and drop",
+              class: "w-full",
+              loading: "lazy" %>
+        </div>
+      </div>
+
+      <%# Step 2 %>
+      <div class="text-center">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-600 text-xl font-bold text-white">2</div>
+        <h3 class="mt-5 text-lg font-semibold text-gray-900">AI extracts the details</h3>
+        <p class="mt-3 text-sm leading-6 text-gray-600">Our AI reads each contract and pulls out dates, values, vendors, renewal terms, and key clauses automatically.</p>
+        <div class="mt-6 rounded-lg shadow-lg ring-1 ring-gray-900/10 overflow-hidden">
+          <%= image_tag "screenshots/clauses.png",
+              alt: "AI-extracted key clauses with confidence scores",
+              class: "w-full",
+              loading: "lazy" %>
+        </div>
+      </div>
+
+      <%# Step 3 %>
+      <div class="text-center">
+        <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-600 text-xl font-bold text-white">3</div>
+        <h3 class="mt-5 text-lg font-semibold text-gray-900">Get alerts before deadlines</h3>
+        <p class="mt-3 text-sm leading-6 text-gray-600">Receive email and in-app notifications ahead of renewals, expirations, and notice periods. Never miss a date.</p>
+        <div class="mt-6 rounded-lg shadow-lg ring-1 ring-gray-900/10 overflow-hidden">
+          <%= image_tag "screenshots/alerts.png",
+              alt: "Automated contract alerts for renewals and expirations",
+              class: "w-full",
+              loading: "lazy" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%# ===== TESTIMONIALS ===== %>
+<section class="bg-gray-50 py-20 sm:py-24">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl text-center">
+      <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Trusted by growing businesses</h2>
+    </div>
+
+    <div class="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-3">
+      <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+        <p class="text-sm leading-6 text-gray-600">"We were tracking 60+ vendor contracts in a spreadsheet. HuttalPact found two auto-renewals we were about to miss — saved us over $15K."</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-700">JR</div>
+          <div>
+            <p class="text-sm font-semibold text-gray-900">Jessica R.</p>
+            <p class="text-xs text-gray-500">Operations Manager</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+        <p class="text-sm leading-6 text-gray-600">"The AI extraction is incredibly accurate. I uploaded a 40-page lease and it pulled out every key date and clause in seconds."</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-700">MT</div>
+          <div>
+            <p class="text-sm font-semibold text-gray-900">Marcus T.</p>
+            <p class="text-xs text-gray-500">Facilities Director</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-white p-8 shadow-sm ring-1 ring-gray-200">
+        <p class="text-sm leading-6 text-gray-600">"The renewal alerts alone are worth the subscription. We set it and forget it — HuttalPact tells us when to act."</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-sm font-bold text-amber-700">SP</div>
+          <div>
+            <p class="text-sm font-semibold text-gray-900">Sarah P.</p>
+            <p class="text-xs text-gray-500">Office Manager</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<%# ===== PRICING TEASER ===== %>
+<section class="bg-white py-20 sm:py-24">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-2xl text-center">
+      <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Simple, transparent pricing</h2>
+      <p class="mt-4 text-lg text-gray-600">Start free, upgrade when you need more.</p>
+    </div>
+
+    <div class="mt-16 grid grid-cols-1 gap-6 sm:grid-cols-3">
+      <div class="rounded-2xl bg-gray-50 p-8 ring-1 ring-gray-200 text-center">
+        <h3 class="text-lg font-semibold text-gray-900">Free</h3>
+        <p class="mt-2 text-3xl font-bold text-gray-900">$0<span class="text-base font-normal text-gray-500">/mo</span></p>
+        <p class="mt-3 text-sm text-gray-600">10 contracts, 5 AI extractions/mo, 1 user</p>
+      </div>
+
+      <div class="rounded-2xl bg-amber-50 p-8 ring-2 ring-amber-500 text-center relative">
+        <span class="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-3 py-0.5 text-xs font-semibold text-white">Most Popular</span>
+        <h3 class="text-lg font-semibold text-gray-900">Starter</h3>
+        <p class="mt-2 text-3xl font-bold text-gray-900">$49<span class="text-base font-normal text-gray-500">/mo</span></p>
+        <p class="mt-3 text-sm text-gray-600">100 contracts, 50 AI extractions/mo, 5 users</p>
+      </div>
+
+      <div class="rounded-2xl bg-gray-50 p-8 ring-1 ring-gray-200 text-center">
+        <h3 class="text-lg font-semibold text-gray-900">Pro</h3>
+        <p class="mt-2 text-3xl font-bold text-gray-900">$149<span class="text-base font-normal text-gray-500">/mo</span></p>
+        <p class="mt-3 text-sm text-gray-600">Unlimited contracts, extractions, and users</p>
+      </div>
+    </div>
+
+    <div class="mt-10 text-center">
+      <%= link_to "View full pricing details →", pricing_path, class: "text-sm font-semibold text-amber-600 hover:text-amber-500" %>
+    </div>
+  </div>
+</section>
+
+<%# ===== FINAL CTA ===== %>
+<section class="bg-gray-900 py-20 sm:py-24">
+  <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
+    <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">Stop losing money on missed deadlines</h2>
+    <p class="mt-4 text-lg text-gray-300">Join businesses that track their contracts with confidence. Get started in under two minutes.</p>
+    <div class="mt-10">
+      <%= link_to "Get Started Free", new_registration_path,
+          class: "rounded-lg bg-amber-600 px-6 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-amber-500 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600" %>
+    </div>
+    <p class="mt-4 text-sm text-gray-400">No credit card required. Free plan available forever.</p>
+  </div>
+</section>

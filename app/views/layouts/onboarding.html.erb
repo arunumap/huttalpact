@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html class="h-full bg-gray-50">
+  <head>
+    <title><%= content_for(:title) || "HuttalPact" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="HuttalPact">
+    <meta name="robots" content="noindex, nofollow">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= yield :head %>
+
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="h-full">
+    <div class="min-h-full bg-gray-50">
+      <header class="border-b border-gray-200 bg-white">
+        <div class="mx-auto flex max-w-4xl items-center justify-between px-6 py-6">
+          <div class="flex items-center gap-2 text-lg font-semibold text-gray-900">
+            <span class="text-2xl">🦡</span>
+            <span>HuttalPact</span>
+          </div>
+          <span class="text-xs font-medium uppercase tracking-wider text-gray-400">Setup</span>
+        </div>
+
+        <% steps = @onboarding_steps || [] %>
+        <% current_index = @onboarding_step_index || 0 %>
+        <div class="mx-auto max-w-4xl px-6 pb-6">
+          <div class="grid grid-cols-3 gap-3">
+            <% steps.each_with_index do |step, index| %>
+              <% completed = index < current_index %>
+              <% active = index == current_index %>
+              <div class="rounded-lg border px-4 py-3 <%= completed ? "border-amber-200 bg-amber-50" : active ? "border-amber-400 bg-white" : "border-gray-200 bg-white" %>">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold <%= completed ? "bg-amber-600 text-white" : active ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-500" %>">
+                    <%= index + 1 %>
+                  </div>
+                  <div class="text-sm font-medium text-gray-700"><%= step.titleize %></div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </header>
+
+      <% if flash[:notice] %>
+        <div class="mx-auto mt-6 max-w-2xl rounded-md bg-green-50 p-4 text-sm text-green-700 ring-1 ring-green-600/20">
+          <%= sanitize flash[:notice], tags: %w[a strong], attributes: %w[href class] %>
+        </div>
+      <% end %>
+      <% if flash[:alert] %>
+        <div class="mx-auto mt-6 max-w-2xl rounded-md bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-600/20">
+          <%= sanitize flash[:alert], tags: %w[a strong], attributes: %w[href class] %>
+        </div>
+      <% end %>
+
+      <main class="mx-auto max-w-4xl px-6 py-8">
+        <%= yield %>
+      </main>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,373 @@
+<% content_for :page_title, "Dashboard" %>
+
+<div class="space-y-8">
+  <%# Welcome header + Quick-add %>
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Welcome back<%= ", #{Current.user.first_name}" if Current.user&.first_name.present? %>!</h2>
+      <p class="mt-1 text-sm text-gray-500">Here's an overview of your contracts and upcoming deadlines.</p>
+    </div>
+    <%= link_to new_contract_path, class: "inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 transition" do %>
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+      Add Contract
+    <% end %>
+  </div>
+
+  <%# Stats grid — 5 cards %>
+  <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <%= render partial: "dashboard/stat_card", locals: {
+      label: "Total Contracts",
+      value: @total_contracts,
+      sublabel: "of #{current_organization&.plan_contract_limit == Float::INFINITY ? '∞' : current_organization&.plan_contract_limit} on #{current_organization&.plan_display_name} plan",
+      color: "blue"
+    } %>
+    <%= render partial: "dashboard/stat_card", locals: {
+      label: "Active",
+      value: @active_contracts,
+      sublabel: format_currency(@total_monthly_value) + "/mo total",
+      color: "green"
+    } %>
+    <%= render partial: "dashboard/stat_card", locals: {
+      label: "Monthly Revenue",
+      value: format_currency(@total_monthly_revenue),
+      sublabel: "#{Contract.active.inbound.count} inbound contracts",
+      color: "emerald"
+    } %>
+    <%= render partial: "dashboard/stat_card", locals: {
+      label: "Monthly Spend",
+      value: format_currency(@total_monthly_spend),
+      sublabel: "#{Contract.active.outbound.count} outbound contracts",
+      color: "indigo"
+    } %>
+    <%= render partial: "dashboard/stat_card", locals: {
+      label: "Expiring Soon",
+      value: @expiring_soon_contracts,
+      sublabel: "need attention",
+      color: "amber"
+    } %>
+  </div>
+
+  <%# Upcoming Renewals with 30/60/90 day tabs %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5" data-controller="tabs" data-tabs-active-class="border-amber-500 text-amber-600" data-tabs-inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700">
+    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <h3 class="text-base font-semibold text-gray-900">Upcoming Renewals</h3>
+      <div class="flex gap-1">
+        <button data-tabs-target="tab" data-action="click->tabs#select" data-tabs-panel-param="30" class="rounded-md px-3 py-1.5 text-xs font-medium border border-amber-500 text-amber-600 bg-amber-50">
+          30 days <span class="ml-1 font-bold"><%= @renewals_30.size %></span>
+        </button>
+        <button data-tabs-target="tab" data-action="click->tabs#select" data-tabs-panel-param="60" class="rounded-md px-3 py-1.5 text-xs font-medium border border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700">
+          60 days <span class="ml-1 font-bold"><%= @renewals_60.size %></span>
+        </button>
+        <button data-tabs-target="tab" data-action="click->tabs#select" data-tabs-panel-param="90" class="rounded-md px-3 py-1.5 text-xs font-medium border border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700">
+          90 days <span class="ml-1 font-bold"><%= @renewals_90.size %></span>
+        </button>
+      </div>
+    </div>
+
+    <% [["30", @renewals_30], ["60", @renewals_60], ["90", @renewals_90]].each_with_index do |(period, renewals), index| %>
+      <div data-tabs-target="panel" data-tabs-panel="<%= period %>" class="<%= index > 0 ? 'hidden' : '' %>">
+        <% if renewals.any? %>
+          <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead>
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Contract</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Vendor</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Type</th>
+                <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Direction</th>
+                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Monthly Value</th>
+                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Renewal Date</th>
+                <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Days Left</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 bg-white">
+              <% renewals.each do |contract| %>
+                <tr class="hover:bg-gray-50">
+                  <td class="whitespace-nowrap px-6 py-4">
+                    <%= link_to contract.title, contract, class: "text-sm font-medium text-amber-600 hover:text-amber-500" %>
+                  </td>
+                  <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500"><%= contract.vendor_name || "—" %></td>
+                  <td class="whitespace-nowrap px-6 py-4"><%= contract_type_badge(contract.contract_type) %></td>
+                  <td class="whitespace-nowrap px-6 py-4"><%= direction_badge(contract.direction) %></td>
+                  <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 text-right"><%= format_currency(contract.monthly_value) %></td>
+                  <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 text-right"><%= format_date(contract.next_renewal_date) %></td>
+                  <td class="whitespace-nowrap px-6 py-4 text-right">
+                    <% days = contract.days_until_renewal %>
+                    <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium <%= days && days <= 14 ? 'bg-red-50 text-red-700' : days && days <= 30 ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700' %>">
+                      <%= days %> days
+                    </span>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+          </div>
+        <% else %>
+          <div class="px-6 py-12 text-center">
+            <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+            </svg>
+            <p class="mt-2 text-sm text-gray-500">No renewals in the next <%= period %> days.</p>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+
+  <%# Expiring Contracts %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <h3 class="text-base font-semibold text-gray-900">Expiring Contracts</h3>
+      <% if @expiring_contracts.any? %>
+        <%= link_to "View all", contracts_path(status: "expiring_soon"), class: "text-sm font-medium text-amber-600 hover:text-amber-500" %>
+      <% end %>
+    </div>
+    <% if @expiring_contracts.any? %>
+      <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead>
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Contract</th>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Vendor</th>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-gray-500">Direction</th>
+            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">End Date</th>
+            <th class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wide text-gray-500">Days Left</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 bg-white">
+          <% @expiring_contracts.each do |contract| %>
+            <tr class="hover:bg-gray-50">
+              <td class="whitespace-nowrap px-6 py-4">
+                <%= link_to contract.title, contract, class: "text-sm font-medium text-amber-600 hover:text-amber-500" %>
+              </td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500"><%= contract.vendor_name || "—" %></td>
+              <td class="whitespace-nowrap px-6 py-4"><%= contract_status_badge(contract.status) %></td>
+              <td class="whitespace-nowrap px-6 py-4"><%= direction_badge(contract.direction) %></td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900 text-right"><%= format_date(contract.end_date) %></td>
+              <td class="whitespace-nowrap px-6 py-4 text-right">
+                <% days = contract.days_until_expiry %>
+                <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium <%= days && days <= 7 ? 'bg-red-50 text-red-700' : days && days <= 30 ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700' %>">
+                  <%= days %> days
+                </span>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      </div>
+    <% else %>
+      <div class="px-6 py-12 text-center">
+        <svg class="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p class="mt-2 text-sm font-medium text-gray-900">No contracts expiring soon</p>
+        <p class="mt-1 text-sm text-gray-500">None of your contracts are expiring in the next 90 days.</p>
+      </div>
+    <% end %>
+  </div>
+
+  <%# Analytics row: Status Distribution + Revenue by Type + Spend by Type %>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <%# Status Distribution %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-base font-semibold text-gray-900">Status Overview</h3>
+      </div>
+      <div class="px-6 py-4 space-y-3">
+        <% total = [@total_contracts, 1].max %>
+        <% Contract::STATUSES.each do |status| %>
+          <% count = @status_counts[status] || 0 %>
+          <% next if count == 0 %>
+          <% pct = (count.to_f / total * 100).round %>
+          <% bar_colors = {
+            "active" => "bg-green-500",
+            "expiring_soon" => "bg-amber-500",
+            "expired" => "bg-red-500",
+            "renewed" => "bg-blue-500",
+            "cancelled" => "bg-gray-400"
+          } %>
+          <div>
+            <div class="flex items-center justify-between text-sm">
+              <span class="font-medium text-gray-700"><%= status.titleize.gsub("_", " ") %></span>
+              <span class="text-gray-500"><%= count %> (<%= pct %>%)</span>
+            </div>
+            <div class="mt-1 h-2 w-full rounded-full bg-gray-100">
+              <div class="h-2 rounded-full <%= bar_colors[status] || 'bg-gray-400' %>" style="width: <%= pct %>%"></div>
+            </div>
+          </div>
+        <% end %>
+        <% if @total_contracts == 0 %>
+          <p class="text-sm text-gray-400 text-center py-4">No contracts yet.</p>
+        <% end %>
+      </div>
+    </div>
+
+    <%# Monthly Revenue by Type (Inbound) %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-base font-semibold text-gray-900">Monthly Revenue by Type</h3>
+      </div>
+      <div class="px-6 py-4">
+        <% if @revenue_by_type.any? %>
+          <% max_val = [@revenue_by_type.map { |_, v| v.to_f }.max, 1].max %>
+          <div class="space-y-3">
+            <% type_colors = {
+              "lease" => "bg-indigo-500",
+              "service_agreement" => "bg-blue-500",
+              "maintenance" => "bg-green-500",
+              "insurance" => "bg-amber-500",
+              "software" => "bg-purple-500",
+              "other" => "bg-gray-400"
+            } %>
+            <% @revenue_by_type.each do |type, value| %>
+              <% pct = (value.to_f / max_val * 100).round %>
+              <div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="font-medium text-gray-700"><%= type.titleize.gsub("_", " ") %></span>
+                  <span class="text-emerald-600 font-medium">+<%= format_currency(value) %>/mo</span>
+                </div>
+                <div class="mt-1 h-2 w-full rounded-full bg-gray-100">
+                  <div class="h-2 rounded-full <%= type_colors[type] || 'bg-gray-400' %>" style="width: <%= pct %>%"></div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-gray-400 text-center py-4">No active revenue contracts.</p>
+        <% end %>
+      </div>
+    </div>
+
+    <%# Monthly Spend by Type (Outbound) %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-base font-semibold text-gray-900">Monthly Spend by Type</h3>
+      </div>
+      <div class="px-6 py-4">
+        <% if @spend_by_type.any? %>
+          <% max_val = [@spend_by_type.map { |_, v| v.to_f }.max, 1].max %>
+          <div class="space-y-3">
+            <% type_colors = {
+              "lease" => "bg-indigo-500",
+              "service_agreement" => "bg-blue-500",
+              "maintenance" => "bg-green-500",
+              "insurance" => "bg-amber-500",
+              "software" => "bg-purple-500",
+              "other" => "bg-gray-400"
+            } %>
+            <% @spend_by_type.each do |type, value| %>
+              <% pct = (value.to_f / max_val * 100).round %>
+              <div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="font-medium text-gray-700"><%= type.titleize.gsub("_", " ") %></span>
+                  <span class="text-gray-500"><%= format_currency(value) %>/mo</span>
+                </div>
+                <div class="mt-1 h-2 w-full rounded-full bg-gray-100">
+                  <div class="h-2 rounded-full <%= type_colors[type] || 'bg-gray-400' %>" style="width: <%= pct %>%"></div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-sm text-gray-400 text-center py-4">No active expense contracts.</p>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <%# Second analytics row: Top Vendors + Net Cash Flow %>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <%# Top Vendors by Value %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-base font-semibold text-gray-900">Top Vendors by Value</h3>
+      </div>
+      <div class="px-6 py-4">
+        <% if @value_by_vendor.any? %>
+          <ul class="space-y-3">
+            <% @value_by_vendor.each_with_index do |(vendor, value), i| %>
+              <li class="flex items-center justify-between">
+                <div class="flex items-center gap-3 min-w-0">
+                  <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600"><%= i + 1 %></span>
+                  <span class="text-sm font-medium text-gray-700 truncate"><%= vendor %></span>
+                </div>
+                <span class="text-sm font-semibold text-gray-900 shrink-0 ml-3"><%= format_currency(value) %>/mo</span>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="text-sm text-gray-400 text-center py-4">No vendor data available.</p>
+        <% end %>
+      </div>
+    </div>
+
+    <%# Net Cash Flow Summary %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-base font-semibold text-gray-900">Net Monthly Cash Flow</h3>
+      </div>
+      <div class="px-6 py-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Revenue (inbound)</span>
+          <span class="text-sm font-semibold text-emerald-600">+<%= format_currency(@total_monthly_revenue) %></span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500">Spend (outbound)</span>
+          <span class="text-sm font-semibold text-red-600">-<%= format_currency(@total_monthly_spend) %></span>
+        </div>
+        <div class="border-t border-gray-200 pt-4">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-900">Net</span>
+            <% net = (@total_monthly_revenue || 0) - (@total_monthly_spend || 0) %>
+            <span class="text-lg font-bold <%= net >= 0 ? 'text-emerald-600' : 'text-red-600' %>">
+              <%= net >= 0 ? '+' : '' %><%= format_currency(net.abs) %>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%# Recently Added %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <h3 class="text-base font-semibold text-gray-900">Recently Added</h3>
+      <% if @recent_contracts.any? %>
+        <%= link_to "View all", contracts_path, class: "text-sm font-medium text-amber-600 hover:text-amber-500" %>
+      <% end %>
+    </div>
+    <% if @recent_contracts.any? %>
+      <ul class="divide-y divide-gray-200">
+        <% @recent_contracts.each do |contract| %>
+          <li class="px-6 py-4 hover:bg-gray-50">
+            <%= link_to contract, class: "flex items-center justify-between" do %>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-medium text-gray-900 truncate"><%= contract.title %></p>
+                <p class="text-xs text-gray-500"><%= contract.vendor_name %> · Added <%= time_ago_in_words(contract.created_at) %> ago</p>
+              </div>
+              <div class="ml-4 flex items-center gap-3">
+                <%= direction_badge(contract.direction) %>
+                <span class="text-sm text-gray-500"><%= format_currency(contract.monthly_value) %>/mo</span>
+                <%= contract_status_badge(contract.status) %>
+              </div>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    <% else %>
+      <div class="px-6 py-12 text-center">
+        <svg class="mx-auto h-12 w-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">No contracts yet</h3>
+        <p class="mt-1 text-sm text-gray-500">Upload your first contract to get started.</p>
+        <div class="mt-4">
+          <%= link_to "Add Contract", new_contract_path, class: "inline-flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

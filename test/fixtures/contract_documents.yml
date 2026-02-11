@@ -1,0 +1,13 @@
+pending_doc:
+  contract: hvac_maintenance
+  extraction_status: pending
+  document_type: main_contract
+  position: 0
+
+completed_doc:
+  contract: hvac_maintenance
+  extracted_text: "This is a sample HVAC Maintenance Agreement between Acme Properties and CoolAir Services. The term begins January 1, 2025 and ends December 31, 2026. Monthly fee: $1,200.00. Auto-renews annually unless 30 days written notice is provided."
+  extraction_status: completed
+  page_count: 3
+  document_type: main_contract
+  position: 0
