@@ -19,11 +19,14 @@ production:
     <<: *default
     url: <%= ENV["DATABASE_URL"] %>
     migrations_paths: db/cache_migrate
+    pool: <%= ENV.fetch("DB_POOL_CACHE", 2) %>
   queue:
     <<: *default
     url: <%= ENV["DATABASE_URL"] %>
     migrations_paths: db/queue_migrate
+    pool: <%= ENV.fetch("DB_POOL_QUEUE", 8) %>
   cable:
     <<: *default
     url: <%= ENV["DATABASE_URL"] %>
     migrations_paths: db/cable_migrate
+    pool: <%= ENV.fetch("DB_POOL_CABLE", 2) %>
