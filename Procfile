@@ -1,2 +1,2 @@
 web: SOLID_QUEUE_IN_PUMA=true bundle exec puma -C config/puma.rb
-release: bin/rails db:prepare
+release: bin/rails db:prepare solid:ensure_schemas
