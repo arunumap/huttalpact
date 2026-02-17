@@ -103,7 +103,7 @@ module SeoHelper
       "@type" => "Organization",
       "name" => DEFAULT_SITE_NAME,
       "url" => root_url,
-      "logo" => image_url("sagebadger-logo.svg"),
+      "logo" => image_url("huttalpact-logo-transparent.png"),
       "description" => DEFAULT_DESCRIPTION,
       "sameAs" => []
     }
