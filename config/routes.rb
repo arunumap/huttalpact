@@ -57,8 +57,14 @@ Rails.application.routes.draw do
   # Dashboard
   get "dashboard", to: "dashboard#show", as: :dashboard
 
+  # Static pages
+  get "privacy", to: "pages#privacy", as: :privacy
+
   # Landing page (context-sensitive root)
   root "pages#home"
+
+  # Legal
+  get "terms", to: "pages#terms"
 
   # Onboarding
   get "onboarding/organization", to: "onboarding#organization"

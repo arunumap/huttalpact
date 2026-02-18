@@ -7,4 +7,10 @@ class PagesController < ApplicationController
   def home
     redirect_to dashboard_path if authenticated?
   end
+
+  def privacy
+  end
+
+  def terms
+  end
 end

@@ -1,0 +1,213 @@
+<% content_for(:title, "Privacy Policy — HuttalPact") %>
+
+<div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-16">
+  <div class="prose prose-gray max-w-none">
+    <h1 class="text-3xl font-bold tracking-tight text-gray-900">Privacy Policy</h1>
+    <p class="mt-2 text-sm text-gray-500">Last updated: February 18, 2026</p>
+
+    <p class="mt-6 text-gray-700 leading-relaxed">
+      SageFoundry LLC, doing business as HuttalPact ("we," "us," or "our"), operates the HuttalPact contract tracking platform (the "Service").
+      This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service.
+      Please read this policy carefully. By using HuttalPact, you agree to the collection and use of information in accordance with this policy.
+    </p>
+
+    <!-- 1. Information We Collect -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">1. Information We Collect</h2>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">1.1 Account Information</h3>
+    <p class="text-gray-700">When you register for an account, we collect:</p>
+    <ul class="mt-2 text-gray-700 list-disc pl-5 space-y-1">
+      <li><strong>Email address</strong> — used as your login identifier and for transactional notifications</li>
+      <li><strong>Password</strong> — stored securely using one-way bcrypt hashing; we never store or have access to your plaintext password</li>
+      <li><strong>First and last name</strong> (optional) — used to personalize your experience</li>
+    </ul>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">1.2 Organization Information</h3>
+    <p class="text-gray-700">When you create or join an organization, we collect:</p>
+    <ul class="mt-2 text-gray-700 list-disc pl-5 space-y-1">
+      <li><strong>Organization name</strong></li>
+      <li><strong>Subscription plan</strong> and usage data (e.g., number of contracts, AI extraction counts)</li>
+    </ul>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">1.3 Contract and Document Data</h3>
+    <p class="text-gray-700">When you upload contracts, we collect and process:</p>
+    <ul class="mt-2 text-gray-700 list-disc pl-5 space-y-1">
+      <li><strong>Uploaded files</strong> — PDF, DOCX, and TXT documents (up to 25 MB each)</li>
+      <li><strong>Extracted text</strong> — text content extracted from your uploaded documents for AI analysis</li>
+      <li><strong>Contract metadata</strong> — titles, vendor names, dates, values, contract types, and other structured fields you enter or that our AI extracts</li>
+      <li><strong>Key clauses</strong> — specific contract provisions identified by AI analysis</li>
+    </ul>
+    <p class="mt-2 text-gray-700">
+      Your uploaded contracts may contain sensitive business information, personally identifiable information (PII), or other confidential data.
+      We treat all uploaded contract content as confidential and process it solely to provide the Service.
+    </p>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">1.4 Technical and Session Data</h3>
+    <p class="text-gray-700">When you use the Service, we automatically collect:</p>
+    <ul class="mt-2 text-gray-700 list-disc pl-5 space-y-1">
+      <li><strong>IP address</strong> — recorded when you sign in, stored with your session record</li>
+      <li><strong>User agent</strong> (browser and device information) — recorded with your session</li>
+      <li><strong>Session identifiers</strong> — via a secure, HTTP-only cookie used to authenticate your requests</li>
+    </ul>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">1.5 Billing Information</h3>
+    <p class="text-gray-700">
+      Payment processing is handled entirely by <strong>Stripe</strong>. We do not collect, store, or have access to your
+      credit card numbers or full payment details. Stripe provides us with limited information such as your subscription status,
+      billing period, and payment method type. Please refer to
+      <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" class="text-amber-600 hover:text-amber-700 underline">Stripe's Privacy Policy</a>
+      for details on how they handle your payment data.
+    </p>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">1.6 Audit Logs</h3>
+    <p class="text-gray-700">
+      We maintain audit logs of key actions performed within your organization (e.g., contract creation, updates, deletions,
+      team changes, and alert activity). These logs include the user who performed the action, the action type, and a timestamp.
+      Audit log retention depends on your subscription plan.
+    </p>
+
+    <!-- 2. How We Use Your Information -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">2. How We Use Your Information</h2>
+    <p class="text-gray-700">We use the information we collect to:</p>
+    <ul class="mt-2 text-gray-700 list-disc pl-5 space-y-1">
+      <li><strong>Provide and maintain the Service</strong> — including contract storage, tracking, alerts, and team collaboration</li>
+      <li><strong>Perform AI-powered contract analysis</strong> — extracting structured data, key clauses, and dates from your uploaded documents</li>
+      <li><strong>Send transactional notifications</strong> — password resets, contract expiration alerts, and team invitations</li>
+      <li><strong>Process billing</strong> — managing your subscription and enforcing plan limits</li>
+      <li><strong>Ensure security</strong> — detecting unauthorized access, rate limiting, and maintaining audit trails</li>
+      <li><strong>Improve the Service</strong> — monitoring errors and performance issues to enhance reliability</li>
+    </ul>
+
+    <!-- 3. AI Processing and Third-Party Data Sharing -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">3. AI Processing and Third-Party Data Sharing</h2>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">3.1 Anthropic (Claude AI)</h3>
+    <p class="text-gray-700">
+      When you request an AI extraction, the <strong>full text content</strong> of your uploaded contract documents is sent to
+      <strong>Anthropic's Claude API</strong> for analysis. Anthropic processes this data to extract structured contract information
+      and returns the results to us.
+    </p>
+    <p class="mt-2 text-gray-700">
+      <strong>Important:</strong> This means your contract text — which may contain sensitive business or personal information —
+      is transmitted to and processed by Anthropic. We recommend reviewing
+      <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener noreferrer" class="text-amber-600 hover:text-amber-700 underline">Anthropic's Privacy Policy</a>
+      to understand how they handle data received through their API. Per Anthropic's API terms, data sent through the API is not
+      used to train their models.
+    </p>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">3.2 Stripe</h3>
+    <p class="text-gray-700">
+      We use Stripe to process payments and manage subscriptions. When you subscribe to a paid plan, you are redirected to
+      Stripe's hosted checkout page. We receive webhook notifications from Stripe about subscription status changes.
+      See <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" class="text-amber-600 hover:text-amber-700 underline">Stripe's Privacy Policy</a>.
+    </p>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">3.3 Postmark</h3>
+    <p class="text-gray-700">
+      We use Postmark to deliver transactional emails (password resets, alert notifications, and team invitations).
+      Postmark processes recipient email addresses and email content on our behalf.
+      See <a href="https://postmarkapp.com/privacy-policy" target="_blank" rel="noopener noreferrer" class="text-amber-600 hover:text-amber-700 underline">Postmark's Privacy Policy</a>.
+    </p>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">3.4 Amazon Web Services (AWS)</h3>
+    <p class="text-gray-700">
+      Uploaded contract documents are stored on <strong>Amazon S3</strong> in production. AWS processes and stores your files
+      on our behalf as a data processor.
+      See <a href="https://aws.amazon.com/privacy/" target="_blank" rel="noopener noreferrer" class="text-amber-600 hover:text-amber-700 underline">AWS's Privacy Policy</a>.
+    </p>
+
+    <h3 class="mt-6 text-lg font-medium text-gray-900">3.5 Sentry</h3>
+    <p class="text-gray-700">
+      We use Sentry for error monitoring and performance tracking. When an error occurs, limited context — including your user ID
+      and email address — may be sent to Sentry to help us diagnose issues. We do not enable full PII transmission to Sentry.
+      See <a href="https://sentry.io/privacy/" target="_blank" rel="noopener noreferrer" class="text-amber-600 hover:text-amber-700 underline">Sentry's Privacy Policy</a>.
+    </p>
+
+    <!-- 4. Cookies -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">4. Cookies</h2>
+    <p class="text-gray-700">
+      We use a <strong>single, essential cookie</strong> to maintain your authenticated session. This cookie:
+    </p>
+    <ul class="mt-2 text-gray-700 list-disc pl-5 space-y-1">
+      <li>Is HTTP-only and secure (encrypted in transit)</li>
+      <li>Uses the <code class="text-sm bg-gray-100 px-1 py-0.5 rounded">SameSite=Lax</code> attribute</li>
+      <li>Expires after 30 days of inactivity</li>
+      <li>Cannot be accessed by client-side JavaScript</li>
+    </ul>
+    <p class="mt-2 text-gray-700">
+      We do <strong>not</strong> use any third-party tracking cookies, advertising cookies, or analytics cookies.
+    </p>
+
+    <!-- 5. Data Security -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">5. Data Security</h2>
+    <p class="text-gray-700">We implement the following measures to protect your data:</p>
+    <ul class="mt-2 text-gray-700 list-disc pl-5 space-y-1">
+      <li><strong>Encryption in transit</strong> — all connections use HTTPS/TLS</li>
+      <li><strong>Password hashing</strong> — passwords are stored using bcrypt with automatic salting</li>
+      <li><strong>Multi-tenancy isolation</strong> — each organization's data is logically isolated; users can only access data belonging to their organization</li>
+      <li><strong>Rate limiting</strong> — sign-up and login attempts are rate-limited to prevent abuse</li>
+      <li><strong>Parameter filtering</strong> — sensitive fields (passwords, tokens, keys) are excluded from application logs</li>
+      <li><strong>Secure sessions</strong> — sessions are stored server-side with automatic expiration</li>
+      <li><strong>Content Security Policy</strong> — enforced to prevent cross-site scripting attacks</li>
+    </ul>
+
+    <!-- 6. Data Retention -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">6. Data Retention</h2>
+    <p class="text-gray-700">We retain your data as follows:</p>
+    <ul class="mt-2 text-gray-700 list-disc pl-5 space-y-1">
+      <li><strong>Account data</strong> — retained for as long as your account is active</li>
+      <li><strong>Contract data and documents</strong> — retained for as long as your account is active, unless you delete individual contracts</li>
+      <li><strong>Audit logs</strong> — retained based on your subscription plan (7 days for Free, 30 days for Starter, unlimited for Pro)</li>
+      <li><strong>Draft contracts</strong> — incomplete drafts are automatically cleaned up periodically</li>
+      <li><strong>Session data</strong> — expired sessions (older than 30 days) are automatically purged</li>
+    </ul>
+
+    <!-- 7. Your Rights -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">7. Your Rights</h2>
+    <p class="text-gray-700">You have the right to:</p>
+    <ul class="mt-2 text-gray-700 list-disc pl-5 space-y-1">
+      <li><strong>Access your data</strong> — you can view and export your contracts and associated data through the Service</li>
+      <li><strong>Update your data</strong> — you can edit your profile information, organization details, and contracts at any time</li>
+      <li><strong>Delete your data</strong> — you can delete individual contracts and their associated documents; to delete your account entirely, please contact us</li>
+      <li><strong>Data portability</strong> — you can export your contract data using the bulk export feature</li>
+    </ul>
+    <p class="mt-2 text-gray-700">
+      If you are located in the European Economic Area (EEA), United Kingdom, or another jurisdiction with applicable data
+      protection laws, you may have additional rights including the right to lodge a complaint with your local data protection authority.
+    </p>
+
+    <!-- 8. Children's Privacy -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">8. Children's Privacy</h2>
+    <p class="text-gray-700">
+      HuttalPact is a business-to-business service and is not directed at individuals under the age of 16.
+      We do not knowingly collect personal information from children. If you believe we have collected data from a minor,
+      please contact us so we can promptly delete it.
+    </p>
+
+    <!-- 9. International Data Transfers -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">9. International Data Transfers</h2>
+    <p class="text-gray-700">
+      Your data may be transferred to and processed in countries other than your own, including the United States,
+      where our service providers (Anthropic, Stripe, AWS, Postmark, Sentry) operate data centers. We ensure that
+      appropriate safeguards are in place for any international transfer of your personal data.
+    </p>
+
+    <!-- 10. Changes to This Policy -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">10. Changes to This Policy</h2>
+    <p class="text-gray-700">
+      We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the
+      updated policy on this page with a revised "Last updated" date. Your continued use of the Service after any
+      changes constitutes acceptance of the updated policy.
+    </p>
+
+    <!-- 11. Contact Us -->
+    <h2 class="mt-12 text-xl font-semibold text-gray-900">11. Contact Us</h2>
+    <p class="text-gray-700">
+      If you have questions about this Privacy Policy or wish to exercise your data rights, please contact us at:
+    </p>
+    <p class="mt-2 text-gray-700">
+      <strong>Email:</strong>
+      <a href="mailto:privacy@huttalpact.com" class="text-amber-600 hover:text-amber-700 underline">privacy@huttalpact.com</a>
+    </p>
+  </div>
+</div>
