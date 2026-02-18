@@ -11,6 +11,7 @@ class Invitation < ApplicationRecord
     case_sensitive: false,
     message: "has already been invited"
   }
+  validate :email_not_already_member, on: :create
 
   before_validation :normalize_email
   before_validation :set_defaults, on: :create
@@ -21,6 +22,14 @@ class Invitation < ApplicationRecord
 
   def accept!
     update!(accepted_at: Time.current)
+  end
+
+  def resend!
+    update!(expires_at: 14.days.from_now)
+  end
+
+  def expired?
+    accepted_at.nil? && expires_at.present? && expires_at <= Time.current
   end
 
   private
@@ -36,5 +45,16 @@ class Invitation < ApplicationRecord
 
   def generate_token
     self.token ||= SecureRandom.urlsafe_base64(32)
+  end
+
+  def email_not_already_member
+    return if organization.blank? || email.blank?
+
+    user = User.find_by(email_address: email.strip.downcase)
+    return unless user
+
+    if organization.memberships.exists?(user: user)
+      errors.add(:email, "is already a member of this organization")
+    end
   end
 end

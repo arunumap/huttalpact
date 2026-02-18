@@ -1,0 +1,31 @@
+<%# Shared tab navigation for all settings pages %>
+<%# Expects: current_tab (string) to highlight the active tab %>
+<% membership = current_organization&.memberships&.find_by(user: Current.user) %>
+
+<div class="border-b border-gray-200 mb-8">
+  <nav class="-mb-px flex space-x-8" aria-label="Settings">
+    <%= link_to "Profile",
+          settings_profile_path,
+          class: "whitespace-nowrap border-b-2 px-1 pb-4 text-sm font-medium #{current_tab == 'profile' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}",
+          data: { turbo_action: "replace" } %>
+
+    <% if membership&.admin_or_owner? %>
+      <%= link_to "Organization",
+            settings_organization_path,
+            class: "whitespace-nowrap border-b-2 px-1 pb-4 text-sm font-medium #{current_tab == 'organization' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}",
+            data: { turbo_action: "replace" } %>
+
+      <%= link_to "Team",
+            settings_team_path,
+            class: "whitespace-nowrap border-b-2 px-1 pb-4 text-sm font-medium #{current_tab == 'team' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}",
+            data: { turbo_action: "replace" } %>
+    <% end %>
+
+    <% if membership&.owner? %>
+      <%= link_to "Billing",
+            settings_billing_path,
+            class: "whitespace-nowrap border-b-2 px-1 pb-4 text-sm font-medium #{current_tab == 'billing' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}",
+            data: { turbo_action: "replace" } %>
+    <% end %>
+  </nav>
+</div>

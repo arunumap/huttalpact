@@ -1,40 +1,81 @@
-<p>Hi <%= @user.first_name.presence || @user.full_name %>,</p>
+<p style="margin: 0 0 20px 0; font-size: 15px; color: #374151;">
+  Hi <%= @user.first_name.presence || @user.full_name %>,
+</p>
 
 <% case @alert.alert_type %>
 <% when "renewal_upcoming" %>
-  <p>
-    Your contract <strong><%= @contract.title %></strong>
-    <% if @contract.vendor_name.present? %>with <strong><%= @contract.vendor_name %></strong><% end %>
-    is coming up for renewal on <strong><%= @contract.next_renewal_date.strftime("%B %d, %Y") %></strong>.
-  </p>
+  <!-- Renewal alert callout -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+    <tr>
+      <td style="background-color: #fef3c7; border-left: 4px solid #d97706; border-radius: 0 8px 8px 0; padding: 16px 20px;">
+        <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #92400e;">Renewal Upcoming</p>
+        <p style="margin: 0; font-size: 15px; color: #92400e; line-height: 1.5;">
+          <strong><%= @contract.title %></strong><%= " with <strong>#{h @contract.vendor_name}</strong>".html_safe if @contract.vendor_name.present? %>
+          is coming up for renewal on <strong><%= @contract.next_renewal_date.strftime("%B %d, %Y") %></strong>.
+        </p>
+      </td>
+    </tr>
+  </table>
 
   <% if @contract.auto_renews? %>
-    <p>⚠️ This contract is set to <strong>auto-renew</strong><%= " (#{@contract.renewal_term})" if @contract.renewal_term.present? %>. Take action before the renewal date if you want to make changes.</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+      <tr>
+        <td style="background-color: #fef2f2; border-left: 4px solid #dc2626; border-radius: 0 8px 8px 0; padding: 14px 20px;">
+          <p style="margin: 0; font-size: 14px; color: #991b1b; line-height: 1.5;">
+            &#9888;&#65039; This contract is set to <strong>auto-renew</strong><%= " (#{@contract.renewal_term})" if @contract.renewal_term.present? %>. Take action before the renewal date if you want to make changes.
+          </p>
+        </td>
+      </tr>
+    </table>
   <% end %>
 
 <% when "expiry_warning" %>
-  <p>
-    Your contract <strong><%= @contract.title %></strong>
-    <% if @contract.vendor_name.present? %>with <strong><%= @contract.vendor_name %></strong><% end %>
-    is expiring on <strong><%= @contract.end_date.strftime("%B %d, %Y") %></strong>.
-  </p>
+  <!-- Expiry alert callout -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+    <tr>
+      <td style="background-color: #fef2f2; border-left: 4px solid #dc2626; border-radius: 0 8px 8px 0; padding: 16px 20px;">
+        <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #991b1b;">Expiring Soon</p>
+        <p style="margin: 0; font-size: 15px; color: #991b1b; line-height: 1.5;">
+          <strong><%= @contract.title %></strong><%= " with <strong>#{h @contract.vendor_name}</strong>".html_safe if @contract.vendor_name.present? %>
+          is expiring on <strong><%= @contract.end_date.strftime("%B %d, %Y") %></strong>.
+        </p>
+      </td>
+    </tr>
+  </table>
 
 <% when "notice_period_start" %>
-  <p>
-    The notice period for <strong><%= @contract.title %></strong>
-    <% if @contract.vendor_name.present? %>with <strong><%= @contract.vendor_name %></strong><% end %>
-    has begun. You have <strong><%= @contract.notice_period_days %> days</strong> to provide notice.
-  </p>
+  <!-- Notice period alert callout -->
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+    <tr>
+      <td style="background-color: #eff6ff; border-left: 4px solid #2563eb; border-radius: 0 8px 8px 0; padding: 16px 20px;">
+        <p style="margin: 0 0 4px 0; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #1e40af;">Notice Period Started</p>
+        <p style="margin: 0; font-size: 15px; color: #1e40af; line-height: 1.5;">
+          The notice period for <strong><%= @contract.title %></strong><%= " with <strong>#{h @contract.vendor_name}</strong>".html_safe if @contract.vendor_name.present? %>
+          has begun. You have <strong><%= @contract.notice_period_days %> days</strong> to provide notice.
+        </p>
+      </td>
+    </tr>
+  </table>
 <% end %>
 
 <% if @contract.monthly_value.present? %>
-  <p>Monthly value: <strong><%= number_to_currency(@contract.monthly_value) %></strong></p>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 24px;">
+    <tr>
+      <td style="background-color: #f9fafb; border-radius: 8px; padding: 12px 20px;">
+        <p style="margin: 0; font-size: 13px; color: #6b7280;">Monthly value</p>
+        <p style="margin: 4px 0 0 0; font-size: 20px; font-weight: 700; color: #111827;"><%= number_to_currency(@contract.monthly_value) %></p>
+      </td>
+    </tr>
+  </table>
 <% end %>
 
-<p>
-  <%= link_to "View contract details", contract_url(@contract) %>
-</p>
-
-<p>
-  — HuttalPact
-</p>
+<!-- CTA button -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0 8px 0;">
+  <tr>
+    <td align="center" style="border-radius: 8px; background-color: #d97706;">
+      <a href="<%= contract_url(@contract) %>" target="_blank" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 8px; background-color: #d97706;">
+        View Contract Details &#8594;
+      </a>
+    </td>
+  </tr>
+</table>

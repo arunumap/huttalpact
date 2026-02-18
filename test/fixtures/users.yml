@@ -11,3 +11,15 @@ two:
   password_digest: <%= password_digest %>
   first_name: Bob
   last_name: Smith
+
+three:
+  email_address: carol@example.com
+  password_digest: <%= password_digest %>
+  first_name: Carol
+  last_name: Williams
+
+four:
+  email_address: dave@example.com
+  password_digest: <%= password_digest %>
+  first_name: Dave
+  last_name: Brown

@@ -91,4 +91,18 @@ class UserTest < ActiveSupport::TestCase
     user = User.new(email_address: "okname@example.com", password: "password123", first_name: "a" * 100, last_name: "b" * 100)
     assert user.valid?
   end
+
+  # membership_in
+  test "membership_in returns membership for given organization" do
+    user = users(:two)
+    org = organizations(:two)
+    membership = user.membership_in(org)
+    assert_equal memberships(:two), membership
+  end
+
+  test "membership_in returns nil when user is not a member" do
+    user = users(:one)
+    org = organizations(:two)
+    assert_nil user.membership_in(org)
+  end
 end

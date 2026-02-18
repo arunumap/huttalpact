@@ -1,0 +1,207 @@
+<% content_for :page_title, "Settings" %>
+
+<div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
+  <%= render "settings/settings_nav", current_tab: "team" %>
+
+  <%# Header %>
+  <div class="sm:flex sm:items-center sm:justify-between mb-8">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Team</h2>
+      <p class="mt-1 text-sm text-gray-500">
+        Manage your organization's team members and invitations.
+      </p>
+    </div>
+    <div class="mt-4 sm:mt-0">
+      <span class="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-sm font-medium text-amber-700 ring-1 ring-inset ring-amber-600/20">
+        <%= @seats_used %> of <%= @seats_limit == Float::INFINITY ? "∞" : @seats_limit %> seats used
+      </span>
+    </div>
+  </div>
+
+  <%# Tabs %>
+  <div class="border-b border-gray-200 mb-6">
+    <nav class="-mb-px flex space-x-8">
+      <%= link_to "Members",
+            settings_team_path(tab: "members"),
+            class: "whitespace-nowrap border-b-2 px-1 pb-4 text-sm font-medium #{@tab == 'members' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}",
+            data: { turbo_action: "replace", tab: "members" } %>
+      <%= link_to "Invitations",
+            settings_team_path(tab: "invitations"),
+            class: "whitespace-nowrap border-b-2 px-1 pb-4 text-sm font-medium #{@tab == 'invitations' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'}",
+            data: { turbo_action: "replace", tab: "invitations" } %>
+    </nav>
+  </div>
+
+  <% if @tab == "members" %>
+    <%# Members Table %>
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg">
+      <table class="min-w-full divide-y divide-gray-300">
+        <thead>
+          <tr>
+            <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Name</th>
+            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Email</th>
+            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Role</th>
+            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+              <span class="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <% @memberships.each do |membership| %>
+            <tr id="<%= dom_id(membership) %>">
+              <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
+                <div class="flex items-center gap-3">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-full bg-amber-600 text-xs font-bold text-white">
+                    <%= membership.user.initials %>
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-900">
+                      <%= membership.user.full_name %>
+                      <% if membership.user == Current.user %>
+                        <span class="ml-1 text-xs text-gray-400">(you)</span>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                <%= membership.user.email_address %>
+              </td>
+              <td class="whitespace-nowrap px-3 py-4 text-sm">
+                <%= role_badge(membership.role) %>
+              </td>
+              <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                <% if !membership.owner? && membership.manageable_by?(@current_membership || current_membership) %>
+                  <div class="flex items-center justify-end gap-2">
+                    <%# Role change dropdown %>
+                    <%= form_with url: settings_member_path(membership), method: :patch, class: "inline" do |f| %>
+                      <%= f.select :role,
+                            options_for_select([["Member", "member"], ["Admin", "admin"]], membership.role),
+                            {},
+                            class: "rounded-md border-gray-300 text-sm py-1 pr-8 focus:border-amber-500 focus:ring-amber-500",
+                            onchange: "this.form.requestSubmit()" %>
+                    <% end %>
+
+                    <%# Remove button %>
+                    <%= button_to "Remove",
+                          settings_member_path(membership),
+                          method: :delete,
+                          class: "text-red-600 hover:text-red-900 text-sm font-medium",
+                          data: { turbo_confirm: "Are you sure you want to remove #{membership.user.full_name} from the team? Their contracts will be reassigned to the organization owner." } %>
+                  </div>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+  <% else %>
+    <%# Invitations Tab %>
+
+    <%# Invite Form %>
+    <% if current_organization.seats_remaining > 0 %>
+      <div class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg p-6 mb-6">
+        <h3 class="text-base font-semibold text-gray-900 mb-4">Invite a team member</h3>
+        <%= form_with url: settings_invitations_path, method: :post, class: "flex flex-col sm:flex-row gap-3" do |f| %>
+          <div class="flex-1">
+            <%= f.email_field :email,
+                  placeholder: "colleague@company.com",
+                  class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm",
+                  required: true,
+                  name: "invitation[email]" %>
+          </div>
+          <div>
+            <%= f.select :role,
+                  options_for_select([["Member", "member"], ["Admin", "admin"]], "member"),
+                  {},
+                  class: "block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm",
+                  name: "invitation[role]" %>
+          </div>
+          <div>
+            <%= f.submit "Send Invite",
+                  class: "inline-flex items-center rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 cursor-pointer",
+                  data: { turbo_submits_with: "Sending..." } %>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="rounded-md bg-amber-50 p-4 mb-6">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.345 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-amber-800">Seat limit reached</h3>
+            <p class="mt-1 text-sm text-amber-700">
+              You've used all available seats on your current plan.
+              <%= link_to "Upgrade your plan", pricing_path, class: "font-semibold underline hover:text-amber-600" %> to invite more team members.
+            </p>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Pending Invitations Table %>
+    <% if @invitations.any? %>
+      <div class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg">
+        <table class="min-w-full divide-y divide-gray-300">
+          <thead>
+            <tr>
+              <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Email</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Role</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Expires</th>
+              <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                <span class="sr-only">Actions</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <% @invitations.each do |invitation| %>
+              <tr id="<%= dom_id(invitation) %>">
+                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                  <%= invitation.email %>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm">
+                  <%= role_badge(invitation.role) %>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                  <% if invitation.expired? %>
+                    <span class="text-red-600 font-medium">Expired</span>
+                  <% else %>
+                    Expires <%= time_ago_in_words(invitation.expires_at) %> from now
+                  <% end %>
+                </td>
+                <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                  <div class="flex items-center justify-end gap-3">
+                    <%= button_to "Resend",
+                          resend_settings_invitation_path(invitation),
+                          method: :post,
+                          class: "text-amber-600 hover:text-amber-900 text-sm font-medium",
+                          data: { turbo_submits_with: "Sending..." } %>
+                    <%= button_to "Revoke",
+                          settings_invitation_path(invitation),
+                          method: :delete,
+                          class: "text-red-600 hover:text-red-900 text-sm font-medium",
+                          data: { turbo_confirm: "Are you sure you want to revoke this invitation?" } %>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="text-center py-12 bg-white shadow-sm ring-1 ring-gray-900/5 rounded-lg">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+        </svg>
+        <h3 class="mt-2 text-sm font-semibold text-gray-900">No pending invitations</h3>
+        <p class="mt-1 text-sm text-gray-500">Invite team members to collaborate on contract management.</p>
+      </div>
+    <% end %>
+  <% end %>
+</div>

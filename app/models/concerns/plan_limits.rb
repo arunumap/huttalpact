@@ -51,6 +51,16 @@ module PlanLimits
     memberships.count >= plan_user_limit
   end
 
+  def seats_used
+    memberships.count
+  end
+
+  def seats_remaining
+    limit = plan_user_limit
+    return Float::INFINITY if limit == Float::INFINITY
+    [ limit - seats_used, 0 ].max
+  end
+
   def contracts_remaining
     limit = plan_contract_limit
     return Float::INFINITY if limit == Float::INFINITY

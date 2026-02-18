@@ -17,6 +17,10 @@ class User < ApplicationRecord
   validates :first_name, length: { maximum: 100 }, allow_nil: true
   validates :last_name, length: { maximum: 100 }, allow_nil: true
 
+  def membership_in(organization)
+    memberships.find_by(organization: organization)
+  end
+
   def full_name
     [ first_name, last_name ].compact_blank.join(" ").presence || email_address
   end

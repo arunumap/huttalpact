@@ -144,4 +144,26 @@ class OrganizationTest < ActiveSupport::TestCase
     org = Organization.create!(name: "!!!")
     assert_equal "org", org.slug
   end
+
+  # Seat management methods
+  test "seats_used returns membership count" do
+    org = organizations(:two) # has owner + admin + member = 3
+    assert_equal 3, org.seats_used
+  end
+
+  test "seats_remaining returns available seats" do
+    org = organizations(:two) # starter plan: 5 seats, 3 used
+    assert_equal 2, org.seats_remaining
+  end
+
+  test "seats_remaining returns zero when at limit" do
+    org = organizations(:one) # free plan: 1 seat, 1 used
+    assert_equal 0, org.seats_remaining
+  end
+
+  test "seats_remaining returns infinity for pro plan" do
+    org = organizations(:two)
+    org.update!(plan: "pro")
+    assert_equal Float::INFINITY, org.seats_remaining
+  end
 end

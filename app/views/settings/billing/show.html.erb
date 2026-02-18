@@ -1,6 +1,9 @@
-<% content_for :page_title, "Billing" %>
+<% content_for :page_title, "Settings" %>
 
-<div class="mx-auto max-w-3xl space-y-8">
+<div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
+  <%= render "settings/settings_nav", current_tab: "billing" %>
+
+  <div class="max-w-3xl space-y-8">
   <%# Current Plan %>
   <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
     <div class="flex items-center justify-between">
@@ -31,7 +34,7 @@
 
     <div class="mt-6 flex gap-3">
       <% if @organization.paid_plan? %>
-        <%= link_to "Manage Subscription", portal_billing_path,
+        <%= link_to "Manage Subscription", portal_settings_billing_path,
             class: "inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
       <% end %>
       <%= link_to "View Plans", pricing_path,
@@ -109,4 +112,5 @@
       </div>
     </div>
   <% end %>
+  </div>
 </div>

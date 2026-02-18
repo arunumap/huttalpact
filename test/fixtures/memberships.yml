@@ -7,3 +7,13 @@ two:
   user: two
   organization: two
   role: owner
+
+admin_member:
+  user: three
+  organization: two
+  role: admin
+
+regular_member:
+  user: four
+  organization: two
+  role: member

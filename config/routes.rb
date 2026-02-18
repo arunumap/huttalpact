@@ -26,13 +26,30 @@ Rails.application.routes.draw do
 
   resources :audit_logs, only: %i[index]
 
-  # Billing
-  resource :pricing, only: %i[show], controller: "pricing"
-  resource :billing, only: %i[show], controller: "billing" do
-    post :checkout
-    get :portal
-    get :success
+  # Settings
+  namespace :settings do
+    resource :profile, only: %i[show update], controller: "profile"
+    resource :organization, only: %i[show update], controller: "organization"
+    resource :team, only: %i[show], controller: "team"
+    resources :members, only: %i[update destroy]
+    resources :invitations, only: %i[create destroy] do
+      member do
+        post :resend
+      end
+    end
+    resource :billing, only: %i[show], controller: "billing" do
+      post :checkout
+      get :portal
+      get :success
+    end
   end
+  get "settings", to: redirect("/settings/profile")
+
+  # Billing (legacy redirects)
+  get "billing", to: redirect("/settings/billing")
+
+  # Pricing
+  resource :pricing, only: %i[show], controller: "pricing"
   mount Pay::Engine, at: "/pay", as: "pay_engine" if defined?(Pay::Engine)
 
   # Dashboard

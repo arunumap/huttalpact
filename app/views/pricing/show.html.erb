@@ -120,7 +120,7 @@
         <% elsif Current.user && !@is_owner %>
           <span class="block w-full rounded-lg bg-gray-100 px-4 py-2.5 text-center text-xs font-medium text-gray-500">Contact your organization owner to upgrade</span>
         <% elsif Current.user %>
-          <%= button_to "Upgrade to Starter", checkout_billing_path,
+          <%= button_to "Upgrade to Starter", checkout_settings_billing_path,
             params: { lookup_key: "starter_monthly" },
             data: { turbo: false, pricing_toggle_target: "starterBtn", pricing_toggle_monthly_price_param: "starter_monthly", pricing_toggle_annual_price_param: "starter_annual" },
             class: "block w-full rounded-lg bg-amber-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-amber-500 transition" %>
@@ -171,7 +171,7 @@
         <% elsif Current.user && !@is_owner %>
           <span class="block w-full rounded-lg bg-gray-100 px-4 py-2.5 text-center text-xs font-medium text-gray-500">Contact your organization owner to upgrade</span>
         <% elsif Current.user %>
-          <%= button_to "Upgrade to Pro", checkout_billing_path,
+          <%= button_to "Upgrade to Pro", checkout_settings_billing_path,
             params: { lookup_key: "pro_monthly" },
             data: { turbo: false, pricing_toggle_target: "proBtn", pricing_toggle_monthly_price_param: "pro_monthly", pricing_toggle_annual_price_param: "pro_annual" },
             class: "block w-full rounded-lg bg-gray-900 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-gray-800 transition" %>

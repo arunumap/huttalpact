@@ -1,4 +1,4 @@
-class BillingController < ApplicationController
+class Settings::BillingController < ApplicationController
   include PlanEnforcement
 
   before_action :require_owner
@@ -12,7 +12,7 @@ class BillingController < ApplicationController
     lookup_key = params[:lookup_key]
 
     unless PlanLimits::LOOKUP_KEYS.key?(lookup_key)
-      redirect_to billing_path, alert: "Invalid plan selected."
+      redirect_to settings_billing_path, alert: "Invalid plan selected."
       return
     end
 
@@ -21,37 +21,37 @@ class BillingController < ApplicationController
     session = customer.checkout(
       mode: "subscription",
       line_items: [ { price: price_id, quantity: 1 } ],
-      success_url: success_billing_url + "?session_id={CHECKOUT_SESSION_ID}",
-      cancel_url: billing_url
+      success_url: success_settings_billing_url + "?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: settings_billing_url
     )
 
     redirect_to session.url, allow_other_host: true, status: :see_other
   rescue StripePriceResolver::PriceNotFound => e
     Rails.logger.error("Stripe price not found for org #{current_organization.id}: #{e.message}")
-    redirect_to billing_path, alert: "Plan not available. Please try again or contact support."
+    redirect_to settings_billing_path, alert: "Plan not available. Please try again or contact support."
   rescue Pay::Error, Stripe::StripeError => e
     Rails.logger.error("Stripe checkout error for org #{current_organization.id}: #{e.message}")
-    redirect_to billing_path, alert: "Unable to start checkout. Please try again."
+    redirect_to settings_billing_path, alert: "Unable to start checkout. Please try again."
   end
 
   def portal
     customer = current_organization.pay_customers&.find_by(processor: :stripe)
 
     unless customer
-      redirect_to billing_path, alert: "No billing account found. Please subscribe to a plan first."
+      redirect_to settings_billing_path, alert: "No billing account found. Please subscribe to a plan first."
       return
     end
 
-    session = customer.billing_portal(return_url: billing_url)
+    session = customer.billing_portal(return_url: settings_billing_url)
     redirect_to session.url, allow_other_host: true, status: :see_other
   rescue Pay::Error, Stripe::StripeError => e
     Rails.logger.error("Stripe portal error for org #{current_organization.id}: #{e.message}")
-    redirect_to billing_path, alert: "Unable to open billing portal. Please try again."
+    redirect_to settings_billing_path, alert: "Unable to open billing portal. Please try again."
   end
 
   def success
     current_organization.reload
-    redirect_to billing_path, notice: "Welcome to the #{current_organization.plan_display_name} plan! Your subscription is now active."
+    redirect_to settings_billing_path, notice: "Welcome to the #{current_organization.plan_display_name} plan! Your subscription is now active."
   end
 
   private
