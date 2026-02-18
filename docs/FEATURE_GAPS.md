@@ -43,10 +43,10 @@ Remnants of a prior product name appear in:
 
 ## Medium Priority — Logic & Data Issues
 
-### 6. Alert Channel Bug
-`AlertGeneratorService` creates one `AlertRecipient` per user per alert. If a user has both `email_enabled` and `in_app_enabled`, they **only get email** — the in-app channel is silently skipped.
+### 6. ~~Alert Channel Bug~~ ✅ DONE
+`AlertGeneratorService` now treats every alert as inherently in-app. Email is an additional notification handled at delivery time based on `AlertPreference.email_enabled`. Alert preferences moved from `/alert_preference` to `/settings/alerts`.
 
-- **File**: `app/services/alert_generator_service.rb` (~L110-L112)
+- **Files**: `app/services/alert_generator_service.rb`, `app/services/alert_delivery_service.rb`, `app/controllers/settings/alerts_controller.rb`
 
 ### 7. Draft Status Badge Missing
 `contract_status_badge` in `ApplicationHelper` has no entry for `"draft"`, so drafts render with the same color as active contracts.

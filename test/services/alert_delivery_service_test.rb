@@ -51,8 +51,23 @@ class AlertDeliveryServiceTest < ActiveSupport::TestCase
     assert_equal "sent", @alert.reload.status
   end
 
-  test "handles in_app channel without sending email" do
+  test "sends email when email_enabled regardless of channel" do
+    # Even with in_app channel, email should be sent if preference allows
     @alert.alert_recipients.update_all(channel: "in_app")
+    pref = alert_preferences(:one)
+    pref.update!(email_enabled: true)
+
+    assert_enqueued_emails 1 do
+      AlertDeliveryService.new(@alert).call
+    end
+    assert_equal "sent", @alert.reload.status
+  end
+
+  test "skips email when email_disabled regardless of channel" do
+    @alert.alert_recipients.update_all(channel: "in_app")
+    pref = alert_preferences(:one)
+    pref.update!(email_enabled: false)
+
     assert_no_enqueued_emails do
       AlertDeliveryService.new(@alert).call
     end

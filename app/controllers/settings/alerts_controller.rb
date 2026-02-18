@@ -1,4 +1,4 @@
-class AlertPreferencesController < ApplicationController
+class Settings::AlertsController < ApplicationController
   def show
     @alert_preference = AlertPreference.for(Current.user, Current.organization)
   end
@@ -7,7 +7,7 @@ class AlertPreferencesController < ApplicationController
     @alert_preference = AlertPreference.for(Current.user, Current.organization)
 
     if @alert_preference.update(alert_preference_params)
-      redirect_to alert_preference_path, notice: "Alert preferences updated."
+      redirect_to settings_alerts_path, notice: "Alert preferences updated."
     else
       render :show, status: :unprocessable_entity
     end

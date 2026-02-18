@@ -131,11 +131,22 @@ class AlertGeneratorServiceTest < ActiveSupport::TestCase
     alert = Alert.where(contract: @contract, alert_type: "expiry_warning").last
 
     channels = alert.alert_recipients.where(user: users(:one)).pluck(:channel)
-    assert_includes channels, "email"
-    assert_not_includes channels, "in_app"
+    assert_includes channels, "in_app", "Channel should always be in_app — email is handled at delivery time"
   end
 
-  test "uses in_app channel when email is disabled" do
+  test "creates recipient when both email and in_app are enabled" do
+    pref = alert_preferences(:one)
+    pref.update!(email_enabled: true, in_app_enabled: true)
+
+    AlertGeneratorService.new(@contract).call
+    alert = Alert.where(contract: @contract, alert_type: "expiry_warning").last
+
+    recipients = alert.alert_recipients.where(user: users(:one))
+    assert_equal 1, recipients.count, "Should create exactly one recipient per user"
+    assert_equal "in_app", recipients.first.channel, "Channel should always be in_app"
+  end
+
+  test "uses in_app channel even when email is disabled" do
     pref = alert_preferences(:one)
     pref.update!(email_enabled: false, in_app_enabled: true)
 
@@ -144,6 +155,21 @@ class AlertGeneratorServiceTest < ActiveSupport::TestCase
 
     channels = alert.alert_recipients.where(user: users(:one)).pluck(:channel)
     assert_includes channels, "in_app"
+  end
+
+  test "skips recipient when both channels are disabled" do
+    pref = alert_preferences(:one)
+    pref.update!(email_enabled: false, in_app_enabled: false)
+
+    @contract.alerts.destroy_all
+    AlertGeneratorService.new(@contract).call
+
+    # User one should have no recipients on any alert for this contract
+    recipient_count = AlertRecipient.joins(:alert)
+      .where(alerts: { contract_id: @contract.id }, user_id: users(:one).id)
+      .count
+    assert_equal 0, recipient_count,
+                 "Should not create recipient when both channels are disabled"
   end
 
   test "uses default preferences when user has no preference" do

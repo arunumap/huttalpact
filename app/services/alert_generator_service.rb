@@ -96,6 +96,9 @@ class AlertGeneratorService
   end
 
   def create_alert(alert_type:, trigger_date:, message:, user:, pref:)
+    # Skip entirely if user has opted out of both channels
+    return if !pref.email_enabled && !pref.in_app_enabled
+
     alert = @contract.alerts.find_or_create_by!(
       organization: @organization,
       alert_type: alert_type,
@@ -105,8 +108,10 @@ class AlertGeneratorService
       a.status = "pending"
     end
 
+    # Every alert is inherently in-app. Email is an additional notification
+    # channel handled at delivery time based on pref.email_enabled.
     alert.alert_recipients.find_or_create_by!(user: user) do |r|
-      r.channel = pref.email_enabled ? "email" : "in_app"
+      r.channel = "in_app"
     end
   end
 

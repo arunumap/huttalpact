@@ -39,11 +39,10 @@ class AlertDeliveryService
   def deliver_to(recipient)
     pref = preference_for(recipient.user)
 
-    case recipient.channel
-    when "email"
-      AlertMailer.alert_notification(recipient).deliver_later if pref.email_enabled
-    when "in_app"
-      # In-app alerts are "delivered" immediately — they just show up in the UI
+    # Every alert is inherently in-app (visible in the UI by existing).
+    # Email is an additional notification sent when the user has it enabled.
+    if pref.email_enabled
+      AlertMailer.alert_notification(recipient).deliver_later
     end
 
     recipient.mark_as_sent!

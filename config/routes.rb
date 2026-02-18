@@ -22,13 +22,15 @@ Rails.application.routes.draw do
     end
   end
 
-  resource :alert_preference, only: %i[show update]
+  # Redirect old alert_preference path to new settings location
+  get "alert_preference", to: redirect("/settings/alerts")
 
   resources :audit_logs, only: %i[index]
 
   # Settings
   namespace :settings do
     resource :profile, only: %i[show update], controller: "profile"
+    resource :alerts, only: %i[show update], controller: "alerts"
     resource :organization, only: %i[show update], controller: "organization"
     resource :team, only: %i[show], controller: "team"
     resources :members, only: %i[update destroy]
