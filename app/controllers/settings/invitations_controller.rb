@@ -12,7 +12,7 @@ class Settings::InvitationsController < ApplicationController
     end
 
     # Sanitize role — block owner role
-    role = invitation_params[:role]
+    role = params.dig(:invitation, :role)
     if role == Membership::OWNER_ROLE
       redirect_to settings_team_path(tab: "invitations"), alert: "Cannot assign the owner role via invitation."
       return
@@ -65,6 +65,6 @@ class Settings::InvitationsController < ApplicationController
   end
 
   def invitation_params
-    params.require(:invitation).permit(:email, :role)
+    params.require(:invitation).permit(:email)
   end
 end

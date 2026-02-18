@@ -1,4 +1,6 @@
 class Invitation < ApplicationRecord
+  ASSIGNABLE_ROLES = [ Membership::ADMIN_ROLE, Membership::MEMBER_ROLE ].freeze
+
   belongs_to :organization
   belongs_to :inviter, class_name: "User"
 
