@@ -31,7 +31,7 @@
 
     <div class="mt-6 flex gap-3">
       <% if @organization.paid_plan? %>
-        <%= button_to "Manage Subscription", portal_billing_path, method: :get,
+        <%= link_to "Manage Subscription", portal_billing_path,
             class: "inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
       <% end %>
       <%= link_to "View Plans", pricing_path,
