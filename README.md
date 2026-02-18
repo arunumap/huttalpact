@@ -46,15 +46,22 @@ anthropic:
   api_key: sk-ant-...
 postmark:
   api_token: ...
-# Stripe price IDs are set via ENV vars
 ```
 
-Stripe ENV vars:
+### Stripe Setup
 
-- `STRIPE_STARTER_MONTHLY_PRICE_ID`
-- `STRIPE_STARTER_ANNUAL_PRICE_ID`
-- `STRIPE_PRO_MONTHLY_PRICE_ID`
-- `STRIPE_PRO_ANNUAL_PRICE_ID`
+Stripe prices are resolved at runtime via **lookup keys** — no price ID env vars needed.
+Set up your Stripe products and prices with the rake task:
+
+```bash
+bin/rails stripe:setup
+```
+
+This creates two products (Starter, Pro) with four prices using lookup keys:
+`starter_monthly`, `starter_annual`, `pro_monthly`, `pro_annual`.
+
+If you prefer manual setup, create prices in the Stripe Dashboard and assign
+the same lookup keys. See `lib/tasks/stripe.rake` for details.
 
 ## Development
 

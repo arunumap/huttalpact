@@ -9,14 +9,14 @@ class BillingController < ApplicationController
   end
 
   def checkout
-    price_id = params[:price_id]
+    lookup_key = params[:lookup_key]
 
-    unless PlanLimits::PRICE_TO_PLAN.key?(price_id)
+    unless PlanLimits::LOOKUP_KEYS.key?(lookup_key)
       redirect_to billing_path, alert: "Invalid plan selected."
       return
-
     end
 
+    price_id = StripePriceResolver.resolve_checkout_price(lookup_key)
     customer = current_organization.set_payment_processor(:stripe)
     session = customer.checkout(
       mode: "subscription",
@@ -26,6 +26,9 @@ class BillingController < ApplicationController
     )
 
     redirect_to session.url, allow_other_host: true, status: :see_other
+  rescue StripePriceResolver::PriceNotFound => e
+    Rails.logger.error("Stripe price not found for org #{current_organization.id}: #{e.message}")
+    redirect_to billing_path, alert: "Plan not available. Please try again or contact support."
   rescue Pay::Error, Stripe::StripeError => e
     Rails.logger.error("Stripe checkout error for org #{current_organization.id}: #{e.message}")
     redirect_to billing_path, alert: "Unable to start checkout. Please try again."

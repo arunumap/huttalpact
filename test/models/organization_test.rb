@@ -80,8 +80,10 @@ class OrganizationTest < ActiveSupport::TestCase
       status: "active"
     )
 
-    assert_no_changes -> { org.reload.plan } do
-      org.sync_plan_from_subscription!
+    StripePriceResolver.stub(:plan_for_price_id, nil) do
+      assert_no_changes -> { org.reload.plan } do
+        org.sync_plan_from_subscription!
+      end
     end
   end
 

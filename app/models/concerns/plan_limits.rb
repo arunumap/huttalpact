@@ -7,15 +7,11 @@ module PlanLimits
     "pro" => { contracts: Float::INFINITY, extractions: Float::INFINITY, users: Float::INFINITY, audit_log_days: nil }
   }.freeze
 
-  STRIPE_PRICES = {
-    "starter_monthly" => ENV.fetch("STRIPE_STARTER_MONTHLY_PRICE_ID", "price_starter_monthly"),
-    "starter_annual"  => ENV.fetch("STRIPE_STARTER_ANNUAL_PRICE_ID", "price_starter_annual"),
-    "pro_monthly"     => ENV.fetch("STRIPE_PRO_MONTHLY_PRICE_ID", "price_pro_monthly"),
-    "pro_annual"      => ENV.fetch("STRIPE_PRO_ANNUAL_PRICE_ID", "price_pro_annual")
-  }.freeze
-
-  PRICE_TO_PLAN = STRIPE_PRICES.each_with_object({}) { |(key, price_id), hash|
-    hash[price_id] = key.split("_").first
+  LOOKUP_KEYS = {
+    "starter_monthly" => "starter",
+    "starter_annual"  => "starter",
+    "pro_monthly"     => "pro",
+    "pro_annual"      => "pro"
   }.freeze
 
   def plan_contract_limit

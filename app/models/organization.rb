@@ -56,7 +56,7 @@ class Organization < ApplicationRecord
     subscription = customer&.subscriptions&.active&.first
 
     if subscription
-      plan_name = PlanLimits::PRICE_TO_PLAN[subscription.processor_plan]
+      plan_name = StripePriceResolver.plan_for_price_id(subscription.processor_plan)
 
       if plan_name.nil?
         Rails.logger.warn("Unknown Stripe price ID '#{subscription.processor_plan}' for org #{id}. Plan not updated.")

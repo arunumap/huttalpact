@@ -51,7 +51,7 @@ export default class extends Controller {
       const priceParam = period === "annual"
         ? btn.dataset.pricingToggleAnnualPriceParam
         : btn.dataset.pricingToggleMonthlyPriceParam
-      const input = btn.closest("form")?.querySelector("input[name='price_id']")
+      const input = btn.closest("form")?.querySelector("input[name='lookup_key']")
       if (input) input.value = priceParam
     }
 
@@ -60,7 +60,7 @@ export default class extends Controller {
       const priceParam = period === "annual"
         ? btn.dataset.pricingToggleAnnualPriceParam
         : btn.dataset.pricingToggleMonthlyPriceParam
-      const input = btn.closest("form")?.querySelector("input[name='price_id']")
+      const input = btn.closest("form")?.querySelector("input[name='lookup_key']")
       if (input) input.value = priceParam
     }
   }
