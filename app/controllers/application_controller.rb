@@ -30,7 +30,7 @@ class ApplicationController < ActionController::Base
   def set_tenant
     return unless Current.user
 
-    organization = Current.user.organizations.first
+    organization = find_current_organization
 
     if organization.nil?
       redirect_to new_registration_path, alert: "Please create an organization to continue."
@@ -39,6 +39,16 @@ class ApplicationController < ActionController::Base
 
     Current.organization = organization
     set_current_tenant(organization)
+  end
+
+  def find_current_organization
+    if session[:current_organization_id].present?
+      org = Current.user.organizations.find_by(id: session[:current_organization_id])
+      return org if org
+      session.delete(:current_organization_id)
+    end
+
+    Current.user.organizations.first
   end
 
   def set_unread_alert_count

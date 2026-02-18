@@ -3,6 +3,8 @@ Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
   resource :registration, only: %i[new create]
   resources :passwords, param: :token
+  get "invitations/:token/accept", to: "invitation_acceptances#show", as: :accept_invitation
+  post "switch_organization/:id", to: "organization_switches#create", as: :switch_organization
 
   # App
   resources :contracts do

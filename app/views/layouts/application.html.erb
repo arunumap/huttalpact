@@ -46,7 +46,37 @@
         <div class="border-t border-gray-700 p-4">
           <% if current_organization %>
             <p class="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Organization</p>
-            <p class="text-sm font-medium text-white truncate"><%= current_organization.name %></p>
+            <% user_orgs = Current.user&.organizations&.order(:name) || [] %>
+            <% if user_orgs.size > 1 %>
+              <div data-controller="org-switcher" class="relative">
+                <button data-action="click->org-switcher#toggle" data-org-switcher-target="button"
+                        class="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors">
+                  <span class="truncate"><%= current_organization.name %></span>
+                  <svg data-org-switcher-target="chevron" class="h-4 w-4 shrink-0 text-gray-400 transition-transform" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" />
+                  </svg>
+                </button>
+                <div data-org-switcher-target="dropdown" class="hidden absolute bottom-full left-0 mb-1 w-full rounded-md bg-gray-800 py-1 shadow-lg ring-1 ring-gray-700 z-50 max-h-48 overflow-y-auto">
+                  <% user_orgs.each do |org| %>
+                    <% if org.id == current_organization.id %>
+                      <div class="flex items-center gap-2 px-3 py-2 text-sm text-amber-400">
+                        <svg class="h-4 w-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="truncate"><%= org.name %></span>
+                      </div>
+                    <% else %>
+                      <%= button_to switch_organization_path(org), method: :post, class: "flex w-full items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors" do %>
+                        <span class="h-4 w-4 shrink-0"></span>
+                        <span class="truncate"><%= org.name %></span>
+                      <% end %>
+                    <% end %>
+                  <% end %>
+                </div>
+              </div>
+            <% else %>
+              <p class="text-sm font-medium text-white truncate"><%= current_organization.name %></p>
+            <% end %>
             <div class="mt-1">
               <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
                 <%= current_organization.plan == 'pro' ? 'bg-gray-700 text-white' : current_organization.plan == 'starter' ? 'bg-amber-900/50 text-amber-300' : 'bg-gray-800 text-gray-400' %>">
