@@ -16,6 +16,14 @@ module PactBadger
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    # Autoload app/middleware so BotScannerBlocker is available
+    config.autoload_paths << Rails.root.join("app/middleware")
+
+    # Block bot/scanner probe requests (WordPress, phpMyAdmin, etc.) early
+    # to avoid noisy RoutingError exceptions in the logs.
+    require_relative "../app/middleware/bot_scanner_blocker"
+    config.middleware.use BotScannerBlocker
+
     # Use UUID as default primary key type for all generators
     config.generators do |g|
       g.orm :active_record, primary_key_type: :uuid
