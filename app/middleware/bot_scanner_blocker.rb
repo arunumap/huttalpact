@@ -54,7 +54,7 @@ class BotScannerBlocker
     path = env["PATH_INFO"].to_s
 
     if blocked?(path)
-      [ 404, RESPONSE_HEADERS, RESPONSE_BODY ]
+      [ 404, RESPONSE_HEADERS.dup, RESPONSE_BODY ]
     else
       @app.call(env)
     end

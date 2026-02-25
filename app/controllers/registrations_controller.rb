@@ -51,6 +51,7 @@ class RegistrationsController < ApplicationController
       end
     end
 
+    UserMailer.welcome(@user).deliver_later
     start_new_session_for @user
     destination = if @invitation&.organization&.onboarding_complete?
       root_path

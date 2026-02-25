@@ -88,4 +88,10 @@ class BotScannerBlockerTest < ActiveSupport::TestCase
     status, _headers, _body = @middleware.call("PATH_INFO" => nil)
     assert_equal 200, status
   end
+
+  test "returns mutable headers for blocked requests so downstream middleware can modify them" do
+    _status, headers, _body = @middleware.call("PATH_INFO" => "/wp-admin/setup-config.php")
+    assert_not headers.frozen?, "Headers hash should not be frozen (Rack::ETag needs to mutate it)"
+    assert_nothing_raised { headers["cache-control"] = "no-cache" }
+  end
 end

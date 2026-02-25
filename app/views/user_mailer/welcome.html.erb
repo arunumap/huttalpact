@@ -1,0 +1,54 @@
+<p style="margin: 0 0 20px 0; font-size: 15px; color: #374151;">
+  Hi <%= @user.first_name.presence || @user.full_name %>,
+</p>
+
+<p style="margin: 0 0 20px 0; font-size: 15px; color: #374151; line-height: 1.6;">
+  Welcome to <strong style="color: #d97706;">PactBadger</strong>! Your account is all set up<%= " and you've joined <strong>#{h @organization.name}</strong>" if @organization %>.
+</p>
+
+<!-- What you can do callout -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
+  <tr>
+    <td style="background-color: #fffbeb; border-left: 4px solid #d97706; border-radius: 0 8px 8px 0; padding: 20px;">
+      <p style="margin: 0 0 12px 0; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #92400e;">Here's what you can do</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="padding: 4px 0; font-size: 14px; color: #78350f; line-height: 1.5;">
+            &#x1F4C4; <strong>Upload contracts</strong> &mdash; PDF, DOCX, or plain text
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 0; font-size: 14px; color: #78350f; line-height: 1.5;">
+            &#x1F916; <strong>AI-powered extraction</strong> &mdash; key dates, values, and clauses pulled automatically
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 4px 0; font-size: 14px; color: #78350f; line-height: 1.5;">
+            &#x1F514; <strong>Smart alerts</strong> &mdash; never miss a renewal or expiration deadline
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- CTA button -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 24px;">
+  <tr>
+    <td align="center">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="border-radius: 8px; background-color: #d97706;">
+            <a href="<%= dashboard_url %>" style="display: inline-block; padding: 14px 32px; font-size: 15px; font-weight: 600; color: #ffffff; text-decoration: none; border-radius: 8px;">
+              Go to your dashboard &rarr;
+            </a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<p style="margin: 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
+  If you have any questions, just reply to this email &mdash; we're happy to help.
+</p>

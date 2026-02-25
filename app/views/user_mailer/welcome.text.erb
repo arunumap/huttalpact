@@ -1,0 +1,15 @@
+Hi <%= @user.first_name.presence || @user.full_name %>,
+
+Welcome to PactBadger! Your account is all set up<%= " and you've joined #{@organization.name}" if @organization %>.
+
+Here's what you can do:
+
+- Upload contracts — PDF, DOCX, or plain text
+- AI-powered extraction — key dates, values, and clauses pulled automatically
+- Smart alerts — never miss a renewal or expiration deadline
+
+Get started: <%= dashboard_url %>
+
+If you have any questions, just reply to this email — we're happy to help.
+
+— PactBadger

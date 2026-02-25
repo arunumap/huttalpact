@@ -1,6 +1,8 @@
 require "test_helper"
 
 class RegistrationsControllerTest < ActionDispatch::IntegrationTest
+  include ActionMailer::TestHelper
+
   test "should get new" do
     get new_registration_path
     assert_response :success
@@ -167,5 +169,48 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
     assert_not_nil user
     assert user.organizations.include?(organization)
     assert invitation.reload.accepted_at.present?
+  end
+
+  test "welcome email is sent on successful registration" do
+    assert_enqueued_emails 1 do
+      post registration_path, params: {
+        user: {
+          first_name: "Welcome",
+          last_name: "Test",
+          email_address: "welcometest@example.com",
+          password: "password123",
+          password_confirmation: "password123",
+          organization_name: "Welcome Org"
+        }
+      }
+    end
+  end
+
+  test "welcome email is sent for invitation signup" do
+    invitation = invitations(:pending)
+
+    assert_enqueued_emails 1 do
+      post registration_path, params: {
+        token: invitation.token,
+        user: {
+          first_name: "Invited",
+          last_name: "Welcome",
+          password: "password123",
+          password_confirmation: "password123"
+        }
+      }
+    end
+  end
+
+  test "welcome email is not sent on failed registration" do
+    assert_enqueued_emails 0 do
+      post registration_path, params: {
+        user: {
+          email_address: "invalid",
+          password: "password123",
+          password_confirmation: "password123"
+        }
+      }
+    end
   end
 end
