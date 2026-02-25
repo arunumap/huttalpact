@@ -1,4 +1,4 @@
 class ApplicationMailer < ActionMailer::Base
-  default from: "notifications@huttalpact.com"
+  default from: "notifications@pactbadger.com"
   layout "mailer"
 end

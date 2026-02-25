@@ -90,12 +90,12 @@ jobs:
       - name: Run tests
         env:
           RAILS_ENV: test
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/sagebadger_test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/pactbadger_test
           # RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
         run: bin/rails db:test:prepare test
 
       - name: Test seed data
         env:
           RAILS_ENV: test
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/sagebadger_test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/pactbadger_test
         run: bin/rails db:seed:replant

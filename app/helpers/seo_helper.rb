@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module SeoHelper
-  DEFAULT_SITE_NAME = "HuttalPact"
+  DEFAULT_SITE_NAME = "PactBadger"
   DEFAULT_DESCRIPTION = "AI-powered contract tracking for SMBs. Upload contracts, auto-extract key dates and clauses, and never miss a renewal deadline again."
   DEFAULT_OG_IMAGE = "og-image.png"
 
@@ -13,7 +13,7 @@ module SeoHelper
   #   <% content_for :title, "My Page Title" %>
   #   <% content_for :meta_description, "Custom description" %>
   #   <% content_for :meta_robots, "noindex, nofollow" %>
-  #   <% content_for :canonical_url, "https://huttalpact.com/pricing" %>
+  #   <% content_for :canonical_url, "https://pactbadger.com/pricing" %>
   def seo_meta_tags
     safe_join([
       tag.meta(name: "description", content: seo_description),
@@ -103,7 +103,7 @@ module SeoHelper
       "@type" => "Organization",
       "name" => DEFAULT_SITE_NAME,
       "url" => root_url,
-      "logo" => image_url("huttalpact-logo-transparent.png"),
+      "logo" => image_url("pact_badger_log.svg"),
       "description" => DEFAULT_DESCRIPTION,
       "sameAs" => []
     }

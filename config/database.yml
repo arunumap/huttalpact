@@ -5,11 +5,11 @@ default: &default
 
 development:
   <<: *default
-  database: sagebadger_development
+  database: pactbadger_development
 
 test:
   <<: *default
-  database: sagebadger_test
+  database: pactbadger_test
 
 production:
   primary:

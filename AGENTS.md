@@ -1,10 +1,10 @@
-# SageBadger — Agent Instructions
+# PactBadger — Agent Instructions
 
 > **Canonical context file:** See [claude.md](claude.md) for the full, detailed project instructions including tech stack, architecture, conventions, build status, code style preferences, and file locations.
 
 ## Quick Summary
 
-SageBadger is an AI-powered contract tracker for SMBs built with Rails 8.1.2. Users upload contracts (PDF/DOCX/TXT), AI extracts structured data via the Anthropic Claude API, and the system generates automated alerts for expirations, renewals, and notice periods.
+PactBadger is an AI-powered contract tracker for SMBs built with Rails 8.1.2. Users upload contracts (PDF/DOCX/TXT), AI extracts structured data via the Anthropic Claude API, and the system generates automated alerts for expirations, renewals, and notice periods.
 
 ## Key Conventions
 

@@ -12,13 +12,14 @@ class DashboardController < ApplicationController
     @total_monthly_value = Contract.active.sum(:monthly_value) || 0
     @total_annual_value = Contract.active.where.not(total_value: nil).sum(:total_value) || 0
 
-    # Upcoming renewals (next 90 days, grouped for 30/60/90 display)
-    @upcoming_renewals = Contract.not_archived.where.not(next_renewal_date: nil)
-                               .where(next_renewal_date: Date.current..90.days.from_now)
-                               .order(:next_renewal_date)
-    @renewals_30 = @upcoming_renewals.select { |c| c.next_renewal_date <= 30.days.from_now.to_date }
-    @renewals_60 = @upcoming_renewals.select { |c| c.next_renewal_date <= 60.days.from_now.to_date }
-    @renewals_90 = @upcoming_renewals
+    # Upcoming renewals — use SQL date filtering, not Ruby .select
+    renewals_base = Contract.not_archived.where.not(next_renewal_date: nil)
+                           .where(next_renewal_date: Date.current..90.days.from_now.to_date)
+                           .order(:next_renewal_date)
+    @renewals_30 = renewals_base.where(next_renewal_date: ..30.days.from_now.to_date)
+    @renewals_60 = renewals_base.where(next_renewal_date: ..60.days.from_now.to_date)
+    @renewals_90 = renewals_base
+    @upcoming_renewals = renewals_base
 
     # Expiring contracts (end_date within 90 days, not already expired/archived)
     @expiring_contracts = Contract.where.not(end_date: nil)

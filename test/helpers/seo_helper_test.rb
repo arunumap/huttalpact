@@ -7,17 +7,17 @@ class SeoHelperTest < ActionView::TestCase
 
   # Stub request object for helpers that need it
   def request
-    @request ||= OpenStruct.new(original_url: "https://huttalpact.com/test?page=1")
+    @request ||= OpenStruct.new(original_url: "https://pactbadger.com/test?page=1")
   end
 
   # Stub image_url for tests
   def image_url(source)
-    "https://huttalpact.com/assets/#{source}"
+    "https://pactbadger.com/assets/#{source}"
   end
 
   # Stub root_url for tests
   def root_url
-    "https://huttalpact.com/"
+    "https://pactbadger.com/"
   end
 
   test "seo_meta_tags includes description" do
@@ -38,9 +38,9 @@ class SeoHelperTest < ActionView::TestCase
   end
 
   test "seo_meta_tags strips query params from canonical" do
-    content_for(:canonical_url, "https://huttalpact.com/pricing")
+    content_for(:canonical_url, "https://pactbadger.com/pricing")
     result = seo_meta_tags
-    assert_match(/huttalpact\.com\/pricing/, result)
+    assert_match(/pactbadger\.com\/pricing/, result)
   end
 
   test "seo_meta_tags includes Open Graph tags" do
@@ -77,7 +77,7 @@ class SeoHelperTest < ActionView::TestCase
     result = structured_data(type: :organization)
     assert_match(/application\/ld\+json/, result)
     assert_match(/"@type":"Organization"/, result)
-    assert_match(/"name":"HuttalPact"/, result)
+    assert_match(/"name":"PactBadger"/, result)
   end
 
   test "structured_data software_application includes pricing offers" do
@@ -91,12 +91,12 @@ class SeoHelperTest < ActionView::TestCase
 
   test "structured_data faq renders FAQ schema" do
     items = [
-      { question: "What is HuttalPact?", answer: "A contract tracker." },
+      { question: "What is PactBadger?", answer: "A contract tracker." },
       { question: "Is there a free plan?", answer: "Yes." }
     ]
     result = structured_data(type: :faq, items: items)
     assert_match(/"@type":"FAQPage"/, result)
-    assert_match(/"What is HuttalPact\?"/, result)
+    assert_match(/"What is PactBadger\?"/, result)
     assert_match(/"A contract tracker."/, result)
   end
 
@@ -107,8 +107,8 @@ class SeoHelperTest < ActionView::TestCase
 
   test "structured_data breadcrumb renders breadcrumb schema" do
     items = [
-      { name: "Home", url: "https://huttalpact.com/" },
-      { name: "Pricing", url: "https://huttalpact.com/pricing" }
+      { name: "Home", url: "https://pactbadger.com/" },
+      { name: "Pricing", url: "https://pactbadger.com/pricing" }
     ]
     result = structured_data(type: :breadcrumb, items: items)
     assert_match(/"@type":"BreadcrumbList"/, result)

@@ -182,7 +182,7 @@ class ContractsController < ApplicationController
   def generate_csv(contracts)
     CSV.generate(headers: true) do |csv|
       csv << %w[Title Vendor Status Type Direction Start\ Date End\ Date Notice\ Period\ Days Monthly\ Value Total\ Value Auto\ Renews Renewal\ Term Notes]
-      contracts.each do |c|
+      contracts.find_each(batch_size: 500) do |c|
         csv << [
           c.title,
           c.vendor_name,

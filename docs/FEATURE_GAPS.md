@@ -1,4 +1,4 @@
-# SageBadger — Feature Gap Analysis
+# PactBadger — Feature Gap Analysis
 
 > Generated: 2026-02-17
 
@@ -31,7 +31,7 @@ The `admin` role exists on memberships but has no permission differentiation fro
 
 - **Files**: `app/models/membership.rb`
 
-### 5. Branding Inconsistency — "HuttalPact" References
+### 5. ~~Branding Inconsistency — "HuttalPact" References~~ ✅ DONE (rebranded to PactBadger)
 Remnants of a prior product name appear in:
 - `app/mailers/application_mailer.rb` — `from:` address
 - `app/mailers/invitation_mailer.rb` — subject line

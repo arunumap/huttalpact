@@ -1,8 +1,8 @@
-# SageBadger — Project Instructions for Claude
+# PactBadger — Project Instructions for Claude
 
 ## Project Overview
 
-SageBadger is an AI-powered contract tracker for SMBs built with Rails 8.1.2. The first target vertical is property management companies. The tagline is "Smart contract tracking that won't let you forget." The full build plan lives in `docs/BUILD_PLAN.md`.
+PactBadger is an AI-powered contract tracker for SMBs built with Rails 8.1.2. The first target vertical is property management companies. The tagline is "Smart contract tracking that won't let you forget." The full build plan lives in `docs/BUILD_PLAN.md`.
 
 ## Tech Stack
 
@@ -84,7 +84,7 @@ SageBadger is an AI-powered contract tracker for SMBs built with Rails 8.1.2. Th
 - **Empty states**: All list views should have empty states with helpful messaging and a CTA
 - **Flash messages**: Rendered in the layout with `notice` (green) and `alert` (red) styles
 - **Badges**: Helper methods in `ApplicationHelper` generate styled badge spans for statuses, types, confidence scores, etc.
-- **Icons**: Using inline SVG via the `inline_svg` gem. The badger logo is at `app/assets/images/badger_logo.svg`
+- **Icons**: Using inline SVG via the `inline_svg` gem. The badger logo is at `app/assets/images/pact_badger_log.svg`
 
 ### Services
 
@@ -131,7 +131,7 @@ SageBadger is an AI-powered contract tracker for SMBs built with Rails 8.1.2. Th
 **Phase 1 — Foundation (Weeks 1–3):**
 - Authentication (login, logout, registration, password reset)
 - Multi-tenancy with `acts_as_tenant`
-- App shell layout with dark sidebar and SageBadger branding
+- App shell layout with dark sidebar and PactBadger branding
 - Contract CRUD (index, show, new, create, edit, update, destroy)
 - Search and filter (by title/vendor text, status dropdown, type dropdown)
 - Pagination with Pagy

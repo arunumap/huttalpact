@@ -1,8 +1,8 @@
-# SageBadger
+# PactBadger
 
 **Smart contract tracking that won't let you forget.**
 
-SageBadger is an AI-powered contract tracker for SMBs. Upload contracts (PDF, DOCX, or TXT), and AI automatically extracts key dates, values, clauses, and vendor information. The system then generates automated alerts for expirations, renewals, and notice periods — so you never miss a deadline again.
+PactBadger is an AI-powered contract tracker for SMBs. Upload contracts (PDF, DOCX, or TXT), and AI automatically extracts key dates, values, clauses, and vendor information. The system then generates automated alerts for expirations, renewals, and notice periods — so you never miss a deadline again.
 
 First target vertical: property management companies (5–50 properties).
 
@@ -32,7 +32,7 @@ First target vertical: property management companies (5–50 properties).
 
 ```bash
 # Clone the repo and install dependencies
-git clone <repo-url> && cd sagebadger
+git clone <repo-url> && cd pactbadger
 bin/setup
 
 # Configure credentials (Anthropic API key, Stripe keys, etc.)

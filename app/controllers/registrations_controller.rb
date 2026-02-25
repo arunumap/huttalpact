@@ -57,7 +57,7 @@ class RegistrationsController < ApplicationController
     else
       onboarding_organization_path
     end
-    redirect_to destination, notice: "Welcome to HuttalPact!"
+    redirect_to destination, notice: "Welcome to PactBadger!"
   rescue ActiveRecord::RecordInvalid
     render :new, status: :unprocessable_entity
   end

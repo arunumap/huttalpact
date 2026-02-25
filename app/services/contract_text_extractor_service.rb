@@ -61,26 +61,30 @@ class ContractTextExtractorService
   private
 
   def extract_pdf
-    data = @document.file.download
-    raise ExtractionError, "PDF file is empty" if data.blank?
+    text = nil
+    @document.file.blob.open(tmpdir: Dir.tmpdir) do |tempfile|
+      raise ExtractionError, "PDF file is empty" if tempfile.size == 0
 
-    reader = PDF::Reader.new(StringIO.new(data))
-    @page_count = reader.page_count
-    reader.pages.map { |page| page.text rescue "" }.join("\n\n")
+      reader = PDF::Reader.new(tempfile.path)
+      @page_count = reader.page_count
+      text = reader.pages.map { |page| page.text rescue "" }.join("\n\n")
+    end
+    text
   rescue PDF::Reader::MalformedPDFError, PDF::Reader::UnsupportedFeatureError => e
     raise ExtractionError, "Could not read PDF: #{e.message}"
   end
 
   def extract_docx
-    data = @document.file.download
-    raise ExtractionError, "DOCX file is empty" if data.blank?
+    @page_count = nil # DOCX doesn't have reliable page count
 
+    # Download to a tempfile instead of loading entire file into memory
     tempfile = Tempfile.new([ "contract", ".docx" ])
     tempfile.binmode
-    tempfile.write(data)
+    @document.file.blob.open(tmpdir: Dir.tmpdir) do |blob_tempfile|
+      raise ExtractionError, "DOCX file is empty" if blob_tempfile.size == 0
+      IO.copy_stream(blob_tempfile, tempfile)
+    end
     tempfile.rewind
-
-    @page_count = nil # DOCX doesn't have reliable page count
 
     parts = []
 
@@ -170,8 +174,12 @@ class ContractTextExtractorService
 
   def extract_text
     @page_count = nil
-    data = @document.file.download
-    data.force_encoding("UTF-8")
-    data.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+    text = nil
+    @document.file.blob.open(tmpdir: Dir.tmpdir) do |tempfile|
+      data = tempfile.read
+      data.force_encoding("UTF-8")
+      text = data.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+    end
+    text
   end
 end

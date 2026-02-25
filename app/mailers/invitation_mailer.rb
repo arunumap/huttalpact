@@ -5,6 +5,6 @@ class InvitationMailer < ApplicationMailer
     @inviter = invitation.inviter
     @accept_url = accept_invitation_url(token: invitation.token)
 
-    mail(to: invitation.email, subject: "You're invited to join #{@organization.name} on HuttalPact")
+    mail(to: invitation.email, subject: "You're invited to join #{@organization.name} on PactBadger")
   end
 end

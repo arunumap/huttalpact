@@ -12,7 +12,7 @@ class AlertMailerTest < ActionMailer::TestCase
 
   test "alert_notification from address is set" do
     email = AlertMailer.alert_notification(@recipient)
-    assert_equal [ "notifications@huttalpact.com" ], email.from
+    assert_equal [ "notifications@pactbadger.com" ], email.from
   end
 
   test "expiry_warning has correct subject" do

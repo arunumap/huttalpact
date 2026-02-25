@@ -1,4 +1,4 @@
-# HuttalPact — MVP Build Plan
+# PactBadger — MVP Build Plan
 
 > **Product**: AI-powered contract tracker for SMBs
 > **Tagline**: Smart contract tracking that won't let you forget
@@ -646,7 +646,7 @@ app/controllers/
 
 ```
 app/mailers/
-+-- application_mailer.rb             # default from: notifications@huttalpact.com
++-- application_mailer.rb             # default from: notifications@pactbadger.com
 +-- alert_mailer.rb                   # alert_notification (HTML + text)
 +-- invitation_mailer.rb              # invite (token-based team invitation)
 +-- passwords_mailer.rb               # password reset
@@ -667,7 +667,7 @@ app/mailers/
 - [x] Build registration flow (creates user + org)
 - [x] Build login/logout
 - [x] Build app shell layout (sidebar, topbar, main content area)
-- [x] Add HuttalPact branding to layout
+- [x] Add PactBadger branding to layout
 
 #### Week 2: Contract CRUD
 - [x] Create Contract migration

@@ -1,8 +1,8 @@
 Pay.setup do |config|
-  config.business_name = "HuttalPact"
+  config.business_name = "PactBadger"
   config.business_address = ""
-  config.application_name = "HuttalPact"
-  config.support_email = "support@huttalpact.com"
+  config.application_name = "PactBadger"
+  config.support_email = "support@pactbadger.com"
 end
 
 # Sync organization plan when Pay subscription changes.
