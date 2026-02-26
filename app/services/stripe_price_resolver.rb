@@ -27,13 +27,23 @@ class StripePriceResolver
   def self.plan_for_price_id(price_id)
     return nil if price_id.blank?
 
-    Rails.cache.fetch("stripe_price_plan:#{price_id}", expires_in: CACHE_TTL) do
-      price = Stripe::Price.retrieve(price_id)
-      lookup_key = price.lookup_key
+    cache_key = "stripe_price_plan:#{price_id}"
+    cached = Rails.cache.read(cache_key)
+    return cached if cached.present?
 
-      PlanLimits::LOOKUP_KEYS[lookup_key]
+    price = Stripe::Price.retrieve(price_id)
+    plan_name = PlanLimits::LOOKUP_KEYS[price.lookup_key]
+
+    # Only cache non-nil results so unrecognized prices can be retried
+    # after lookup_key is configured in Stripe.
+    if plan_name
+      Rails.cache.write(cache_key, plan_name, expires_in: CACHE_TTL)
+    else
+      Rails.logger.warn("Unmapped Stripe lookup_key '#{price.lookup_key}' for price '#{price_id}'")
     end
-  rescue Stripe::InvalidRequestError => e
+
+    plan_name
+  rescue Stripe::StripeError => e
     Rails.logger.warn("Stripe price retrieval failed for '#{price_id}': #{e.message}")
     nil
   end

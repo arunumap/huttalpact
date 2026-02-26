@@ -5,7 +5,7 @@ class Settings::BillingController < ApplicationController
 
   def show
     @organization = current_organization
-    @subscription = @organization.pay_customers&.first&.subscriptions&.active&.first
+    @subscription = @organization.pay_customers&.first&.subscriptions&.active&.order(created_at: :desc)&.first
   end
 
   def checkout
@@ -14,6 +14,15 @@ class Settings::BillingController < ApplicationController
     unless PlanLimits::LOOKUP_KEYS.key?(lookup_key)
       redirect_to settings_billing_path, alert: "Invalid plan selected."
       return
+    end
+
+    # If the org already has an active subscription, redirect to Stripe Customer Portal
+    # for plan changes (upgrades/downgrades) instead of creating a duplicate subscription.
+    existing_subscription = current_organization.pay_customers&.find_by(processor: :stripe)
+      &.subscriptions&.active&.exists?
+
+    if existing_subscription
+      return redirect_to portal_settings_billing_path
     end
 
     price_id = StripePriceResolver.resolve_checkout_price(lookup_key)
@@ -50,6 +59,7 @@ class Settings::BillingController < ApplicationController
   end
 
   def success
+    current_organization.sync_plan_from_subscription!
     current_organization.reload
     redirect_to settings_billing_path, notice: "Welcome to the #{current_organization.plan_display_name} plan! Your subscription is now active."
   end

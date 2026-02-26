@@ -54,7 +54,7 @@ class Organization < ApplicationRecord
 
   def sync_plan_from_subscription!
     customer = pay_customers.find_by(processor: :stripe)
-    subscription = customer&.subscriptions&.active&.first
+    subscription = customer&.subscriptions&.active&.order(created_at: :desc)&.first
 
     if subscription
       plan_name = StripePriceResolver.plan_for_price_id(subscription.processor_plan)

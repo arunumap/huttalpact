@@ -170,6 +170,65 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     assert_match @org.owner.full_name, flash[:alert]
   end
 
+  test "checkout redirects to portal when active subscription exists" do
+    pay_customer = @org.set_payment_processor(:stripe)
+    pay_customer.update!(processor_id: "cus_test_existing_sub")
+
+    # Create an active subscription using STI subclass so .active scope finds it
+    StripePriceResolver.stub(:plan_for_price_id, "starter") do
+      Pay::Stripe::Subscription.create!(
+        customer: pay_customer,
+        processor_id: "sub_existing_starter",
+        processor_plan: "price_starter_existing",
+        name: "default",
+        status: "active"
+      )
+    end
+
+    # Checkout should detect existing subscription and redirect to portal action
+    post checkout_settings_billing_path, params: { lookup_key: "pro_monthly" }
+
+    assert_redirected_to portal_settings_billing_path
+  end
+
+  test "checkout proceeds to Stripe Checkout when no active subscription" do
+    pay_customer = @org.set_payment_processor(:stripe)
+    pay_customer.update!(processor_id: "cus_test_no_sub")
+
+    fake_session = Struct.new(:url).new("https://checkout.stripe.com/pay/cs_test_new")
+    StripePriceResolver.stub(:resolve_checkout_price, "price_resolved_new") do
+      Stripe::Checkout::Session.stub(:create, fake_session) do
+        post checkout_settings_billing_path, params: { lookup_key: "starter_monthly" }
+      end
+    end
+    assert_response :see_other
+    assert_redirected_to "https://checkout.stripe.com/pay/cs_test_new"
+  end
+
+  test "success calls sync_plan_from_subscription before redirect" do
+    @org.update!(plan: "free")
+
+    # Set up a Pay customer + active subscription using STI subclass
+    pay_customer = @org.set_payment_processor(:stripe)
+    pay_customer.update!(processor_id: "cus_test_success_sync")
+
+    StripePriceResolver.stub(:plan_for_price_id, "pro") do
+      Pay::Stripe::Subscription.create!(
+        customer: pay_customer,
+        processor_id: "sub_success_pro",
+        processor_plan: "price_pro_success",
+        name: "default",
+        status: "active"
+      )
+
+      get success_settings_billing_path
+    end
+
+    assert_redirected_to settings_billing_path
+    assert_equal "pro", @org.reload.plan
+    assert_match "Pro plan", flash[:notice]
+  end
+
   test "legacy /billing redirects to settings billing" do
     get "/billing"
     assert_response :redirect

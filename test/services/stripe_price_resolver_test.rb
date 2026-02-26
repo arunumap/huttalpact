@@ -61,6 +61,36 @@ class StripePriceResolverTest < ActiveSupport::TestCase
     end
   end
 
+  test "plan_for_price_id does not cache nil results" do
+    unknown_price = OpenStruct.new(lookup_key: "unknown_key")
+    known_price = OpenStruct.new(lookup_key: "pro_monthly")
+    call_count = 0
+
+    memory_store = ActiveSupport::Cache::MemoryStore.new
+    Rails.stub(:cache, memory_store) do
+      # First call: unknown lookup_key → returns nil, should NOT be cached
+      Stripe::Price.stub(:retrieve, ->(_) { call_count += 1; unknown_price }) do
+        result = StripePriceResolver.plan_for_price_id("price_nil_cache_test")
+        assert_nil result
+        assert_equal 1, call_count
+      end
+
+      # Second call: now the price has a valid lookup_key → should call Stripe again (not cached)
+      Stripe::Price.stub(:retrieve, ->(_) { call_count += 1; known_price }) do
+        result = StripePriceResolver.plan_for_price_id("price_nil_cache_test")
+        assert_equal "pro", result
+        assert_equal 2, call_count, "Expected Stripe API to be called again since nil should not be cached"
+      end
+    end
+  end
+
+  test "plan_for_price_id handles general Stripe errors" do
+    Rails.cache.clear
+    Stripe::Price.stub(:retrieve, ->(_) { raise Stripe::AuthenticationError.new("Bad API key") }) do
+      assert_nil StripePriceResolver.plan_for_price_id("price_auth_error")
+    end
+  end
+
   test "plan_for_price_id caches result" do
     fake_price = OpenStruct.new(lookup_key: "starter_monthly")
     call_count = 0

@@ -36,9 +36,12 @@
       <% if @organization.paid_plan? %>
         <%= link_to "Manage Subscription", portal_settings_billing_path,
             class: "inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
+        <%= link_to "View Plans", pricing_path,
+            class: "inline-flex items-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 px-4 py-2 text-sm font-semibold shadow-sm" %>
+      <% else %>
+        <%= link_to "Upgrade Plan", pricing_path,
+            class: "inline-flex items-center rounded-lg bg-amber-600 text-white hover:bg-amber-500 px-4 py-2 text-sm font-semibold shadow-sm" %>
       <% end %>
-      <%= link_to "View Plans", pricing_path,
-          class: "inline-flex items-center rounded-lg #{@organization.free_plan? ? 'bg-amber-600 text-white hover:bg-amber-500' : 'bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50'} px-4 py-2 text-sm font-semibold shadow-sm" %>
     </div>
   </div>
 

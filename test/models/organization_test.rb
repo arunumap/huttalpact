@@ -71,8 +71,8 @@ class OrganizationTest < ActiveSupport::TestCase
   test "sync_plan_from_subscription! logs warning for unknown price ID" do
     org = organizations(:one)
     customer = org.set_payment_processor(:stripe)
-    # Create a mock subscription with unknown price
-    Pay::Subscription.create!(
+    # Create a mock subscription with unknown price (must use STI subclass)
+    Pay::Stripe::Subscription.create!(
       customer: customer,
       processor_id: "sub_test_123",
       processor_plan: "price_unknown_plan",
@@ -146,6 +146,40 @@ class OrganizationTest < ActiveSupport::TestCase
   end
 
   # Seat management methods
+  test "sync_plan_from_subscription! picks the most recent subscription when multiple active" do
+    org = organizations(:one)
+    customer = org.set_payment_processor(:stripe)
+
+    # Must use STI subclass so customer.subscriptions query finds them
+    StripePriceResolver.stub(:plan_for_price_id, ->(price_id) {
+      price_id == "price_pro_456" ? "pro" : "starter"
+    }) do
+      # Create an older "starter" subscription
+      Pay::Stripe::Subscription.create!(
+        customer: customer,
+        processor_id: "sub_old_starter",
+        processor_plan: "price_starter_123",
+        name: "default",
+        status: "active",
+        created_at: 2.days.ago
+      )
+
+      # Create a newer "pro" subscription
+      Pay::Stripe::Subscription.create!(
+        customer: customer,
+        processor_id: "sub_new_pro",
+        processor_plan: "price_pro_456",
+        name: "default",
+        status: "active",
+        created_at: 1.minute.ago
+      )
+
+      org.sync_plan_from_subscription!
+    end
+
+    assert_equal "pro", org.reload.plan
+  end
+
   test "seats_used returns membership count" do
     org = organizations(:two) # has owner + admin + member = 3
     assert_equal 3, org.seats_used
