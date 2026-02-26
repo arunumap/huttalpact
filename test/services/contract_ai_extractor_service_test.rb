@@ -31,7 +31,8 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
         { "clause_type" => "termination", "content" => "30 days written notice.", "page_reference" => "Page 3", "confidence_score" => 90 },
         { "clause_type" => "renewal", "content" => "Auto-renews annually.", "page_reference" => "Page 4", "confidence_score" => 85 }
       ],
-      summary: "HVAC maintenance contract for Building A."
+      summary: "HVAC maintenance contract for Building A.",
+      usage: { "input_tokens" => 1500, "output_tokens" => 300 }
     )
 
     stub_anthropic_client(ai_response) do
@@ -43,6 +44,13 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     @contract.reload
     assert_equal "completed", @contract.extraction_status
     assert_not_nil @contract.ai_extracted_data
+
+    usage_log = AiUsageLog.order(:created_at).last
+    assert_equal @contract.organization_id, usage_log.organization_id
+    assert_equal @contract.id, usage_log.contract_id
+    assert_equal 1500, usage_log.input_tokens
+    assert_equal 300, usage_log.output_tokens
+    assert usage_log.success?
   end
 
   test "only overwrites blank fields" do
@@ -135,7 +143,8 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
 
   test "sets status to failed on JSON parse error" do
     bad_response = {
-      "content" => [ { "text" => "This is not valid JSON at all" } ]
+      "content" => [ { "text" => "This is not valid JSON at all" } ],
+      "usage" => { "input_tokens" => 100, "output_tokens" => 20 }
     }
 
     stub_anthropic_client(bad_response) do
@@ -146,6 +155,11 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
 
     @contract.reload
     assert_equal "failed", @contract.extraction_status
+
+    usage_log = AiUsageLog.order(:created_at).last
+    assert_equal 100, usage_log.input_tokens
+    assert_equal 20, usage_log.output_tokens
+    assert_not usage_log.success?
   end
 
   test "skips extraction when no completed documents" do
@@ -602,7 +616,7 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
                         start_date: nil, end_date: nil, monthly_value: nil,
                         total_value: nil, auto_renews: false, renewal_term: nil,
                         notice_period_days: nil, key_clauses: [], summary: nil,
-                        changes_summary: nil)
+                        changes_summary: nil, usage: nil)
     {
       "content" => [
         {
@@ -624,7 +638,9 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
           }.compact.to_json
         }
       ]
-    }
+    }.tap do |response|
+      response["usage"] = usage if usage.present?
+    end
   end
 
   def stub_anthropic_client(response, &block)

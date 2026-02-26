@@ -1,0 +1,101 @@
+<% content_for :title, "Admin Billing" %>
+<% content_for :page_title, "Billing" %>
+
+<div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+  <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3 text-sm">
+    <div class="rounded-md bg-slate-50 p-3">
+      <p class="text-slate-500">Active Subscriptions</p>
+      <p class="mt-1 font-semibold text-slate-900"><%= @active_subscriptions.count %></p>
+    </div>
+    <div class="rounded-md bg-slate-50 p-3">
+      <p class="text-slate-500">Revenue (Last 30 Days)</p>
+      <p class="mt-1 font-semibold text-slate-900"><%= number_to_currency(@revenue_last_30_days_cents.to_f / 100.0) %></p>
+    </div>
+    <div class="rounded-md bg-slate-50 p-3">
+      <p class="text-slate-500">Recent Charges</p>
+      <p class="mt-1 font-semibold text-slate-900"><%= @recent_charges.count %></p>
+    </div>
+  </div>
+
+  <h3 class="text-sm font-semibold text-slate-900">Organizations by Plan</h3>
+  <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3 text-sm">
+    <% %w[free starter pro].each do |plan| %>
+      <div class="rounded-md bg-slate-50 p-3">
+        <p class="text-slate-500"><%= plan.titleize %></p>
+        <p class="mt-1 font-semibold text-slate-900"><%= @plan_distribution[plan] || 0 %></p>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="mt-6 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+  <h3 class="text-sm font-semibold text-slate-900">Active Subscriptions</h3>
+  <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
+    <thead class="bg-slate-50">
+      <tr>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Organization</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Plan</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Status</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Qty</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Period End</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-200 bg-white">
+      <% @active_subscriptions.first(20).each do |subscription| %>
+        <tr>
+          <td class="px-3 py-2"><%= subscription.customer&.owner&.name || "n/a" %></td>
+          <td class="px-3 py-2"><%= subscription.processor_plan %></td>
+          <td class="px-3 py-2"><%= subscription.status %></td>
+          <td class="px-3 py-2"><%= subscription.quantity %></td>
+          <td class="px-3 py-2"><%= subscription.current_period_end&.to_date || "n/a" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-6 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+  <h3 class="text-sm font-semibold text-slate-900">Recent Charges</h3>
+  <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
+    <thead class="bg-slate-50">
+      <tr>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">When</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Organization</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Amount</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Currency</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-200 bg-white">
+      <% @recent_charges.first(20).each do |charge| %>
+        <tr>
+          <td class="px-3 py-2"><%= charge.created_at.to_fs(:db) %></td>
+          <td class="px-3 py-2"><%= charge.customer&.owner&.name || "n/a" %></td>
+          <td class="px-3 py-2"><%= number_to_currency(charge.amount.to_f / 100.0) %></td>
+          <td class="px-3 py-2"><%= charge.currency.to_s.upcase %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-6 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+  <h3 class="text-sm font-semibold text-slate-900">Recent Webhooks</h3>
+  <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
+    <thead class="bg-slate-50">
+      <tr>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">When</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Event Type</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Processor</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-200 bg-white">
+      <% @recent_webhooks.first(20).each do |webhook| %>
+        <tr>
+          <td class="px-3 py-2"><%= webhook.created_at.to_fs(:db) %></td>
+          <td class="px-3 py-2"><%= webhook.event_type %></td>
+          <td class="px-3 py-2"><%= webhook.processor %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

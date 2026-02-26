@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html class="h-full bg-slate-50">
+  <head>
+    <title><%= content_for(:title) || "PactBadger Admin" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <%= seo_meta_tags %>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="h-full">
+    <div class="min-h-screen lg:flex">
+      <aside class="w-full bg-slate-800 text-white lg:w-64">
+        <div class="border-b border-slate-700 px-4 py-4">
+          <h1 class="text-lg font-semibold">PactBadger Admin</h1>
+        </div>
+
+        <nav class="space-y-1 px-3 py-4">
+          <%= admin_sidebar_link_to "Dashboard", admin_root_path %>
+          <%= admin_sidebar_link_to "Users", admin_users_path %>
+          <%= admin_sidebar_link_to "Organizations", admin_organizations_path %>
+          <%= admin_sidebar_link_to "AI Usage", admin_ai_usage_index_path %>
+          <%= admin_sidebar_link_to "Jobs", admin_jobs_path %>
+          <%= admin_sidebar_link_to "Billing", admin_billing_path %>
+          <%= admin_sidebar_link_to "Audit Logs", admin_audit_logs_path %>
+          <%= admin_sidebar_link_to "Storage", admin_storage_path %>
+          <%= admin_sidebar_link_to "Health", admin_health_path %>
+        </nav>
+      </aside>
+
+      <main class="flex-1 p-4 sm:p-6">
+        <header class="mb-6 flex items-center justify-between rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-900"><%= content_for(:page_title) || "Admin Portal" %></h2>
+            <% if current_admin %>
+              <p class="text-sm text-slate-500"><%= current_admin.email_address %></p>
+            <% end %>
+          </div>
+          <%= button_to "Sign out", admin_session_path, method: :delete, class: "rounded-md bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700" %>
+        </header>
+
+        <% if flash[:alert] %>
+          <div class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700"><%= flash[:alert] %></div>
+        <% end %>
+        <% if flash[:notice] %>
+          <div class="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-700"><%= flash[:notice] %></div>
+        <% end %>
+
+        <%= yield %>
+      </main>
+    </div>
+  </body>
+</html>

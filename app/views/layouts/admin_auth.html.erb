@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html class="h-full bg-slate-50">
+  <head>
+    <title><%= content_for(:title) || "PactBadger Admin" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= seo_meta_tags %>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+
+  <body class="h-full">
+    <div class="flex min-h-full flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
+      <div class="mx-auto w-full max-w-md text-center">
+        <%= link_to admin_root_path do %>
+          <%= image_tag "pact_badger_log.svg", alt: "PactBadger", class: "mx-auto h-12 w-auto" %>
+        <% end %>
+        <h2 class="mt-6 text-2xl font-bold tracking-tight text-slate-900">Admin Sign In</h2>
+      </div>
+
+      <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="bg-white px-6 py-8 shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl sm:px-12">
+          <% if flash[:alert] %>
+            <div class="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700"><%= flash[:alert] %></div>
+          <% end %>
+          <% if flash[:notice] %>
+            <div class="mb-4 rounded-md bg-green-50 p-3 text-sm text-green-700"><%= flash[:notice] %></div>
+          <% end %>
+
+          <%= yield %>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

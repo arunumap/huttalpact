@@ -1,0 +1,80 @@
+<% content_for :title, "Admin User" %>
+<% content_for :page_title, @user.full_name %>
+
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <h3 class="text-sm font-semibold text-slate-900">Profile</h3>
+    <dl class="mt-3 space-y-2 text-sm text-slate-700">
+      <div class="flex justify-between"><dt>Email</dt><dd><%= @user.email_address %></dd></div>
+      <div class="flex justify-between"><dt>Created</dt><dd><%= @user.created_at.to_date %></dd></div>
+      <div class="flex justify-between"><dt>Organizations</dt><dd><%= @memberships.size %></dd></div>
+    </dl>
+  </div>
+
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <h3 class="text-sm font-semibold text-slate-900">Recent Sessions</h3>
+    <% if @sessions.any? %>
+      <ul class="mt-3 space-y-2 text-sm text-slate-700">
+        <% @sessions.each do |session| %>
+          <li><%= session.created_at.to_fs(:db) %> · <%= session.ip_address.presence || "n/a" %> · <%= session.user_agent.to_s.truncate(60) %></li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="mt-3 text-sm text-slate-500">No sessions found for this user.</p>
+    <% end %>
+  </div>
+</div>
+
+<div class="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+    <h3 class="text-sm font-semibold text-slate-900">Organization Memberships</h3>
+    <% if @memberships.any? %>
+      <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">Organization</th>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">Role</th>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">Joined</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white">
+          <% @memberships.each do |membership| %>
+            <tr>
+              <td class="px-3 py-2"><%= link_to membership.organization.name, admin_organization_path(membership.organization), class: "text-indigo-700 hover:text-indigo-600" %></td>
+              <td class="px-3 py-2"><%= membership.role.titleize %></td>
+              <td class="px-3 py-2"><%= membership.created_at.to_date %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="mt-3 text-sm text-slate-500">No organization memberships found.</p>
+    <% end %>
+  </div>
+
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+    <h3 class="text-sm font-semibold text-slate-900">Recent Activity</h3>
+    <% if @recent_activity.any? %>
+      <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">When</th>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">Organization</th>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">Action</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white">
+          <% @recent_activity.each do |log| %>
+            <tr>
+              <td class="px-3 py-2"><%= log.created_at.to_fs(:db) %></td>
+              <td class="px-3 py-2"><%= log.organization&.name || "n/a" %></td>
+              <td class="px-3 py-2"><%= log.action.to_s.humanize %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% else %>
+      <p class="mt-3 text-sm text-slate-500">No recent activity found for this user.</p>
+    <% end %>
+  </div>
+</div>

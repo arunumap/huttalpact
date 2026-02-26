@@ -1,0 +1,47 @@
+<% content_for :title, "Admin Jobs" %>
+<% content_for :page_title, "Jobs" %>
+
+<div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+  <% unless @solid_queue_available %>
+    <p class="text-sm text-slate-600">Solid Queue is not available in this environment.</p>
+  <% else %>
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-4 text-sm">
+      <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Pending</p><p class="mt-1 font-semibold text-slate-900"><%= @pending_jobs %></p></div>
+      <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Running</p><p class="mt-1 font-semibold text-slate-900"><%= @running_jobs %></p></div>
+      <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Scheduled</p><p class="mt-1 font-semibold text-slate-900"><%= @scheduled_jobs %></p></div>
+      <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Failed</p><p class="mt-1 font-semibold text-slate-900"><%= @failed_jobs %></p></div>
+    </div>
+
+    <div class="mt-4 flex gap-2">
+      <%= link_to "Failed Executions", failed_admin_jobs_path, class: "rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500" %>
+      <%= link_to "Recurring Tasks", recurring_admin_jobs_path, class: "rounded-md bg-slate-700 px-3 py-2 text-sm font-medium text-white hover:bg-slate-600" %>
+    </div>
+
+    <div class="mt-6 overflow-x-auto">
+      <h3 class="mb-2 text-sm font-semibold text-slate-900">Worker Processes</h3>
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50">
+          <tr>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">Name</th>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">Host</th>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">PID</th>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">Heartbeat</th>
+            <th class="px-3 py-2 text-left font-medium text-slate-600">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white">
+          <% @processes.each do |process| %>
+            <% healthy = process.last_heartbeat_at.present? && process.last_heartbeat_at > 5.minutes.ago %>
+            <tr>
+              <td class="px-3 py-2"><%= process.name %></td>
+              <td class="px-3 py-2"><%= process.hostname %></td>
+              <td class="px-3 py-2"><%= process.pid %></td>
+              <td class="px-3 py-2"><%= process.last_heartbeat_at&.to_fs(:db) || "n/a" %></td>
+              <td class="px-3 py-2"><%= healthy ? "Healthy" : "Stale" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</div>

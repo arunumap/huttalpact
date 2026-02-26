@@ -115,6 +115,10 @@ class ContractAiExtractorService
 
     prompt = build_prompt(document_text)
 
+    started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    input_tokens = 0
+    output_tokens = 0
+
     response = client.messages(
       parameters: {
         model: "claude-sonnet-4-20250514",
@@ -122,6 +126,9 @@ class ContractAiExtractorService
         messages: [ { role: "user", content: prompt } ]
       }
     )
+    duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round
+    input_tokens = response.dig("usage", "input_tokens").to_i
+    output_tokens = response.dig("usage", "output_tokens").to_i
 
     raw_text = response.dig("content", 0, "text")
     raise ExtractionError, "No content in AI response" if raw_text.blank?
@@ -146,9 +153,25 @@ class ContractAiExtractorService
     # Track extraction usage against plan limits
     @contract.organization&.increment_extraction_count!
 
+    log_ai_usage!(
+      ai_model: "claude-sonnet-4-20250514",
+      input_tokens:,
+      output_tokens:,
+      duration_ms:,
+      success: true
+    )
+
     extracted
   rescue JSON::ParserError => e
     @contract.update!(extraction_status: "failed")
+    log_ai_usage!(
+      ai_model: "claude-sonnet-4-20250514",
+      input_tokens:,
+      output_tokens:,
+      duration_ms:,
+      success: false,
+      error_message: "JSON parse error: #{e.message}"
+    )
     Rails.logger.error("AI extraction JSON parse error for contract #{@contract.id}: #{e.message}")
     raise ExtractionError, "Failed to parse AI response as JSON"
   rescue ExtractionLimitReachedError
@@ -156,11 +179,27 @@ class ContractAiExtractorService
     raise
   rescue Faraday::ClientError => e
     @contract.update!(extraction_status: "failed")
+    log_ai_usage!(
+      ai_model: "claude-sonnet-4-20250514",
+      input_tokens:,
+      output_tokens:,
+      duration_ms:,
+      success: false,
+      error_message: "API error: #{e.message}"
+    )
     body = e.response&.dig(:body) rescue nil
     Rails.logger.error("AI extraction API error for contract #{@contract.id}: #{e.message} — #{body}")
     raise e
   rescue => e
     @contract.update!(extraction_status: "failed")
+    log_ai_usage!(
+      ai_model: "claude-sonnet-4-20250514",
+      input_tokens:,
+      output_tokens:,
+      duration_ms:,
+      success: false,
+      error_message: e.message
+    )
     Rails.logger.error("AI extraction failed for contract #{@contract.id}: #{e.message}")
     raise e
   end
@@ -196,6 +235,25 @@ class ContractAiExtractorService
     else
       combined
     end
+  end
+
+  def log_ai_usage!(ai_model:, input_tokens:, output_tokens:, duration_ms:, success:, error_message: nil)
+    organization = @contract.organization
+    return unless organization
+
+    AiUsageLog.create!(
+      organization:,
+      contract: @contract,
+      ai_model:,
+      input_tokens:,
+      output_tokens:,
+      extraction_mode: @mode.to_s,
+      success:,
+      error_message:,
+      duration_ms:
+    )
+  rescue => e
+    Rails.logger.error("Failed to write AI usage log for contract #{@contract.id}: #{e.message}")
   end
 
   # Truncate each document's text proportionally, keeping start and end

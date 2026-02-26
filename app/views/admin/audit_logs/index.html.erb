@@ -1,0 +1,46 @@
+<% content_for :title, "Admin Audit Logs" %>
+<% content_for :page_title, "Audit Logs" %>
+
+<div class="mb-4 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+  <%= form_with url: admin_audit_logs_path, method: :get, class: "grid grid-cols-1 gap-2 md:grid-cols-5" do |form| %>
+    <%= form.collection_select :organization_id, @organizations, :id, :name, { include_blank: "All organizations", selected: params[:organization_id] }, class: "rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    <%= form.collection_select :user_id, @users, :id, :email_address, { include_blank: "All users", selected: params[:user_id] }, class: "rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    <%= form.select :action_type, options_for_select([["All actions", ""]] + @actions.map { |a| [a.humanize, a] }, params[:action_type]), {}, class: "rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    <%= form.date_field :start_date, value: params[:start_date], class: "rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    <%= form.date_field :end_date, value: params[:end_date], class: "rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    <div class="md:col-span-5 flex gap-2">
+      <%= form.submit "Apply filters", class: "rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500" %>
+      <%= link_to "Reset", admin_audit_logs_path, class: "rounded-md bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+  <% if @audit_logs.any? %>
+  <table class="min-w-full divide-y divide-slate-200 text-sm">
+    <thead class="bg-slate-50">
+      <tr>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">When</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Organization</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">User</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Action</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Details</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-200 bg-white">
+      <% @audit_logs.each do |audit_log| %>
+        <tr>
+          <td class="px-3 py-2"><%= audit_log.created_at.to_fs(:db) %></td>
+          <td class="px-3 py-2"><%= audit_log.organization&.name %></td>
+          <td class="px-3 py-2"><%= audit_log.user&.email_address || "System" %></td>
+          <td class="px-3 py-2"><%= audit_log.action.titleize %></td>
+          <td class="px-3 py-2"><%= truncate(audit_log.details, length: 120) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <%== pagy_nav(@pagy) if @pagy.pages > 1 %>
+  <% else %>
+    <p class="text-sm text-slate-500">No audit logs match the selected filters.</p>
+  <% end %>
+</div>

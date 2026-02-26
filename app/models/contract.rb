@@ -7,6 +7,7 @@ class Contract < ApplicationRecord
   has_many :key_clauses, dependent: :destroy
   has_many :alerts, dependent: :destroy
   has_many :audit_logs, dependent: :nullify
+  has_many :ai_usage_logs, dependent: :nullify
 
   normalizes :vendor_name, with: ->(v) { v.strip.squeeze(" ") }
 

@@ -1,0 +1,23 @@
+<% content_for :title, "Recurring Jobs" %>
+<% content_for :page_title, "Recurring Jobs" %>
+
+<div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+  <table class="min-w-full divide-y divide-slate-200 text-sm">
+    <thead class="bg-slate-50">
+      <tr>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Key</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Class</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Queue</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-200 bg-white">
+      <% @tasks.each do |task| %>
+        <tr>
+          <td class="px-3 py-2"><%= task.key %></td>
+          <td class="px-3 py-2"><%= task.class_name %></td>
+          <td class="px-3 py-2"><%= task.queue_name %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

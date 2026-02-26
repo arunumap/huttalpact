@@ -1,4 +1,24 @@
 Rails.application.routes.draw do
+  namespace :admin do
+    resource :session, only: %i[new create destroy]
+    resource :dashboard, only: %i[show], controller: "dashboard"
+    root to: "dashboard#show"
+
+    resources :users, only: %i[index show]
+    resources :organizations, only: %i[index show]
+    resources :ai_usage, only: %i[index], controller: "ai_usage"
+    resources :jobs, only: %i[index show] do
+      collection do
+        get :failed
+        get :recurring
+      end
+    end
+    resource :billing, only: %i[show], controller: "billing"
+    resources :audit_logs, only: %i[index]
+    resource :storage, only: %i[show], controller: "storage"
+    resource :health, only: %i[show], controller: "health"
+  end
+
   # Auth
   resource :session, only: %i[new create destroy]
   resource :registration, only: %i[new create]

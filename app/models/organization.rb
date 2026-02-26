@@ -9,6 +9,7 @@ class Organization < ApplicationRecord
   has_many :alerts, dependent: :destroy
   has_many :alert_preferences, dependent: :destroy
   has_many :invitations, dependent: :destroy
+  has_many :ai_usage_logs, dependent: :destroy
 
   validates :name, presence: true, length: { maximum: 255 }
   validates :slug, presence: true, uniqueness: true, length: { maximum: 100 },

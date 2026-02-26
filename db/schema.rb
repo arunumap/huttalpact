@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_26_023616) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_26_121300) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -41,6 +41,43 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_26_023616) do
     t.uuid "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "admin_sessions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "admin_user_id", null: false
+    t.datetime "created_at", null: false
+    t.string "ip_address"
+    t.datetime "updated_at", null: false
+    t.string "user_agent"
+    t.index ["admin_user_id"], name: "index_admin_sessions_on_admin_user_id"
+  end
+
+  create_table "admin_users", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "email_address", null: false
+    t.string "first_name"
+    t.string "last_name"
+    t.string "password_digest", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email_address"], name: "index_admin_users_on_email_address", unique: true
+  end
+
+  create_table "ai_usage_logs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "ai_model", null: false
+    t.uuid "contract_id"
+    t.datetime "created_at", null: false
+    t.integer "duration_ms"
+    t.text "error_message"
+    t.string "extraction_mode", default: "full", null: false
+    t.integer "input_tokens", default: 0, null: false
+    t.uuid "organization_id", null: false
+    t.integer "output_tokens", default: 0, null: false
+    t.boolean "success", default: true, null: false
+    t.integer "total_tokens", default: 0, null: false
+    t.index ["contract_id"], name: "index_ai_usage_logs_on_contract_id"
+    t.index ["created_at"], name: "index_ai_usage_logs_on_created_at"
+    t.index ["organization_id"], name: "index_ai_usage_logs_on_organization_id"
+    t.index ["success", "created_at"], name: "index_ai_usage_logs_on_success_and_created_at"
   end
 
   create_table "alert_preferences", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -326,6 +363,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_26_023616) do
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "admin_sessions", "admin_users"
+  add_foreign_key "ai_usage_logs", "contracts"
+  add_foreign_key "ai_usage_logs", "organizations"
   add_foreign_key "alert_preferences", "organizations"
   add_foreign_key "alert_preferences", "users"
   add_foreign_key "alert_recipients", "alerts", on_delete: :cascade

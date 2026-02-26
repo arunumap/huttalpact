@@ -1,0 +1,11 @@
+<% content_for :title, "Failed Job" %>
+<% content_for :page_title, "Failed Job #{@failed_execution.id}" %>
+
+<div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+  <dl class="space-y-3 text-sm text-slate-700">
+    <div><dt class="font-semibold text-slate-900">Job Class</dt><dd><%= @job&.class_name %></dd></div>
+    <div><dt class="font-semibold text-slate-900">Queue</dt><dd><%= @job&.queue_name %></dd></div>
+    <div><dt class="font-semibold text-slate-900">Arguments</dt><dd><pre class="overflow-x-auto rounded-md bg-slate-50 p-3 text-xs"><%= JSON.pretty_generate(@job.arguments || []) rescue @job.arguments.inspect %></pre></dd></div>
+    <div><dt class="font-semibold text-slate-900">Error</dt><dd><pre class="overflow-x-auto rounded-md bg-red-50 p-3 text-xs text-red-700"><%= @failed_execution.error %></pre></dd></div>
+  </dl>
+</div>
