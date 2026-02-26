@@ -9,6 +9,8 @@ class User < ApplicationRecord
   has_many :audit_logs
   has_many :sent_invitations, class_name: "Invitation", foreign_key: :inviter_id, dependent: :nullify
 
+  attr_accessor :terms_accepted
+
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
   validates :email_address, presence: true, uniqueness: true,
@@ -16,6 +18,7 @@ class User < ApplicationRecord
   validates :password, length: { minimum: 8, maximum: 72 }, allow_nil: true
   validates :first_name, length: { maximum: 100 }, allow_nil: true
   validates :last_name, length: { maximum: 100 }, allow_nil: true
+  validate :terms_must_be_accepted, on: :create
 
   def membership_in(organization)
     memberships.find_by(organization: organization)
@@ -31,5 +34,11 @@ class User < ApplicationRecord
     else
       email_address[0..1].upcase
     end
+  end
+
+  private
+
+  def terms_must_be_accepted
+    errors.add(:terms_accepted, "You must accept the Terms of Use and Privacy Policy") unless terms_accepted == "1"
   end
 end

@@ -71,6 +71,13 @@
         placeholder: "Confirm your password" %>
   </div>
 
+  <div class="flex items-start gap-3">
+    <%= form.check_box :terms_accepted, class: "mt-0.5 h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600 cursor-pointer" %>
+    <%= form.label :terms_accepted, class: "text-sm text-gray-600 cursor-pointer" do %>
+      I agree to the <%= link_to "Terms of Use", terms_path, class: "font-medium text-amber-600 hover:text-amber-500", target: "_blank" %> and <%= link_to "Privacy Policy", privacy_path, class: "font-medium text-amber-600 hover:text-amber-500", target: "_blank" %>
+    <% end %>
+  </div>
+
   <div>
     <%= form.submit (@invitation ? "Join workspace" : "Create account"),
         data: { turbo_submits_with: "Creating account..." },

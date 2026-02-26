@@ -109,8 +109,8 @@ Contracts can only be categorized by `contract_type` (6 fixed options). No user-
 ### 20. No Global Search
 Search only covers the contracts index. No search across alerts, audit logs, vendors, or key clauses.
 
-### 21. No Terms of Service / Privacy Policy Pages
-Footer links exist but there are no corresponding routes or views.
+### 21. ~~No Terms of Service / Privacy Policy Pages~~ ✅ COMPLETED
+Terms of Use and Privacy Policy pages now exist with full content. Registration requires terms acceptance checkbox (stored as `terms_accepted_at` on user record).
 
 ### 22. No Dedicated Reporting Page
 Dashboard has summary stats but no reporting with date range filtering, trend charts, or downloadable reports.

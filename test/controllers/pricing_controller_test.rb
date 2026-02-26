@@ -33,7 +33,7 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "non-owner sees contact message instead of upgrade buttons" do
-    member_user = User.create!(email_address: "member_pricing@example.com", password: "password123", first_name: "Member", last_name: "Pricing")
+    member_user = User.create!(email_address: "member_pricing@example.com", password: "password123", first_name: "Member", last_name: "Pricing", terms_accepted: "1")
     org = users(:one).memberships.first.organization
     Membership.create!(user: member_user, organization: org, role: Membership::MEMBER_ROLE)
     sign_out

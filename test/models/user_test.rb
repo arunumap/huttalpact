@@ -63,7 +63,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "accepts password of exactly 8 characters" do
-    user = User.new(email_address: "exact8@example.com", password: "12345678", password_confirmation: "12345678")
+    user = User.new(email_address: "exact8@example.com", password: "12345678", password_confirmation: "12345678", terms_accepted: "1")
     assert user.valid?
   end
 
@@ -88,7 +88,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "accepts names within 100 characters" do
-    user = User.new(email_address: "okname@example.com", password: "password123", first_name: "a" * 100, last_name: "b" * 100)
+    user = User.new(email_address: "okname@example.com", password: "password123", first_name: "a" * 100, last_name: "b" * 100, terms_accepted: "1")
     assert user.valid?
   end
 

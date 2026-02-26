@@ -22,7 +22,8 @@ class InvitationAcceptancesControllerTest < ActionDispatch::IntegrationTest
       email_address: @invitation.email,
       password: "password123",
       first_name: "Existing",
-      last_name: "User"
+      last_name: "User",
+      terms_accepted: "1"
     )
 
     assert_difference "Membership.count", 1 do
@@ -45,7 +46,8 @@ class InvitationAcceptancesControllerTest < ActionDispatch::IntegrationTest
       email_address: @invitation.email,
       password: "password123",
       first_name: "Invited",
-      last_name: "Person"
+      last_name: "Person",
+      terms_accepted: "1"
     )
     # Give user an org so sign_in_as works (needs at least one org for session)
     other_org = Organization.create!(name: "Other Org", onboarding_completed_at: Time.current, onboarding_step: 2)
@@ -113,7 +115,8 @@ class InvitationAcceptancesControllerTest < ActionDispatch::IntegrationTest
       email_address: @invitation.email,
       password: "password123",
       first_name: "Invited",
-      last_name: "Person"
+      last_name: "Person",
+      terms_accepted: "1"
     )
     @organization.memberships.create!(user: user, role: "member")
     other_org = Organization.create!(name: "Other Org", onboarding_completed_at: Time.current, onboarding_step: 2)

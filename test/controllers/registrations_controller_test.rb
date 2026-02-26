@@ -17,7 +17,8 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
           email_address: "jane@example.com",
           password: "password123",
           password_confirmation: "password123",
-          organization_name: "Jane's Properties"
+          organization_name: "Jane's Properties",
+          terms_accepted: "1"
         }
       }
     end
@@ -45,7 +46,8 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
           first_name: "Jane",
           email_address: "jane2@example.com",
           password: "password123",
-          password_confirmation: "password123"
+          password_confirmation: "password123",
+          terms_accepted: "1"
         }
       }
     end
@@ -60,7 +62,8 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
         user: {
           email_address: "noname@example.com",
           password: "password123",
-          password_confirmation: "password123"
+          password_confirmation: "password123",
+          terms_accepted: "1"
         }
       }
     end
@@ -159,7 +162,8 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
             first_name: "Invited",
             last_name: "User",
             password: "password123",
-            password_confirmation: "password123"
+            password_confirmation: "password123",
+            terms_accepted: "1"
           }
         }
       end
@@ -180,7 +184,8 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
           email_address: "welcometest@example.com",
           password: "password123",
           password_confirmation: "password123",
-          organization_name: "Welcome Org"
+          organization_name: "Welcome Org",
+          terms_accepted: "1"
         }
       }
     end
@@ -196,7 +201,8 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
           first_name: "Invited",
           last_name: "Welcome",
           password: "password123",
-          password_confirmation: "password123"
+          password_confirmation: "password123",
+          terms_accepted: "1"
         }
       }
     end
@@ -212,5 +218,38 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
         }
       }
     end
+  end
+
+  test "should not create user without terms acceptance" do
+    assert_no_difference "User.count" do
+      post registration_path, params: {
+        user: {
+          first_name: "No",
+          last_name: "Terms",
+          email_address: "noterms@example.com",
+          password: "password123",
+          password_confirmation: "password123"
+        }
+      }
+    end
+
+    assert_response :unprocessable_entity
+  end
+
+  test "should store terms_accepted_at timestamp on successful registration" do
+    post registration_path, params: {
+      user: {
+        first_name: "Timestamp",
+        last_name: "Test",
+        email_address: "timestamp@example.com",
+        password: "password123",
+        password_confirmation: "password123",
+        terms_accepted: "1"
+      }
+    }
+
+    user = User.find_by(email_address: "timestamp@example.com")
+    assert_not_nil user
+    assert_not_nil user.terms_accepted_at
   end
 end

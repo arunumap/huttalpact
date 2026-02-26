@@ -10,7 +10,8 @@ class AuthFlowTest < ActionDispatch::IntegrationTest
         email_address: "integration@example.com",
         password: "securepass1",
         password_confirmation: "securepass1",
-        organization_name: "Integration Org"
+        organization_name: "Integration Org",
+        terms_accepted: "1"
       }
     }
     assert_redirected_to onboarding_organization_path

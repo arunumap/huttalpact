@@ -70,7 +70,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "checkout redirects non-owners" do
-    member_user = User.create!(email_address: "member_billing@example.com", password: "password123", first_name: "Member", last_name: "User")
+    member_user = User.create!(email_address: "member_billing@example.com", password: "password123", first_name: "Member", last_name: "User", terms_accepted: "1")
     Membership.create!(user: member_user, organization: @org, role: Membership::MEMBER_ROLE)
     sign_out
     sign_in_as member_user
@@ -81,7 +81,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "portal redirects non-owners" do
-    member_user = User.create!(email_address: "member_portal@example.com", password: "password123", first_name: "Member", last_name: "User")
+    member_user = User.create!(email_address: "member_portal@example.com", password: "password123", first_name: "Member", last_name: "User", terms_accepted: "1")
     Membership.create!(user: member_user, organization: @org, role: Membership::MEMBER_ROLE)
     sign_out
     sign_in_as member_user
@@ -92,7 +92,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "success redirects non-owners" do
-    member_user = User.create!(email_address: "member_success@example.com", password: "password123", first_name: "Member", last_name: "User")
+    member_user = User.create!(email_address: "member_success@example.com", password: "password123", first_name: "Member", last_name: "User", terms_accepted: "1")
     Membership.create!(user: member_user, organization: @org, role: Membership::MEMBER_ROLE)
     sign_out
     sign_in_as member_user
@@ -160,7 +160,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "non-owner redirect includes owner name" do
-    member_user = User.create!(email_address: "member_ownername@example.com", password: "password123", first_name: "Member", last_name: "User")
+    member_user = User.create!(email_address: "member_ownername@example.com", password: "password123", first_name: "Member", last_name: "User", terms_accepted: "1")
     Membership.create!(user: member_user, organization: @org, role: Membership::MEMBER_ROLE)
     sign_out
     sign_in_as member_user

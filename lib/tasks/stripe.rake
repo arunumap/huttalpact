@@ -1,5 +1,5 @@
 namespace :stripe do
-  desc "Create Stripe products and prices with lookup keys for HuttalPact plans"
+  desc "Create Stripe products and prices with lookup keys for PactBadger plans"
   task setup: :environment do
     require "stripe"
 
@@ -26,8 +26,8 @@ namespace :stripe do
     end
 
     # Create products
-    starter_product = find_or_create_product("HuttalPact Starter", "Contract tracking for growing property managers. Up to 100 contracts, 50 AI extractions/month, 5 team members.")
-    pro_product = find_or_create_product("HuttalPact Pro", "Unlimited contract tracking for large portfolios & teams. Unlimited contracts, AI extractions, and team members.")
+    starter_product = find_or_create_product("PactBadger Starter", "Smart contract tracking for growing businesses. Up to 100 contracts, 50 AI extractions/month, 5 team members.")
+    pro_product = find_or_create_product("PactBadger Pro", "Unlimited contract tracking for teams of any size. Unlimited contracts, AI extractions, and team members.")
 
     # Create prices with lookup keys
     prices_config = [
