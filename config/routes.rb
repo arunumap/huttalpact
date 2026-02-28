@@ -13,7 +13,12 @@ Rails.application.routes.draw do
         get :recurring
       end
     end
-    resource :billing, only: %i[show], controller: "billing"
+    resource :billing, only: %i[show], controller: "billing" do
+      post :setup_stripe
+      post :configure_portal
+      post :sync_all_organizations
+      post :sync_organization
+    end
     resources :audit_logs, only: %i[index]
     resource :storage, only: %i[show], controller: "storage"
     resource :health, only: %i[show], controller: "health"
@@ -63,8 +68,14 @@ Rails.application.routes.draw do
     end
     resource :billing, only: %i[show], controller: "billing" do
       post :checkout
+      post :upgrade
+      post :downgrade
+      post :cancel_downgrade
+      post :cancel_subscription
+      post :resume_subscription
       get :portal
       get :success
+      delete :destroy_account
     end
   end
   get "settings", to: redirect("/settings/profile")

@@ -23,6 +23,16 @@
     </div>
   </div>
 
+  <%# Manage plan banner for subscribed users %>
+  <% if @has_subscription %>
+    <div class="mt-6 rounded-lg bg-amber-50 border border-amber-200 p-4 text-center">
+      <p class="text-sm text-amber-800">
+        You're on the <strong><%= @current_plan.titleize %></strong> plan.
+        <%= link_to "Manage your plan in Settings → Billing", settings_billing_path, class: "font-semibold text-amber-700 underline hover:text-amber-900" %>
+      </p>
+    </div>
+  <% end %>
+
   <%# Pricing cards %>
   <div class="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
     <%# Free %>
@@ -73,6 +83,7 @@
       </div>
     </div>
 
+
     <%# Starter %>
     <div class="relative rounded-2xl bg-white p-8 shadow-sm ring-2 ring-amber-500">
       <div class="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -117,6 +128,8 @@
       <div class="mt-8">
         <% if Current.user && @current_plan == "starter" %>
           <span class="block w-full rounded-lg bg-amber-50 px-4 py-2.5 text-center text-sm font-semibold text-amber-700 ring-1 ring-amber-200">Current Plan</span>
+        <% elsif @has_subscription %>
+          <%= link_to "Manage your plan", settings_billing_path, class: "block w-full rounded-lg bg-gray-100 px-4 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-200 transition" %>
         <% elsif Current.user && !@is_owner %>
           <span class="block w-full rounded-lg bg-gray-100 px-4 py-2.5 text-center text-xs font-medium text-gray-500">Contact your organization owner to upgrade</span>
         <% elsif Current.user %>
@@ -168,6 +181,8 @@
       <div class="mt-8">
         <% if Current.user && @current_plan == "pro" %>
           <span class="block w-full rounded-lg bg-gray-100 px-4 py-2.5 text-center text-sm font-semibold text-gray-500">Current Plan</span>
+        <% elsif @has_subscription %>
+          <%= link_to "Manage your plan", settings_billing_path, class: "block w-full rounded-lg bg-gray-100 px-4 py-2.5 text-center text-sm font-semibold text-gray-700 hover:bg-gray-200 transition" %>
         <% elsif Current.user && !@is_owner %>
           <span class="block w-full rounded-lg bg-gray-100 px-4 py-2.5 text-center text-xs font-medium text-gray-500">Contact your organization owner to upgrade</span>
         <% elsif Current.user %>

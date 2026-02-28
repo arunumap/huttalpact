@@ -3,49 +3,207 @@
 <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
   <%= render "settings/settings_nav", current_tab: "billing" %>
 
-  <div class="max-w-3xl space-y-8">
-  <%# Current Plan %>
-  <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-gray-900">Current Plan</h2>
-        <p class="mt-1 text-sm text-gray-500">Manage your subscription and usage.</p>
+  <div class="max-w-4xl space-y-8">
+
+  <%# ═══════════════════════════════════════════════════════════════════ %>
+  <%# Section A: Status Banners (conditional) %>
+  <%# ═══════════════════════════════════════════════════════════════════ %>
+
+  <% if @pending_downgrade %>
+    <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <svg class="h-5 w-5 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+        </svg>
+        <p class="text-sm text-amber-800">
+          Your plan will change to <strong><%= @organization.pending_plan&.titleize %></strong> on
+          <strong><%= @organization.pending_plan_effective_at&.strftime("%B %-d, %Y") %></strong>.
+        </p>
       </div>
-      <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold
-        <%= @organization.plan == 'pro' ? 'bg-gray-900 text-white' : @organization.plan == 'starter' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700' %>">
-        <%= @organization.plan_display_name %>
-      </span>
+      <%= button_to "Cancel Downgrade", cancel_downgrade_settings_billing_path,
+          method: :post,
+          data: { turbo_confirm: "Are you sure you want to cancel your pending downgrade?" },
+          class: "ml-4 shrink-0 inline-flex items-center rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 transition" %>
+    </div>
+  <% end %>
+
+  <% if @pending_cancellation %>
+    <div class="rounded-lg bg-red-50 border border-red-200 p-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <svg class="h-5 w-5 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+        <p class="text-sm text-red-800">
+          Your subscription will end on
+          <strong><%= @subscription&.ends_at&.strftime("%B %-d, %Y") || @subscription&.current_period_end&.strftime("%B %-d, %Y") %></strong>.
+          You'll revert to the Free plan.
+        </p>
+      </div>
+      <%= button_to "Resume Subscription", resume_subscription_settings_billing_path,
+          method: :post,
+          data: { turbo_confirm: "Resume your subscription?" },
+          class: "ml-4 shrink-0 inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 transition" %>
+    </div>
+  <% end %>
+
+  <%# ═══════════════════════════════════════════════════════════════════ %>
+  <%# Section B: Plan Cards %>
+  <%# ═══════════════════════════════════════════════════════════════════ %>
+
+  <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5" data-controller="plan-change">
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-lg font-semibold text-gray-900">Choose Your Plan</h2>
+        <p class="mt-1 text-sm text-gray-500">
+          Current plan: <strong><%= @organization.plan_display_name %></strong>
+        </p>
+      </div>
+      <%# Billing toggle %>
+      <div class="relative flex rounded-full bg-gray-100 p-1">
+        <button type="button" data-action="click->plan-change#selectMonthly" data-plan-change-target="monthlyBtn"
+                class="relative rounded-full px-3 py-1.5 text-xs font-semibold bg-white text-gray-900 shadow-sm transition">
+          Monthly
+        </button>
+        <button type="button" data-action="click->plan-change#selectAnnual" data-plan-change-target="annualBtn"
+                class="relative rounded-full px-3 py-1.5 text-xs font-semibold text-gray-500 transition">
+          Annual <span class="ml-1 text-xs font-medium text-amber-600">Save 17%</span>
+        </button>
+      </div>
     </div>
 
-    <% if @subscription %>
-      <div class="mt-4 rounded-lg bg-gray-50 p-4">
-        <dl class="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <dt class="font-medium text-gray-500">Status</dt>
-            <dd class="mt-1 text-gray-900"><%= @subscription.status.titleize %></dd>
-          </div>
-          <div>
-            <dt class="font-medium text-gray-500">Next billing date</dt>
-            <dd class="mt-1 text-gray-900"><%= @subscription.current_period_end&.strftime("%B %d, %Y") || "—" %></dd>
-          </div>
-        </dl>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <%# ── Free Card ── %>
+      <div class="rounded-xl p-5 ring-1 <%= @organization.plan == 'free' ? 'ring-amber-500 bg-amber-50/30' : 'ring-gray-200 bg-white' %>">
+        <h3 class="text-base font-semibold text-gray-900">Free</h3>
+        <div class="mt-3">
+          <span class="text-3xl font-bold text-gray-900">$0</span>
+          <span class="text-sm text-gray-500">/month</span>
+        </div>
+        <ul class="mt-4 space-y-2 text-xs text-gray-600">
+          <li>10 contracts</li>
+          <li>5 AI extractions/mo</li>
+          <li>1 user</li>
+          <li>7-day activity log</li>
+        </ul>
+        <div class="mt-5">
+          <% if @organization.plan == "free" %>
+            <span class="block w-full rounded-lg bg-gray-100 px-3 py-2 text-center text-xs font-semibold text-gray-500">Current Plan</span>
+          <% elsif @organization.pending_downgrade? && @organization.pending_plan == "free" %>
+            <span class="block w-full rounded-lg bg-amber-100 px-3 py-2 text-center text-xs font-semibold text-amber-700">Downgrade Scheduled</span>
+          <% else %>
+            <% eligibility = @downgrade_eligibility["free"] %>
+            <% if eligibility && eligibility[:eligible] %>
+              <%= button_to "Downgrade to Free", cancel_subscription_settings_billing_path,
+                  method: :post,
+                  data: { turbo_confirm: "Are you sure? Your plan will revert to Free at the end of your billing period." },
+                  class: "block w-full rounded-lg bg-gray-100 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-200 transition" %>
+            <% elsif eligibility %>
+              <span class="block w-full rounded-lg bg-gray-50 px-3 py-2 text-center text-xs font-medium text-gray-400 cursor-not-allowed"
+                    title="<%= eligibility[:blockers].join(' ') %>">
+                Cannot Downgrade
+              </span>
+            <% else %>
+              <span class="block w-full rounded-lg bg-gray-50 px-3 py-2 text-center text-xs font-medium text-gray-400">—</span>
+            <% end %>
+          <% end %>
+        </div>
       </div>
-    <% end %>
 
-    <div class="mt-6 flex gap-3">
-      <% if @organization.paid_plan? %>
-        <%= link_to "Manage Subscription", portal_settings_billing_path,
-            class: "inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
-        <%= link_to "View Plans", pricing_path,
-            class: "inline-flex items-center rounded-lg bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 px-4 py-2 text-sm font-semibold shadow-sm" %>
-      <% else %>
-        <%= link_to "Upgrade Plan", pricing_path,
-            class: "inline-flex items-center rounded-lg bg-amber-600 text-white hover:bg-amber-500 px-4 py-2 text-sm font-semibold shadow-sm" %>
-      <% end %>
+      <%# ── Starter Card ── %>
+      <div class="rounded-xl p-5 ring-1 <%= @organization.plan == 'starter' ? 'ring-amber-500 bg-amber-50/30' : 'ring-gray-200 bg-white' %>">
+        <h3 class="text-base font-semibold text-gray-900">Starter</h3>
+        <div class="mt-3">
+          <span data-plan-change-target="starterPrice" class="text-3xl font-bold text-gray-900">$49</span>
+          <span data-plan-change-target="starterPeriod" class="text-sm text-gray-500">/month</span>
+          <span data-plan-change-target="starterAnnualTotal" class="hidden block mt-1 text-xs text-gray-400">(billed as $492/year)</span>
+        </div>
+        <ul class="mt-4 space-y-2 text-xs text-gray-600">
+          <li>100 contracts</li>
+          <li>50 AI extractions/mo</li>
+          <li>5 users</li>
+          <li>30-day activity log</li>
+        </ul>
+        <div class="mt-5">
+          <% if @organization.plan == "starter" %>
+            <span class="block w-full rounded-lg bg-gray-100 px-3 py-2 text-center text-xs font-semibold text-gray-500">Current Plan</span>
+          <% elsif @organization.pending_downgrade? && @organization.pending_plan == "starter" %>
+            <span class="block w-full rounded-lg bg-amber-100 px-3 py-2 text-center text-xs font-semibold text-amber-700">Downgrade Scheduled</span>
+          <% elsif @organization.upgrade_from_current?("starter") %>
+            <%# Free users need checkout (Stripe Checkout for first payment) %>
+            <%= form_with url: checkout_settings_billing_path, method: :post, class: "w-full" do |f| %>
+              <input type="hidden" name="lookup_key" value="starter_monthly" data-plan-change-target="starterBtn" data-plan-change-monthly-key-param="starter_monthly" data-plan-change-annual-key-param="starter_annual">
+              <button type="submit" data-turbo-submits-with="Processing…"
+                      class="block w-full rounded-lg bg-amber-600 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-amber-500 transition">
+                Get Started
+              </button>
+            <% end %>
+          <% elsif @organization.downgrade_from_current?("starter") %>
+            <% eligibility = @downgrade_eligibility["starter"] %>
+            <% if eligibility && eligibility[:eligible] %>
+              <%= form_with url: downgrade_settings_billing_path, method: :post, class: "w-full" do |f| %>
+                <input type="hidden" name="lookup_key" value="starter_monthly" data-plan-change-target="starterBtn" data-plan-change-monthly-key-param="starter_monthly" data-plan-change-annual-key-param="starter_annual">
+                <button type="submit" data-turbo-confirm="Are you sure? Your plan will change to Starter at the end of your billing period."
+                        class="block w-full rounded-lg bg-gray-100 px-3 py-2 text-center text-xs font-semibold text-gray-700 hover:bg-gray-200 transition">
+                  Downgrade to Starter
+                </button>
+              <% end %>
+            <% elsif eligibility %>
+              <span class="block w-full rounded-lg bg-gray-50 px-3 py-2 text-center text-xs font-medium text-gray-400 cursor-not-allowed"
+                    title="<%= eligibility[:blockers].join(' ') %>">
+                Cannot Downgrade
+              </span>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <%# ── Pro Card ── %>
+      <div class="rounded-xl p-5 ring-1 <%= @organization.plan == 'pro' ? 'ring-amber-500 bg-amber-50/30' : 'ring-gray-200 bg-white' %>">
+        <h3 class="text-base font-semibold text-gray-900">Pro</h3>
+        <div class="mt-3">
+          <span data-plan-change-target="proPrice" class="text-3xl font-bold text-gray-900">$149</span>
+          <span data-plan-change-target="proPeriod" class="text-sm text-gray-500">/month</span>
+          <span data-plan-change-target="proAnnualTotal" class="hidden block mt-1 text-xs text-gray-400">(billed as $1,488/year)</span>
+        </div>
+        <ul class="mt-4 space-y-2 text-xs text-gray-600">
+          <li>Unlimited contracts</li>
+          <li>Unlimited AI extractions</li>
+          <li>Unlimited users</li>
+          <li>Full activity log</li>
+        </ul>
+        <div class="mt-5">
+          <% if @organization.plan == "pro" %>
+            <span class="block w-full rounded-lg bg-gray-100 px-3 py-2 text-center text-xs font-semibold text-gray-500">Current Plan</span>
+          <% elsif @organization.upgrade_from_current?("pro") %>
+            <% if @organization.free_plan? %>
+              <%# Free users need checkout %>
+              <%= form_with url: checkout_settings_billing_path, method: :post, class: "w-full" do |f| %>
+                <input type="hidden" name="lookup_key" value="pro_monthly" data-plan-change-target="proBtn" data-plan-change-monthly-key-param="pro_monthly" data-plan-change-annual-key-param="pro_annual">
+                <button type="submit" data-turbo-submits-with="Processing…"
+                        class="block w-full rounded-lg bg-amber-600 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-amber-500 transition">
+                  Get Started
+                </button>
+              <% end %>
+            <% else %>
+              <%# Existing subscribers upgrade in-place %>
+              <%= form_with url: upgrade_settings_billing_path, method: :post, class: "w-full" do |f| %>
+                <input type="hidden" name="lookup_key" value="pro_monthly" data-plan-change-target="proBtn" data-plan-change-monthly-key-param="pro_monthly" data-plan-change-annual-key-param="pro_annual">
+                <button type="submit" data-turbo-confirm="Upgrade to Pro? You'll be charged a prorated amount immediately." data-turbo-submits-with="Processing…"
+                        class="block w-full rounded-lg bg-amber-600 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-amber-500 transition">
+                  Upgrade to Pro
+                </button>
+              <% end %>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
     </div>
   </div>
 
-  <%# Usage %>
+  <%# ═══════════════════════════════════════════════════════════════════ %>
+  <%# Section C: Usage Meters %>
+  <%# ═══════════════════════════════════════════════════════════════════ %>
+
   <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
     <h2 class="text-lg font-semibold text-gray-900">Usage</h2>
     <p class="mt-1 text-sm text-gray-500">Your current resource usage against plan limits.</p>
@@ -96,24 +254,87 @@
     </div>
   </div>
 
-  <%# Upgrade CTA for free users %>
-  <% if @organization.free_plan? %>
-    <div class="rounded-xl bg-gradient-to-r from-amber-50 to-amber-100 p-6 ring-1 ring-amber-200">
-      <div class="flex items-start gap-4">
-        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-amber-200">
-          <svg class="h-5 w-5 text-amber-700" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-          </svg>
-        </div>
-        <div>
-          <h3 class="text-base font-semibold text-amber-900">Unlock more with a paid plan</h3>
-          <p class="mt-1 text-sm text-amber-700">Upgrade to Starter for 100 contracts and 50 AI extractions/month, or go Pro for unlimited everything.</p>
-          <div class="mt-4">
-            <%= link_to "View Plans →", pricing_path, class: "text-sm font-semibold text-amber-700 hover:text-amber-800" %>
+  <%# ═══════════════════════════════════════════════════════════════════ %>
+  <%# Section D: Billing Details (paid users only) %>
+  <%# ═══════════════════════════════════════════════════════════════════ %>
+
+  <% if @subscription %>
+    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
+      <h2 class="text-lg font-semibold text-gray-900">Billing Details</h2>
+      <div class="mt-4 rounded-lg bg-gray-50 p-4">
+        <dl class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <dt class="font-medium text-gray-500">Status</dt>
+            <dd class="mt-1 text-gray-900"><%= @subscription.status.titleize %></dd>
           </div>
-        </div>
+          <div>
+            <dt class="font-medium text-gray-500">Next billing date</dt>
+            <dd class="mt-1 text-gray-900"><%= @subscription.current_period_end&.strftime("%B %-d, %Y") || "—" %></dd>
+          </div>
+        </dl>
+      </div>
+      <div class="mt-4">
+        <%= link_to "Payment Methods & Invoices", portal_settings_billing_path,
+            class: "inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 transition" %>
       </div>
     </div>
   <% end %>
+
+  <%# ═══════════════════════════════════════════════════════════════════ %>
+  <%# Section E: Danger Zone %>
+  <%# ═══════════════════════════════════════════════════════════════════ %>
+
+  <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-red-200">
+    <h2 class="text-lg font-semibold text-red-600">Danger Zone</h2>
+
+    <% if @organization.paid_plan? && !@pending_cancellation %>
+      <div class="mt-4 flex items-center justify-between rounded-lg border border-red-200 p-4">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900">Cancel Subscription</h3>
+          <p class="mt-1 text-xs text-gray-500">You'll keep access to your current plan until the end of your billing period, then revert to Free.</p>
+        </div>
+        <%= button_to "Cancel Subscription", cancel_subscription_settings_billing_path,
+            method: :post,
+            data: { turbo_confirm: "Are you sure you want to cancel? You'll keep access to #{@organization.plan.titleize} until your billing period ends, then revert to Free." },
+            class: "ml-4 shrink-0 inline-flex items-center rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 transition" %>
+      </div>
+    <% end %>
+
+    <div class="mt-4 rounded-lg border border-red-200 p-4" data-controller="account-delete">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-gray-900">Delete Account</h3>
+          <p class="mt-1 text-xs text-gray-500">Permanently delete your organization, all contracts, documents, and data. This cannot be undone.</p>
+        </div>
+        <button type="button" data-action="click->account-delete#toggle"
+                class="ml-4 shrink-0 inline-flex items-center rounded-md bg-white px-3 py-1.5 text-xs font-semibold text-red-600 ring-1 ring-inset ring-red-300 hover:bg-red-50 transition">
+          Delete Account
+        </button>
+      </div>
+
+      <div data-account-delete-target="form" class="hidden mt-4 rounded-lg bg-red-50 p-4 border border-red-200">
+        <p class="text-sm text-red-800 font-medium mb-3">Enter your password to confirm account deletion:</p>
+        <%= form_with url: destroy_account_settings_billing_path, method: :delete, class: "space-y-3" do |f| %>
+          <div>
+            <input type="password" name="password" placeholder="Enter your password" required
+                   data-account-delete-target="passwordInput"
+                   data-action="input->account-delete#validatePassword"
+                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-red-500 focus:ring-red-500 text-sm">
+          </div>
+          <div class="flex items-center gap-3">
+            <button type="submit" data-account-delete-target="submitBtn" disabled
+                    class="inline-flex items-center rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition">
+              Permanently Delete Account
+            </button>
+            <button type="button" data-action="click->account-delete#toggle"
+                    class="text-xs text-gray-500 hover:text-gray-700">
+              Cancel
+            </button>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
   </div>
 </div>

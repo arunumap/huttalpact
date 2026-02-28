@@ -122,6 +122,7 @@ PactBadger is an AI-powered contract tracker for SMBs built with Rails 8.1.2. Th
 - Anthropic API key is stored in Rails encrypted credentials at `anthropic.api_key`
 - Access with `Rails.application.credentials.anthropic_api_key` (note: uses underscore method delegation, i.e., `credentials.anthropic` returns the hash, `.api_key` reads the key)
 - Postmark API token should be stored at `postmark.api_token` (required for production mailer config)
+- Stripe webhook signing secret stored at `stripe.signing_secret` — used by Pay gem to verify webhook signatures (`Pay::Stripe.signing_secret`). Obtain from Stripe Dashboard → Webhooks → Signing secret
 - Edit credentials with `EDITOR="code --wait" bin/rails credentials:edit`
 
 ## Current Build Status

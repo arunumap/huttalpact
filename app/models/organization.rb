@@ -15,6 +15,7 @@ class Organization < ApplicationRecord
   validates :slug, presence: true, uniqueness: true, length: { maximum: 100 },
             format: { with: /\A[a-z0-9\-]+\z/, message: "only allows lowercase letters, numbers, and hyphens" }
   validates :plan, inclusion: { in: %w[free starter pro] }
+  validates :pending_plan, inclusion: { in: %w[free starter], allow_nil: true }
 
   before_validation :generate_slug, on: :create
 
@@ -52,9 +53,21 @@ class Organization < ApplicationRecord
     )
   end
 
+  def active_subscription
+    pay_customers&.first&.subscriptions&.active&.order(created_at: :desc)&.first
+  end
+
+  def clear_pending_downgrade!
+    update!(
+      pending_plan: nil,
+      pending_plan_interval: nil,
+      pending_plan_effective_at: nil,
+      pending_downgrade_schedule_id: nil
+    )
+  end
+
   def sync_plan_from_subscription!
-    customer = pay_customers.find_by(processor: :stripe)
-    subscription = customer&.subscriptions&.active&.order(created_at: :desc)&.first
+    subscription = active_subscription
 
     if subscription
       plan_name = StripePriceResolver.plan_for_price_id(subscription.processor_plan)
@@ -76,6 +89,9 @@ class Organization < ApplicationRecord
         log_plan_change(old_plan, "free")
       end
     end
+
+    # Clear pending downgrade if the plan now matches what was scheduled
+    clear_pending_downgrade! if pending_downgrade? && plan == pending_plan
   end
 
   private

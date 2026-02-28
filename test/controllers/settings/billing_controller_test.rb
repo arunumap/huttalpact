@@ -10,7 +10,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   test "show renders billing page for owner" do
     get settings_billing_path
     assert_response :success
-    assert_select "h2", text: "Current Plan"
+    assert_select "h2", text: "Choose Your Plan"
     assert_select "h2", text: "Usage"
   end
 
@@ -59,14 +59,14 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     @org.update!(plan: "free")
     get settings_billing_path
     assert_response :success
-    assert_match "Unlock more with a paid plan", response.body
+    assert_match "Get Started", response.body
   end
 
   test "hides upgrade CTA for pro plan" do
     @org.update!(plan: "pro")
     get settings_billing_path
     assert_response :success
-    assert_no_match "Unlock more with a paid plan", response.body
+    assert_match "Current Plan", response.body
   end
 
   test "checkout redirects non-owners" do
@@ -170,7 +170,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     assert_match @org.owner.full_name, flash[:alert]
   end
 
-  test "checkout redirects to portal when active subscription exists" do
+  test "checkout redirects when active subscription exists" do
     pay_customer = @org.set_payment_processor(:stripe)
     pay_customer.update!(processor_id: "cus_test_existing_sub")
 
@@ -185,10 +185,11 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
       )
     end
 
-    # Checkout should detect existing subscription and redirect to portal action
+    # Checkout should detect existing subscription and redirect back with error
     post checkout_settings_billing_path, params: { lookup_key: "pro_monthly" }
 
-    assert_redirected_to portal_settings_billing_path
+    assert_redirected_to settings_billing_path
+    assert_match "already have an active subscription", flash[:alert]
   end
 
   test "checkout proceeds to Stripe Checkout when no active subscription" do
@@ -233,5 +234,243 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     get "/billing"
     assert_response :redirect
     assert_redirected_to "/settings/billing"
+  end
+
+  # --- upgrade action ---
+
+  test "upgrade rejects invalid lookup_key" do
+    post upgrade_settings_billing_path, params: { lookup_key: "bad_key" }
+    assert_redirected_to settings_billing_path
+    assert_equal "Invalid plan selected.", flash[:alert]
+  end
+
+  test "upgrade succeeds for valid upgrade" do
+    @org.update!(plan: "starter")
+    customer = @org.set_payment_processor(:stripe)
+    customer.update!(processor_id: "cus_ctrl_upgrade")
+
+    Pay::Stripe::Subscription.create!(
+      customer: customer,
+      processor_id: "sub_ctrl_upgrade",
+      processor_plan: "price_starter_ctrl",
+      name: "default",
+      status: "active"
+    )
+
+    fake_service = build_fake_service(upgrade!: SubscriptionManagerService::Result.new(success: true))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      post upgrade_settings_billing_path, params: { lookup_key: "pro_monthly" }
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "upgraded to the Pro plan", flash[:notice]
+  end
+
+  test "upgrade shows error on failure" do
+    fake_service = build_fake_service(upgrade!: SubscriptionManagerService::Result.new(success: false, error: "Not an upgrade"))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      post upgrade_settings_billing_path, params: { lookup_key: "pro_monthly" }
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "Not an upgrade", flash[:alert]
+  end
+
+  test "upgrade requires owner" do
+    member_user = User.create!(email_address: "member_upgrade@example.com", password: "password123", first_name: "Member", last_name: "User", terms_accepted: "1")
+    Membership.create!(user: member_user, organization: @org, role: Membership::MEMBER_ROLE)
+    sign_out
+    sign_in_as member_user
+
+    post upgrade_settings_billing_path, params: { lookup_key: "pro_monthly" }
+    assert_redirected_to root_path
+    assert_match "Only the organization owner", flash[:alert]
+  end
+
+  # --- downgrade action ---
+
+  test "downgrade rejects invalid lookup_key" do
+    post downgrade_settings_billing_path, params: { lookup_key: "bad_key" }
+    assert_redirected_to settings_billing_path
+    assert_equal "Invalid plan selected.", flash[:alert]
+  end
+
+  test "downgrade succeeds and shows effective date" do
+    @org.update!(plan: "pro")
+    effective_date = 30.days.from_now
+
+    fake_service = build_fake_service(schedule_downgrade!: SubscriptionManagerService::Result.new(success: true))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      @org.update!(pending_plan: "starter", pending_plan_effective_at: effective_date)
+      post downgrade_settings_billing_path, params: { lookup_key: "starter_monthly" }
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "Starter", flash[:notice]
+  end
+
+  test "downgrade shows error on failure" do
+    fake_service = build_fake_service(schedule_downgrade!: SubscriptionManagerService::Result.new(success: false, error: "Too many contracts"))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      post downgrade_settings_billing_path, params: { lookup_key: "starter_monthly" }
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "Too many contracts", flash[:alert]
+  end
+
+  # --- cancel_downgrade action ---
+
+  test "cancel_downgrade succeeds" do
+    @org.update!(plan: "pro", pending_plan: "starter", pending_downgrade_schedule_id: "sub_sched_x")
+
+    fake_service = build_fake_service(cancel_scheduled_downgrade!: SubscriptionManagerService::Result.new(success: true))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      post cancel_downgrade_settings_billing_path
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "downgrade has been canceled", flash[:notice]
+  end
+
+  test "cancel_downgrade shows error on failure" do
+    fake_service = build_fake_service(cancel_scheduled_downgrade!: SubscriptionManagerService::Result.new(success: false, error: "No pending downgrade"))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      post cancel_downgrade_settings_billing_path
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "No pending downgrade", flash[:alert]
+  end
+
+  # --- cancel_subscription action ---
+
+  test "cancel_subscription succeeds" do
+    @org.update!(plan: "starter")
+    customer = @org.set_payment_processor(:stripe)
+    customer.update!(processor_id: "cus_ctrl_cancel")
+
+    Pay::Stripe::Subscription.create!(
+      customer: customer,
+      processor_id: "sub_ctrl_cancel",
+      processor_plan: "price_starter_cancel",
+      name: "default",
+      status: "active",
+      ends_at: 30.days.from_now
+    )
+
+    fake_service = build_fake_service(cancel_subscription!: SubscriptionManagerService::Result.new(success: true))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      post cancel_subscription_settings_billing_path
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "subscription will remain active", flash[:notice]
+  end
+
+  test "cancel_subscription shows error on failure" do
+    fake_service = build_fake_service(cancel_subscription!: SubscriptionManagerService::Result.new(success: false, error: "No active subscription found"))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      post cancel_subscription_settings_billing_path
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "No active subscription found", flash[:alert]
+  end
+
+  # --- resume_subscription action ---
+
+  test "resume_subscription succeeds" do
+    @org.update!(plan: "starter")
+
+    fake_service = build_fake_service(resume_subscription!: SubscriptionManagerService::Result.new(success: true))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      post resume_subscription_settings_billing_path
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "subscription has been resumed", flash[:notice]
+  end
+
+  test "resume_subscription shows error on failure" do
+    fake_service = build_fake_service(resume_subscription!: SubscriptionManagerService::Result.new(success: false, error: "No active subscription"))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      post resume_subscription_settings_billing_path
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "No active subscription", flash[:alert]
+  end
+
+  # --- destroy_account action ---
+
+  test "destroy_account succeeds with correct password" do
+    fake_service = build_fake_service(destroy_account!: SubscriptionManagerService::Result.new(success: true))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      delete destroy_account_settings_billing_path, params: { password: "password" }
+    end
+    assert_redirected_to root_path
+    assert_match "permanently deleted", flash[:notice]
+  end
+
+  test "destroy_account fails with wrong password" do
+    fake_service = build_fake_service(destroy_account!: SubscriptionManagerService::Result.new(success: false, error: "Incorrect password."))
+
+    SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
+      delete destroy_account_settings_billing_path, params: { password: "wrongpass" }
+    end
+    assert_redirected_to settings_billing_path
+    assert_match "Incorrect password", flash[:alert]
+  end
+
+  test "destroy_account requires owner" do
+    member_user = User.create!(email_address: "member_destroy@example.com", password: "password123", first_name: "Member", last_name: "User", terms_accepted: "1")
+    Membership.create!(user: member_user, organization: @org, role: Membership::MEMBER_ROLE)
+    sign_out
+    sign_in_as member_user
+
+    delete destroy_account_settings_billing_path, params: { password: "password123" }
+    assert_redirected_to root_path
+    assert_match "Only the organization owner", flash[:alert]
+  end
+
+  # --- show action with pending states ---
+
+  test "show displays pending downgrade banner" do
+    @org.update!(plan: "pro", pending_plan: "starter", pending_plan_effective_at: 30.days.from_now, pending_downgrade_schedule_id: "sub_sched_show")
+    get settings_billing_path
+    assert_response :success
+    assert_match "pending downgrade", response.body.downcase
+  end
+
+  test "show displays pending cancellation banner" do
+    @org.update!(plan: "starter")
+    customer = @org.set_payment_processor(:stripe)
+    customer.update!(processor_id: "cus_show_cancel")
+
+    Pay::Stripe::Subscription.create!(
+      customer: customer,
+      processor_id: "sub_show_cancel",
+      processor_plan: "price_starter_show",
+      name: "default",
+      status: "active",
+      ends_at: 30.days.from_now
+    )
+
+    get settings_billing_path
+    assert_response :success
+    assert_match "cancel", response.body.downcase
+  end
+
+  private
+
+  # Build a fake service object that responds to stubbed methods
+  def build_fake_service(**method_results)
+    fake = Object.new
+    method_results.each do |method_name, result|
+      fake.define_singleton_method(method_name) { |*_args| result }
+    end
+    fake
   end
 end

@@ -14,6 +14,8 @@ module PlanLimits
     "pro_annual"      => "pro"
   }.freeze
 
+  PLAN_HIERARCHY = { "free" => 0, "starter" => 1, "pro" => 2 }.freeze
+
   def plan_contract_limit
     PLAN_LIMITS.dig(plan, :contracts) || 10
   end
@@ -121,5 +123,46 @@ module PlanLimits
     return if ai_extractions_reset_at.present? && ai_extractions_reset_at >= Time.current.beginning_of_month
 
     reset_monthly_extractions!
+  end
+
+  def upgrade_from_current?(target_plan)
+    current_rank = PLAN_HIERARCHY[plan] || 0
+    target_rank = PLAN_HIERARCHY[target_plan] || 0
+    target_rank > current_rank
+  end
+
+  def downgrade_from_current?(target_plan)
+    current_rank = PLAN_HIERARCHY[plan] || 0
+    target_rank = PLAN_HIERARCHY[target_plan] || 0
+    target_rank < current_rank
+  end
+
+  def downgrade_eligibility(target_plan)
+    target_limits = PLAN_LIMITS[target_plan]
+    return { eligible: false, blockers: [ "Unknown plan: #{target_plan}" ] } unless target_limits
+
+    blockers = []
+
+    contract_limit = target_limits[:contracts]
+    if contract_limit != Float::INFINITY && active_contracts_count > contract_limit
+      blockers << "You have #{active_contracts_count} active contracts but #{target_plan.titleize} allows #{contract_limit}. Archive or remove #{active_contracts_count - contract_limit} contracts first."
+    end
+
+    user_limit = target_limits[:users]
+    if user_limit != Float::INFINITY && memberships.count > user_limit
+      blockers << "You have #{memberships.count} team members but #{target_plan.titleize} allows #{user_limit}. Remove #{memberships.count - user_limit} members first."
+    end
+
+    { eligible: blockers.empty?, blockers: blockers }
+  end
+
+  def pending_downgrade?
+    pending_plan.present?
+  end
+
+  def pending_cancellation?
+    return false unless respond_to?(:pay_customers)
+
+    pay_customers&.first&.subscriptions&.active&.where&.not(ends_at: nil)&.exists? || false
   end
 end

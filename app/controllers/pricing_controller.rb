@@ -7,5 +7,6 @@ class PricingController < ApplicationController
   def show
     @current_plan = current_organization&.plan || "free"
     @is_owner = Current.user && current_organization&.owner == Current.user
+    @has_subscription = Current.user && current_organization&.active_subscription.present?
   end
 end

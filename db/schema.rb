@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_26_121300) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_27_210748) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -236,9 +236,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_26_121300) do
     t.string "name", null: false
     t.datetime "onboarding_completed_at"
     t.integer "onboarding_step", default: 0, null: false
+    t.string "pending_downgrade_schedule_id"
+    t.string "pending_plan"
+    t.datetime "pending_plan_effective_at"
+    t.string "pending_plan_interval"
     t.string "plan", default: "free", null: false
     t.string "slug", null: false
     t.datetime "updated_at", null: false
+    t.index ["pending_plan_effective_at"], name: "index_organizations_on_pending_plan_effective_at"
     t.index ["slug"], name: "index_organizations_on_slug", unique: true
   end
 
