@@ -83,7 +83,7 @@
                 <%= current_organization.plan_display_name %> plan
               </span>
               <% unless current_organization.plan == 'pro' %>
-                <%= link_to "Upgrade", pricing_path, class: "ml-1 text-xs text-amber-400 hover:text-amber-300" %>
+                <%= link_to "Upgrade", settings_billing_path, class: "ml-1 text-xs text-amber-400 hover:text-amber-300" %>
               <% end %>
             </div>
           <% end %>
