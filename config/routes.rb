@@ -34,7 +34,13 @@ Rails.application.routes.draw do
   # App
   resources :contracts do
     resources :documents, only: %i[create destroy], controller: "contract_documents"
-    resource :extraction, only: %i[create], controller: "contract_extractions"
+    resource :extraction, only: %i[create], controller: "contract_extractions" do
+      post :redetect
+    end
+    resource :lease_detail, only: %i[edit update]
+    resources :rent_escalations, only: %i[new create edit update destroy]
+    resources :lease_options, only: %i[new create edit update destroy]
+    resources :lease_milestones, only: %i[new create edit update destroy]
     collection do
       post :create_draft
       post :bulk_archive

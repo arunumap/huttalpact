@@ -1,0 +1,38 @@
+year_one:
+  contract: commercial_lease
+  effective_date: <%= Date.new(2025, 4, 1) %>
+  base_rent_monthly: 8500.00
+  base_rent_annual: 102000.00
+  escalation_type: flat
+  description: Initial rent
+  position: 1
+
+year_two:
+  contract: commercial_lease
+  effective_date: <%= Date.new(2026, 4, 1) %>
+  base_rent_monthly: 8755.00
+  base_rent_annual: 105060.00
+  escalation_type: fixed_percentage
+  escalation_value: 3.0
+  description: 3% annual increase
+  position: 2
+
+year_three:
+  contract: commercial_lease
+  effective_date: <%= Date.new(2027, 4, 1) %>
+  base_rent_monthly: 9017.65
+  base_rent_annual: 108211.80
+  escalation_type: fixed_percentage
+  escalation_value: 3.0
+  description: 3% annual increase
+  position: 3
+
+future_cpi:
+  contract: commercial_lease
+  effective_date: <%= 2.years.from_now.to_date %>
+  base_rent_monthly: 9500.00
+  base_rent_annual: 114000.00
+  escalation_type: cpi
+  escalation_value: nil
+  description: CPI adjustment (floor 2%, cap 5%)
+  position: 4

@@ -62,3 +62,21 @@ other_org_contract:
   renewal_term: annual
   extraction_status: pending
   uploaded_by: two
+
+commercial_lease:
+  organization: one
+  title: Retail Space - Downtown
+  vendor_name: Metro Properties LLC
+  status: active
+  contract_type: lease
+  direction: outbound
+  start_date: <%= Date.new(2025, 1, 1) %>
+  end_date: <%= Date.new(2030, 12, 31) %>
+  next_renewal_date: <%= Date.new(2030, 6, 30) %>
+  notice_period_days: 180
+  monthly_value: 8500.00
+  total_value: 612000.00
+  auto_renews: true
+  renewal_term: annual
+  extraction_status: completed
+  uploaded_by: one

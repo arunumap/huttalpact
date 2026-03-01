@@ -15,6 +15,15 @@ class AlertGeneratorService
     generate_expiry_alerts
     generate_renewal_alerts
     generate_notice_period_alerts
+
+    # Lease-specific alerts
+    if @contract.lease?
+      generate_option_exercise_alerts
+      generate_rent_escalation_alerts
+      generate_cam_reconciliation_alerts
+      generate_ti_deadline_alerts
+      generate_lease_milestone_alerts
+    end
   end
 
   private
@@ -87,10 +96,124 @@ class AlertGeneratorService
     end
   end
 
+  # --- Lease-specific alert generators ---
+
+  def generate_option_exercise_alerts
+    @contract.lease_options.each do |option|
+      next unless option.notice_deadline.present?
+      next if option.notice_deadline <= Date.current
+
+      each_member_preference do |user, pref|
+        lead_days = pref.days_before_option_exercise || 90
+        trigger_date = option.notice_deadline - lead_days.days
+
+        next if trigger_date <= Date.current && already_alerted?(user, "option_exercise_deadline")
+
+        create_alert(
+          alert_type: "option_exercise_deadline",
+          trigger_date: [ trigger_date, Date.current ].max,
+          message: "#{option.option_type_label} option notice deadline for #{@contract.title} — #{option.notice_deadline.strftime('%b %-d, %Y')}",
+          user: user,
+          pref: pref
+        )
+      end
+    end
+  end
+
+  def generate_rent_escalation_alerts
+    @contract.rent_escalations.future.each do |escalation|
+      each_member_preference do |user, pref|
+        lead_days = pref.days_before_rent_escalation || 30
+        trigger_date = escalation.effective_date - lead_days.days
+
+        next if trigger_date <= Date.current && already_alerted?(user, "rent_escalation_date")
+
+        create_alert(
+          alert_type: "rent_escalation_date",
+          trigger_date: [ trigger_date, Date.current ].max,
+          message: "Rent escalation for #{@contract.title} — effective #{escalation.effective_date.strftime('%b %-d, %Y')} (#{escalation.escalation_type_label})",
+          user: user,
+          pref: pref
+        )
+      end
+    end
+  end
+
+  def generate_cam_reconciliation_alerts
+    lease_detail = @contract.lease_detail
+    return unless lease_detail&.cam_reconciliation_month.present?
+
+    next_recon_date = lease_detail.next_cam_reconciliation_date
+    return unless next_recon_date.present?
+
+    each_member_preference do |user, pref|
+      lead_days = pref.days_before_cam_reconciliation || 30
+      trigger_date = next_recon_date - lead_days.days
+
+      next if trigger_date <= Date.current && already_alerted?(user, "cam_reconciliation")
+
+      create_alert(
+        alert_type: "cam_reconciliation",
+        trigger_date: [ trigger_date, Date.current ].max,
+        message: "CAM reconciliation for #{@contract.title} — #{next_recon_date.strftime('%b %Y')}",
+        user: user,
+        pref: pref
+      )
+    end
+  end
+
+  def generate_ti_deadline_alerts
+    lease_detail = @contract.lease_detail
+    return unless lease_detail&.ti_deadline.present?
+    return if lease_detail.ti_deadline <= Date.current
+
+    each_member_preference do |user, pref|
+      lead_days = pref.days_before_milestone || 14
+      trigger_date = lease_detail.ti_deadline - lead_days.days
+
+      next if trigger_date <= Date.current && already_alerted?(user, "ti_deadline")
+
+      create_alert(
+        alert_type: "ti_deadline",
+        trigger_date: [ trigger_date, Date.current ].max,
+        message: "TI allowance deadline for #{@contract.title} — use by #{lease_detail.ti_deadline.strftime('%b %-d, %Y')}",
+        user: user,
+        pref: pref
+      )
+    end
+  end
+
+  def generate_lease_milestone_alerts
+    @contract.lease_milestones.each do |milestone|
+      target_date = milestone.recurring? ? milestone.next_occurrence_date : milestone.due_date
+      next if target_date.nil? || target_date <= Date.current
+
+      each_member_preference do |user, pref|
+        lead_days = pref.days_before_milestone || 14
+        trigger_date = target_date - lead_days.days
+
+        next if trigger_date <= Date.current && already_alerted?(user, "milestone_reminder")
+
+        create_alert(
+          alert_type: "milestone_reminder",
+          trigger_date: [ trigger_date, Date.current ].max,
+          message: "#{milestone.milestone_type_label} — #{milestone.description || @contract.title}",
+          user: user,
+          pref: pref
+        )
+      end
+    end
+  end
+
   def each_member_preference(&block)
     @organization.users.includes(:alert_preferences).find_each do |user|
       pref = user.alert_preferences.find_by(organization: @organization) ||
-             AlertPreference.new(days_before_renewal: 30, days_before_expiry: 14, email_enabled: true, in_app_enabled: true)
+             AlertPreference.new(
+               days_before_renewal: 30, days_before_expiry: 14,
+               days_before_option_exercise: 90, days_before_rent_escalation: 30,
+               days_before_cam_reconciliation: 30, days_before_milestone: 14,
+               email_enabled: true, in_app_enabled: true
+             )
       yield user, pref
     end
   end

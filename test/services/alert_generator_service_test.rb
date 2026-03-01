@@ -212,4 +212,80 @@ class AlertGeneratorServiceTest < ActiveSupport::TestCase
 
     assert_equal 1, Alert.where(contract: @contract, alert_type: "expiry_warning").count
   end
+
+  # --- Lease-specific alert tests ---
+
+  test "generates option_exercise_deadline alerts from lease_options" do
+    lease = contracts(:commercial_lease)
+    lease.alerts.destroy_all
+
+    AlertGeneratorService.new(lease).call
+    alerts = Alert.where(contract: lease, alert_type: "option_exercise_deadline")
+    assert alerts.exists?, "Should create option_exercise_deadline alerts for lease options with future notice_deadline"
+  end
+
+  test "generates rent_escalation_date alerts from future rent_escalations" do
+    lease = contracts(:commercial_lease)
+    lease.alerts.destroy_all
+
+    AlertGeneratorService.new(lease).call
+    alerts = Alert.where(contract: lease, alert_type: "rent_escalation_date")
+    assert alerts.exists?, "Should create rent_escalation_date alerts for future rent escalations"
+  end
+
+  test "generates cam_reconciliation alerts from lease_detail" do
+    lease = contracts(:commercial_lease)
+    lease.alerts.destroy_all
+    assert lease.lease_detail.cam_reconciliation_month.present?, "Fixture should have cam_reconciliation_month"
+
+    AlertGeneratorService.new(lease).call
+    alerts = Alert.where(contract: lease, alert_type: "cam_reconciliation")
+    assert alerts.exists?, "Should create cam_reconciliation alert when cam_reconciliation_month is set"
+  end
+
+  test "generates ti_deadline alerts from lease_detail" do
+    lease = contracts(:commercial_lease)
+    lease.alerts.destroy_all
+    assert lease.lease_detail.ti_deadline.present?, "Fixture should have ti_deadline"
+    assert lease.lease_detail.ti_deadline > Date.current, "TI deadline should be in the future"
+
+    AlertGeneratorService.new(lease).call
+    alerts = Alert.where(contract: lease, alert_type: "ti_deadline")
+    assert alerts.exists?, "Should create ti_deadline alert when ti_deadline is set and future"
+  end
+
+  test "generates milestone_reminder alerts from lease_milestones" do
+    lease = contracts(:commercial_lease)
+    lease.alerts.destroy_all
+    future_milestones = lease.lease_milestones.select { |m| (m.recurring? ? m.next_occurrence_date : m.due_date) > Date.current }
+    assert future_milestones.any?, "Fixture should have future milestones"
+
+    AlertGeneratorService.new(lease).call
+    alerts = Alert.where(contract: lease, alert_type: "milestone_reminder")
+    assert alerts.exists?, "Should create milestone_reminder alerts for future milestones"
+  end
+
+  test "recurring milestones generate alerts for next occurrence" do
+    lease = contracts(:commercial_lease)
+    lease.alerts.destroy_all
+    recurring = lease.lease_milestones.recurring.first
+    assert recurring.present?, "Fixture should have a recurring milestone"
+
+    AlertGeneratorService.new(lease).call
+    alerts = Alert.where(contract: lease, alert_type: "milestone_reminder")
+    assert alerts.exists?, "Should create milestone alerts for recurring milestones"
+  end
+
+  test "does not generate lease alerts for non-lease contracts" do
+    @contract.alerts.destroy_all
+    refute @contract.lease?, "HVAC contract should not be a lease"
+
+    AlertGeneratorService.new(@contract).call
+
+    assert_equal 0, Alert.where(contract: @contract, alert_type: "option_exercise_deadline").count
+    assert_equal 0, Alert.where(contract: @contract, alert_type: "rent_escalation_date").count
+    assert_equal 0, Alert.where(contract: @contract, alert_type: "cam_reconciliation").count
+    assert_equal 0, Alert.where(contract: @contract, alert_type: "ti_deadline").count
+    assert_equal 0, Alert.where(contract: @contract, alert_type: "milestone_reminder").count
+  end
 end

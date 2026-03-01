@@ -1,0 +1,13 @@
+<% content_for :page_title, "New Lease Option — #{@contract.title}" %>
+
+<div class="mx-auto max-w-2xl space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Add Lease Option</h2>
+      <p class="mt-1 text-sm text-gray-500"><%= @contract.title %></p>
+    </div>
+    <%= link_to "Back to Contract", @contract, class: "text-sm font-medium text-amber-600 hover:text-amber-500" %>
+  </div>
+
+  <%= render "form", lease_option: @lease_option, contract: @contract %>
+</div>

@@ -148,7 +148,7 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     get contracts_path(format: :csv)
     assert_response :success
     assert_equal "text/csv", response.media_type
-    assert_match "Title,Vendor,Status", response.body
+    assert_match "Title,Vendor,Premises Address,Status", response.body
     assert_match @contract.title, response.body
   end
 
@@ -645,5 +645,36 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     # The status filter dropdown should not include "Draft"
     assert_select "option[value='draft']", count: 0
+  end
+
+  # --- Lease-specific rendering tests ---
+
+  test "show page renders lease details for lease contracts" do
+    lease = contracts(:commercial_lease)
+    get contract_path(lease)
+    assert_response :success
+    assert_match "Lease Details", response.body
+    assert_match "Rent Schedule", response.body
+    assert_match "NNN", response.body
+  end
+
+  test "show page does not render lease details for non-lease contracts" do
+    get contract_path(@contract)
+    assert_response :success
+    assert_no_match(/Lease Details/, response.body)
+    assert_no_match(/Rent Schedule/, response.body)
+  end
+
+  test "edit page renders lease summary for lease contracts" do
+    lease = contracts(:commercial_lease)
+    get edit_contract_path(lease)
+    assert_response :success
+    assert_match "Lease Details (AI-Extracted)", response.body
+  end
+
+  test "edit page does not render lease summary for non-lease contracts" do
+    get edit_contract_path(@contract)
+    assert_response :success
+    assert_no_match(/Lease Details \(AI-Extracted\)/, response.body)
   end
 end

@@ -51,6 +51,68 @@ module ApplicationHelper
     date.strftime("%b %d, %Y")
   end
 
+  def format_sqft(value)
+    return "—" if value.blank?
+    "#{number_with_delimiter(value.to_i)} SF"
+  end
+
+  def lease_type_badge(lease_type)
+    colors = {
+      "gross"          => "bg-green-50 text-green-700 ring-green-600/20",
+      "modified_gross" => "bg-teal-50 text-teal-700 ring-teal-600/20",
+      "nnn"            => "bg-blue-50 text-blue-700 ring-blue-600/20",
+      "percentage"     => "bg-purple-50 text-purple-700 ring-purple-600/20"
+    }
+    labels = { "nnn" => "NNN (Triple Net)", "modified_gross" => "Modified Gross" }
+    color_class = colors[lease_type] || "bg-gray-50 text-gray-600 ring-gray-500/20"
+    label = labels[lease_type] || lease_type&.titleize || "Unknown"
+    tag.span(label, class: "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset #{color_class}")
+  end
+
+  def option_type_badge(option_type)
+    colors = {
+      "renewal"     => "bg-blue-50 text-blue-700 ring-blue-600/20",
+      "expansion"   => "bg-green-50 text-green-700 ring-green-600/20",
+      "termination" => "bg-red-50 text-red-700 ring-red-600/20",
+      "purchase"    => "bg-purple-50 text-purple-700 ring-purple-600/20",
+      "rofr"        => "bg-amber-50 text-amber-700 ring-amber-600/20",
+      "rofo"        => "bg-orange-50 text-orange-700 ring-orange-600/20"
+    }
+    labels = { "rofr" => "Right of First Refusal", "rofo" => "Right of First Offer" }
+    color_class = colors[option_type] || "bg-gray-50 text-gray-600 ring-gray-500/20"
+    label = labels[option_type] || option_type&.titleize || "Unknown"
+    tag.span(label, class: "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset #{color_class}")
+  end
+
+  def escalation_type_badge(escalation_type)
+    colors = {
+      "fixed_percentage" => "bg-amber-50 text-amber-700 ring-amber-600/20",
+      "cpi"              => "bg-blue-50 text-blue-700 ring-blue-600/20",
+      "fmv_reset"        => "bg-purple-50 text-purple-700 ring-purple-600/20",
+      "stepped"          => "bg-green-50 text-green-700 ring-green-600/20",
+      "flat"             => "bg-gray-50 text-gray-600 ring-gray-500/20"
+    }
+    labels = { "cpi" => "CPI", "fmv_reset" => "FMV Reset", "fixed_percentage" => "Fixed %" }
+    color_class = colors[escalation_type] || "bg-gray-50 text-gray-600 ring-gray-500/20"
+    label = labels[escalation_type] || escalation_type&.titleize || "Unknown"
+    tag.span(label, class: "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset #{color_class}")
+  end
+
+  def milestone_type_badge(milestone_type)
+    colors = {
+      "cam_reconciliation"     => "bg-teal-50 text-teal-700 ring-teal-600/20",
+      "insurance_renewal"      => "bg-cyan-50 text-cyan-700 ring-cyan-600/20",
+      "estoppel_response"      => "bg-amber-50 text-amber-700 ring-amber-600/20",
+      "ti_completion"          => "bg-green-50 text-green-700 ring-green-600/20",
+      "percentage_rent_report" => "bg-purple-50 text-purple-700 ring-purple-600/20",
+      "guarantee_burnoff"      => "bg-rose-50 text-rose-700 ring-rose-600/20",
+      "custom"                 => "bg-gray-50 text-gray-600 ring-gray-500/20"
+    }
+    color_class = colors[milestone_type] || "bg-gray-50 text-gray-600 ring-gray-500/20"
+    label = milestone_type&.titleize&.gsub("_", " ") || "Unknown"
+    tag.span(label, class: "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset #{color_class}")
+  end
+
   def role_badge(role)
     colors = {
       "owner"  => "bg-purple-50 text-purple-700 ring-purple-600/20",
@@ -64,13 +126,26 @@ module ApplicationHelper
 
   def clause_type_badge(clause_type)
     colors = {
-      "termination"           => "bg-red-50 text-red-700 ring-red-600/20",
-      "renewal"               => "bg-blue-50 text-blue-700 ring-blue-600/20",
-      "penalty"               => "bg-orange-50 text-orange-700 ring-orange-600/20",
-      "sla"                   => "bg-purple-50 text-purple-700 ring-purple-600/20",
-      "price_escalation"      => "bg-amber-50 text-amber-700 ring-amber-600/20",
-      "liability"             => "bg-rose-50 text-rose-700 ring-rose-600/20",
-      "insurance_requirement" => "bg-cyan-50 text-cyan-700 ring-cyan-600/20"
+      "termination"              => "bg-red-50 text-red-700 ring-red-600/20",
+      "renewal"                  => "bg-blue-50 text-blue-700 ring-blue-600/20",
+      "penalty"                  => "bg-orange-50 text-orange-700 ring-orange-600/20",
+      "sla"                      => "bg-purple-50 text-purple-700 ring-purple-600/20",
+      "price_escalation"         => "bg-amber-50 text-amber-700 ring-amber-600/20",
+      "liability"                => "bg-rose-50 text-rose-700 ring-rose-600/20",
+      "insurance_requirement"    => "bg-cyan-50 text-cyan-700 ring-cyan-600/20",
+      "security_deposit"         => "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+      "cam_provision"            => "bg-teal-50 text-teal-700 ring-teal-600/20",
+      "maintenance_responsibility" => "bg-slate-50 text-slate-700 ring-slate-600/20",
+      "subletting_assignment"    => "bg-indigo-50 text-indigo-700 ring-indigo-600/20",
+      "exclusivity"              => "bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-600/20",
+      "co_tenancy"               => "bg-violet-50 text-violet-700 ring-violet-600/20",
+      "parking"                  => "bg-sky-50 text-sky-700 ring-sky-600/20",
+      "signage"                  => "bg-lime-50 text-lime-700 ring-lime-600/20",
+      "hazmat"                   => "bg-red-50 text-red-700 ring-red-600/20",
+      "ada_compliance"           => "bg-blue-50 text-blue-700 ring-blue-600/20",
+      "subordination"            => "bg-zinc-50 text-zinc-700 ring-zinc-600/20",
+      "use_restriction"          => "bg-amber-50 text-amber-700 ring-amber-600/20",
+      "tenant_improvement"       => "bg-green-50 text-green-700 ring-green-600/20"
     }
     color_class = colors[clause_type] || "bg-gray-50 text-gray-600 ring-gray-500/20"
     label = clause_type.titleize.gsub("_", " ")
@@ -90,9 +165,14 @@ module ApplicationHelper
 
   def alert_type_badge(alert_type)
     colors = {
-      "renewal_upcoming"     => "bg-blue-50 text-blue-700 ring-blue-600/20",
-      "expiry_warning"       => "bg-amber-50 text-amber-700 ring-amber-600/20",
-      "notice_period_start"  => "bg-purple-50 text-purple-700 ring-purple-600/20"
+      "renewal_upcoming"          => "bg-blue-50 text-blue-700 ring-blue-600/20",
+      "expiry_warning"            => "bg-amber-50 text-amber-700 ring-amber-600/20",
+      "notice_period_start"       => "bg-purple-50 text-purple-700 ring-purple-600/20",
+      "option_exercise_deadline"  => "bg-red-50 text-red-700 ring-red-600/20",
+      "rent_escalation_date"      => "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+      "cam_reconciliation"        => "bg-teal-50 text-teal-700 ring-teal-600/20",
+      "ti_deadline"               => "bg-orange-50 text-orange-700 ring-orange-600/20",
+      "milestone_reminder"        => "bg-indigo-50 text-indigo-700 ring-indigo-600/20"
     }
     color_class = colors[alert_type] || "bg-gray-50 text-gray-600 ring-gray-500/20"
     label = alert_type.titleize.gsub("_", " ")

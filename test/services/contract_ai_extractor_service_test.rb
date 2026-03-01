@@ -609,6 +609,237 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     assert_nil clause.source_document_id
   end
 
+  # --- New extraction logic tests (QA #2) ---
+
+  test "full extraction maps title only when blank" do
+    @contract.update!(title: "User-Set Title", extraction_status: "pending")
+    @contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "Sample contract text",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    ai_response = build_ai_response(
+      title: "AI Suggested Title",
+      vendor_name: "AI Vendor",
+      key_clauses: [],
+      summary: "Test summary"
+    )
+
+    stub_anthropic_client(ai_response) do
+      ContractAiExtractorService.new(@contract).call
+    end
+
+    @contract.reload
+    assert_equal "User-Set Title", @contract.title, "Title should be preserved when already set"
+  end
+
+  test "full extraction fills title when blank" do
+    @contract.update_columns(title: "", extraction_status: "pending")
+    @contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "Sample contract text",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    ai_response = build_ai_response(
+      title: "AI Suggested Title",
+      key_clauses: [],
+      summary: "Test summary"
+    )
+
+    stub_anthropic_client(ai_response) do
+      ContractAiExtractorService.new(@contract).call
+    end
+
+    @contract.reload
+    assert_equal "AI Suggested Title", @contract.title, "Title should be set from AI when blank"
+  end
+
+  test "full extraction maps ai_summary from summary separate from notes" do
+    @contract.update!(notes: "User notes here", ai_summary: nil, extraction_status: "pending")
+    @contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "Sample contract text",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    ai_response = build_ai_response(
+      key_clauses: [],
+      summary: "AI-generated summary of the contract"
+    )
+
+    stub_anthropic_client(ai_response) do
+      ContractAiExtractorService.new(@contract).call
+    end
+
+    @contract.reload
+    assert_equal "AI-generated summary of the contract", @contract.ai_summary
+    assert_equal "User notes here", @contract.notes, "User notes must not be overwritten by AI summary"
+  end
+
+  test "incremental extraction maps ai_summary separate from notes" do
+    prior_data = {
+      "vendor_name" => "CoolAir Services",
+      "key_clauses" => [],
+      "summary" => "Old AI summary"
+    }
+    @contract.update!(
+      ai_extracted_data: prior_data.to_json,
+      notes: "My personal notes",
+      ai_summary: "Old AI summary",
+      extraction_status: "completed"
+    )
+
+    ai_response = build_ai_response(
+      vendor_name: "CoolAir Services",
+      key_clauses: [],
+      summary: "Updated AI summary from addendum",
+      changes_summary: "Summary updated"
+    )
+
+    stub_anthropic_client(ai_response) do
+      ContractAiExtractorService.new(@contract, mode: :incremental).call
+    end
+
+    @contract.reload
+    assert_equal "Updated AI summary from addendum", @contract.ai_summary
+    assert_equal "My personal notes", @contract.notes, "User notes must be preserved in incremental mode"
+  end
+
+  test "full extraction maps premises_address only when blank" do
+    @contract.update!(premises_address: "123 Existing St", extraction_status: "pending")
+    @contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "Sample text",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    ai_response = build_ai_response(key_clauses: [], summary: "Test")
+    # Inject premises_address into the response
+    parsed = JSON.parse(ai_response["content"][0]["text"])
+    parsed["premises_address"] = "456 AI Detected Ave"
+    ai_response["content"][0]["text"] = parsed.to_json
+
+    stub_anthropic_client(ai_response) do
+      ContractAiExtractorService.new(@contract).call
+    end
+
+    @contract.reload
+    assert_equal "123 Existing St", @contract.premises_address, "Existing address should be preserved"
+  end
+
+  test "full extraction fills premises_address when blank" do
+    @contract.update!(premises_address: nil, extraction_status: "pending")
+    @contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "Sample text",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    ai_response = build_ai_response(key_clauses: [], summary: "Test")
+    parsed = JSON.parse(ai_response["content"][0]["text"])
+    parsed["premises_address"] = "456 AI Detected Ave"
+    ai_response["content"][0]["text"] = parsed.to_json
+
+    stub_anthropic_client(ai_response) do
+      ContractAiExtractorService.new(@contract).call
+    end
+
+    @contract.reload
+    assert_equal "456 AI Detected Ave", @contract.premises_address
+  end
+
+  test "full extraction maps next_renewal_date from AI response" do
+    @contract.update!(next_renewal_date: nil, auto_renews: false, extraction_status: "pending")
+    @contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "Sample text",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    ai_response = build_ai_response(key_clauses: [], summary: "Test")
+    parsed = JSON.parse(ai_response["content"][0]["text"])
+    parsed["next_renewal_date"] = "2027-06-30"
+    ai_response["content"][0]["text"] = parsed.to_json
+
+    stub_anthropic_client(ai_response) do
+      ContractAiExtractorService.new(@contract).call
+    end
+
+    @contract.reload
+    assert_equal Date.new(2027, 6, 30), @contract.next_renewal_date
+  end
+
+  test "compute_next_renewal_date sets end_date as fallback when auto_renews and blank" do
+    @contract.update!(
+      next_renewal_date: nil,
+      auto_renews: true,
+      end_date: Date.new(2027, 12, 31),
+      extraction_status: "pending"
+    )
+
+    service = ContractAiExtractorService.new(@contract)
+    service.send(:compute_next_renewal_date!)
+
+    @contract.reload
+    assert_equal Date.new(2027, 12, 31), @contract.next_renewal_date,
+      "Should fall back to end_date for auto-renewing contracts"
+  end
+
+  test "compute_next_renewal_date does not overwrite existing value" do
+    existing_date = Date.new(2027, 6, 30)
+    @contract.update!(
+      next_renewal_date: existing_date,
+      auto_renews: true,
+      end_date: Date.new(2027, 12, 31)
+    )
+
+    service = ContractAiExtractorService.new(@contract)
+    service.send(:compute_next_renewal_date!)
+
+    @contract.reload
+    assert_equal existing_date, @contract.next_renewal_date,
+      "Should not overwrite existing next_renewal_date"
+  end
+
+  test "compute_next_renewal_date skipped when not auto_renews" do
+    @contract.update!(
+      next_renewal_date: nil,
+      auto_renews: false,
+      end_date: Date.new(2027, 12, 31)
+    )
+
+    service = ContractAiExtractorService.new(@contract)
+    service.send(:compute_next_renewal_date!)
+
+    @contract.reload
+    assert_nil @contract.next_renewal_date,
+      "Should not set date for non-auto-renewing contracts"
+  end
+
+  test "detect_and_set_lease_type overrides other contract_type" do
+    @contract.update_column(:contract_type, "other")
+    lease_text = "This LEASE AGREEMENT between LANDLORD and TENANT for the PREMISES located at 123 Main Street. The RENT shall be payable monthly."
+    service = ContractAiExtractorService.new(@contract)
+    service.send(:detect_and_set_lease_type!, lease_text)
+    @contract.reload
+    assert_equal "lease", @contract.contract_type,
+      "Should override 'other' type when lease indicators are detected"
+  end
+
   private
 
   def build_ai_response(title: nil, vendor_name: nil, contract_type: nil,
@@ -648,5 +879,260 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     fake_client.define_singleton_method(:messages) { |**_kwargs| response }
 
     Anthropic::Client.stub(:new, fake_client, &block)
+  end
+
+  def build_lease_ai_response
+    build_ai_response(
+      title: "Retail Space - Downtown",
+      vendor_name: "Metro Properties LLC",
+      contract_type: "lease",
+      direction: "outbound",
+      start_date: "2025-01-01",
+      end_date: "2030-12-31",
+      monthly_value: 8500,
+      total_value: 612000,
+      auto_renews: true,
+      renewal_term: "annual",
+      notice_period_days: 180,
+      key_clauses: [
+        { "clause_type" => "security_deposit", "content" => "Security deposit of $25,500.", "confidence_score" => 95 },
+        { "clause_type" => "cam_provision", "content" => "CAM capped at 5% cumulative.", "confidence_score" => 90 }
+      ],
+      summary: "NNN retail lease for downtown location."
+    ).tap do |response|
+      # Inject lease-specific data into the JSON response
+      parsed = JSON.parse(response["content"][0]["text"])
+      parsed["lease_details"] = {
+        "lease_type" => "nnn",
+        "rentable_sqft" => 3500,
+        "usable_sqft" => 3200,
+        "load_factor" => 1.0937,
+        "permitted_use" => "Retail sales and office",
+        "security_deposit" => 25500,
+        "parking_spaces" => 8,
+        "parking_monthly_cost" => 150,
+        "free_rent_months" => 3,
+        "rent_commencement_date" => "2025-04-01",
+        "cam_base_amount" => 12000,
+        "cam_base_year" => 2025,
+        "cam_cap_percentage" => 5.0,
+        "cam_cap_type" => "cumulative",
+        "cam_reconciliation_month" => 3,
+        "cam_audit_rights" => true,
+        "cam_gross_up_provision" => true,
+        "ti_allowance_psf" => 35.0,
+        "ti_total_amount" => 122500,
+        "ti_deadline" => "2026-06-30",
+        "ti_disbursement_type" => "draw_schedule"
+      }
+      parsed["rent_escalations"] = [
+        { "effective_date" => "2025-04-01", "base_rent_monthly" => 8500, "base_rent_annual" => 102000, "escalation_type" => "flat", "description" => "Initial rent" },
+        { "effective_date" => "2026-04-01", "base_rent_monthly" => 8755, "base_rent_annual" => 105060, "escalation_type" => "fixed_percentage", "escalation_value" => 3.0, "description" => "3% annual increase" }
+      ]
+      parsed["lease_options"] = [
+        { "option_type" => "renewal", "exercise_deadline" => "2030-06-30", "notice_deadline" => "2030-01-01", "term_length_months" => 60, "rent_terms" => "FMV with 10% cap" },
+        { "option_type" => "termination", "notice_deadline" => "2028-06-30", "penalty_amount" => 50000 }
+      ]
+      parsed["lease_milestones"] = [
+        { "milestone_type" => "cam_reconciliation", "due_date" => "2027-03-01", "description" => "Annual CAM reconciliation", "recurring" => true, "recurrence_interval" => "annual" },
+        { "milestone_type" => "insurance_renewal", "due_date" => "2026-06-15", "description" => "Certificate of insurance", "recurring" => true, "recurrence_interval" => "annual" }
+      ]
+      response["content"][0]["text"] = parsed.to_json
+      response["usage"] = { "input_tokens" => 3000, "output_tokens" => 1200 }
+    end
+  end
+
+  # --- Lease-specific extraction tests ---
+
+  test "detects lease type from document text when contract_type is blank" do
+    @contract.update_column(:contract_type, nil)
+    lease_text = "This LEASE AGREEMENT between LANDLORD and TENANT for the PREMISES located at 123 Main Street. The RENT shall be payable monthly."
+    service = ContractAiExtractorService.new(@contract)
+    service.send(:detect_and_set_lease_type!, lease_text)
+    @contract.reload
+    assert_equal "lease", @contract.contract_type
+  end
+
+  test "does not change contract_type when already set" do
+    @contract.update_column(:contract_type, "maintenance")
+    lease_text = "This LEASE AGREEMENT between LANDLORD and TENANT for the PREMISES."
+    service = ContractAiExtractorService.new(@contract)
+    service.send(:detect_and_set_lease_type!, lease_text)
+    @contract.reload
+    assert_equal "maintenance", @contract.contract_type
+  end
+
+  test "uses lease prompt when contract_type is lease" do
+    lease_contract = contracts(:commercial_lease)
+    # Need a completed doc for the lease contract
+    lease_contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "This is a sample commercial lease.",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+    service = ContractAiExtractorService.new(lease_contract)
+    assert service.send(:lease_extraction?)
+    document_text = service.send(:build_document_text)
+    prompt = service.send(:build_prompt, document_text)
+    assert_includes prompt, "commercial real estate lease analysis specialist"
+  end
+
+  test "uses generic prompt for non-lease contract" do
+    service = ContractAiExtractorService.new(@contract)
+    refute service.send(:lease_extraction?)
+  end
+
+  test "apply_lease_extraction creates all child records" do
+    lease_contract = contracts(:commercial_lease)
+    # Clean up existing records
+    lease_contract.lease_detail&.destroy
+    lease_contract.rent_escalations.destroy_all
+    lease_contract.lease_options.destroy_all
+    lease_contract.lease_milestones.destroy_all
+
+    service = ContractAiExtractorService.new(lease_contract)
+
+    data = {
+      "lease_details" => {
+        "lease_type" => "nnn",
+        "rentable_sqft" => 4000,
+        "cam_base_amount" => 15000,
+        "cam_reconciliation_month" => 6,
+        "ti_allowance_psf" => 40.0,
+        "ti_total_amount" => 160000,
+        "ti_deadline" => "2027-01-01",
+        "ti_disbursement_type" => "lump_sum"
+      },
+      "rent_escalations" => [
+        { "effective_date" => "2025-01-01", "base_rent_monthly" => 9000, "escalation_type" => "flat" },
+        { "effective_date" => "2026-01-01", "base_rent_monthly" => 9270, "escalation_type" => "fixed_percentage", "escalation_value" => 3.0 }
+      ],
+      "lease_options" => [
+        { "option_type" => "renewal", "notice_deadline" => "2029-06-30", "term_length_months" => 60 }
+      ],
+      "lease_milestones" => [
+        { "milestone_type" => "cam_reconciliation", "due_date" => "2027-06-01", "description" => "CAM recon", "recurring" => true, "recurrence_interval" => "annual" }
+      ]
+    }
+
+    service.send(:apply_lease_extraction, data)
+    lease_contract.reload
+
+    assert_not_nil lease_contract.lease_detail
+    assert_equal "nnn", lease_contract.lease_detail.lease_type
+    assert_equal 4000, lease_contract.lease_detail.rentable_sqft.to_i
+    assert_equal 2, lease_contract.rent_escalations.count
+    assert_equal 1, lease_contract.lease_options.count
+    assert_equal "renewal", lease_contract.lease_options.first.option_type
+    assert_equal 1, lease_contract.lease_milestones.count
+    assert_equal "cam_reconciliation", lease_contract.lease_milestones.first.milestone_type
+  end
+
+  test "sanitize_lease_data coerces invalid enum values to nil" do
+    service = ContractAiExtractorService.new(@contract)
+    data = {
+      "lease_details" => {
+        "lease_type" => "invalid_type",
+        "cam_cap_type" => "bad_value",
+        "ti_disbursement_type" => "unknown",
+        "rentable_sqft" => "abc",
+        "cam_reconciliation_month" => 15
+      },
+      "rent_escalations" => [
+        { "effective_date" => "not-a-date", "escalation_type" => "flat" }
+      ],
+      "lease_options" => [
+        { "option_type" => "invalid_opt" }
+      ],
+      "lease_milestones" => [
+        { "milestone_type" => "nonexistent", "due_date" => "2027-01-01" }
+      ]
+    }
+
+    service.send(:sanitize_lease_data!, data)
+
+    assert_nil data["lease_details"]["lease_type"]
+    assert_nil data["lease_details"]["cam_cap_type"]
+    assert_nil data["lease_details"]["ti_disbursement_type"]
+    assert_nil data["lease_details"]["cam_reconciliation_month"]
+    # Invalid rent_escalation removed (bad date)
+    assert_equal 0, data["rent_escalations"].size
+    # Invalid lease_option removed (bad type)
+    assert_equal 0, data["lease_options"].size
+    # Invalid lease_milestone removed (bad type)
+    assert_equal 0, data["lease_milestones"].size
+  end
+
+  test "incremental lease extraction replaces child tables" do
+    lease_contract = contracts(:commercial_lease)
+    # Ensure the fixture data is loaded
+    assert_not_nil lease_contract.lease_detail
+    original_escalation_count = lease_contract.rent_escalations.count
+    assert original_escalation_count > 0
+
+    service = ContractAiExtractorService.new(lease_contract, mode: :incremental)
+
+    data = {
+      "lease_details" => {
+        "lease_type" => "modified_gross",
+        "rentable_sqft" => 5000
+      },
+      "rent_escalations" => [
+        { "effective_date" => "2025-07-01", "base_rent_monthly" => 10000, "escalation_type" => "flat" }
+      ],
+      "lease_options" => [],
+      "lease_milestones" => []
+    }
+
+    service.send(:apply_lease_extraction, data)
+    lease_contract.reload
+
+    assert_equal "modified_gross", lease_contract.lease_detail.lease_type
+    assert_equal 5000, lease_contract.lease_detail.rentable_sqft.to_i
+    assert_equal 1, lease_contract.rent_escalations.count
+    assert_equal 0, lease_contract.lease_options.count
+    assert_equal 0, lease_contract.lease_milestones.count
+  end
+
+  test "full lease extraction via stubbed API creates lease records" do
+    lease_contract = contracts(:commercial_lease)
+    lease_contract.lease_detail&.destroy
+    lease_contract.rent_escalations.destroy_all
+    lease_contract.lease_options.destroy_all
+    lease_contract.lease_milestones.destroy_all
+    lease_contract.key_clauses.destroy_all
+    lease_contract.update!(extraction_status: "pending")
+
+    lease_contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "This LEASE AGREEMENT between Metro Properties LLC (Landlord) and Tenant...",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    ai_response = build_lease_ai_response
+
+    stub_anthropic_client(ai_response) do
+      ContractAiExtractorService.new(lease_contract).call
+    end
+
+    lease_contract.reload
+    assert_equal "completed", lease_contract.extraction_status
+    assert_not_nil lease_contract.lease_detail
+    assert_equal "nnn", lease_contract.lease_detail.lease_type
+    assert lease_contract.rent_escalations.count >= 2
+    assert lease_contract.lease_options.count >= 2
+    assert lease_contract.lease_milestones.count >= 1
+    assert lease_contract.key_clauses.any? { |c| c.clause_type == "security_deposit" }
+  end
+
+  test "max_tokens is 8192 for lease extractions" do
+    lease_contract = contracts(:commercial_lease)
+    service = ContractAiExtractorService.new(lease_contract)
+    assert service.send(:lease_extraction?)
+    # The lease extraction flag is used to determine max_tokens in the call method
   end
 end

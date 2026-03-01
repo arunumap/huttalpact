@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_27_210748) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_02_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -82,8 +82,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_210748) do
 
   create_table "alert_preferences", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.integer "days_before_cam_reconciliation", default: 30
     t.integer "days_before_expiry", default: 14, null: false
+    t.integer "days_before_milestone", default: 14
+    t.integer "days_before_option_exercise", default: 90
     t.integer "days_before_renewal", default: 30, null: false
+    t.integer "days_before_rent_escalation", default: 30
     t.boolean "email_enabled", default: true, null: false
     t.boolean "in_app_enabled", default: true, null: false
     t.uuid "organization_id", null: false
@@ -157,6 +161,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_210748) do
 
   create_table "contracts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.text "ai_extracted_data"
+    t.text "ai_summary"
     t.boolean "auto_renews", default: false
     t.string "contract_type"
     t.datetime "created_at", null: false
@@ -169,6 +174,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_210748) do
     t.text "notes"
     t.integer "notice_period_days"
     t.uuid "organization_id", null: false
+    t.string "premises_address"
     t.string "renewal_term"
     t.date "start_date"
     t.string "status", default: "active", null: false
@@ -182,6 +188,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_210748) do
     t.index ["end_date"], name: "index_contracts_on_end_date"
     t.index ["next_renewal_date"], name: "index_contracts_on_next_renewal_date"
     t.index ["organization_id"], name: "index_contracts_on_organization_id"
+    t.index ["premises_address"], name: "index_contracts_on_premises_address"
     t.index ["status"], name: "index_contracts_on_status"
     t.index ["uploaded_by_id"], name: "index_contracts_on_uploaded_by_id"
   end
@@ -215,6 +222,76 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_210748) do
     t.index ["contract_id", "clause_type"], name: "index_key_clauses_on_contract_id_and_clause_type"
     t.index ["contract_id"], name: "index_key_clauses_on_contract_id"
     t.index ["source_document_id"], name: "index_key_clauses_on_source_document_id"
+  end
+
+  create_table "lease_details", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.boolean "cam_audit_rights", default: false
+    t.decimal "cam_base_amount", precision: 12, scale: 2
+    t.integer "cam_base_year"
+    t.decimal "cam_cap_percentage", precision: 5, scale: 2
+    t.string "cam_cap_type"
+    t.decimal "cam_controllable_cap", precision: 5, scale: 2
+    t.boolean "cam_gross_up_provision", default: false
+    t.integer "cam_reconciliation_month"
+    t.uuid "contract_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "free_rent_months"
+    t.string "lease_type"
+    t.decimal "load_factor", precision: 5, scale: 4
+    t.decimal "parking_monthly_cost", precision: 10, scale: 2
+    t.integer "parking_spaces"
+    t.decimal "percentage_rent_breakpoint", precision: 12, scale: 2
+    t.decimal "percentage_rent_rate", precision: 5, scale: 2
+    t.date "percentage_rent_report_date"
+    t.string "permitted_use"
+    t.date "rent_commencement_date"
+    t.decimal "rentable_sqft", precision: 10, scale: 2
+    t.decimal "security_deposit", precision: 12, scale: 2
+    t.text "security_deposit_conditions"
+    t.decimal "ti_allowance_psf", precision: 10, scale: 2
+    t.decimal "ti_amortization_rate", precision: 5, scale: 2
+    t.integer "ti_amortization_term_months"
+    t.date "ti_deadline"
+    t.string "ti_disbursement_type"
+    t.text "ti_landlord_work_description"
+    t.text "ti_tenant_work_description"
+    t.decimal "ti_total_amount", precision: 12, scale: 2
+    t.datetime "updated_at", null: false
+    t.decimal "usable_sqft", precision: 10, scale: 2
+    t.index ["contract_id"], name: "index_lease_details_on_contract_id", unique: true
+  end
+
+  create_table "lease_milestones", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "contract_id", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.date "due_date", null: false
+    t.string "milestone_type", null: false
+    t.uuid "organization_id", null: false
+    t.string "recurrence_interval"
+    t.boolean "recurring", default: false
+    t.datetime "updated_at", null: false
+    t.index ["contract_id", "milestone_type"], name: "index_lease_milestones_on_contract_id_and_milestone_type"
+    t.index ["contract_id"], name: "index_lease_milestones_on_contract_id"
+    t.index ["organization_id", "due_date"], name: "index_lease_milestones_on_organization_id_and_due_date"
+    t.index ["organization_id"], name: "index_lease_milestones_on_organization_id"
+  end
+
+  create_table "lease_options", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "conditions"
+    t.uuid "contract_id", null: false
+    t.datetime "created_at", null: false
+    t.date "exercise_deadline"
+    t.date "notice_deadline"
+    t.string "option_type", null: false
+    t.decimal "penalty_amount", precision: 12, scale: 2
+    t.integer "position", default: 0
+    t.text "rent_terms"
+    t.integer "term_length_months"
+    t.datetime "updated_at", null: false
+    t.index ["contract_id", "option_type"], name: "index_lease_options_on_contract_id_and_option_type"
+    t.index ["contract_id"], name: "index_lease_options_on_contract_id"
+    t.index ["notice_deadline"], name: "index_lease_options_on_notice_deadline"
   end
 
   create_table "memberships", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -346,6 +423,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_210748) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "rent_escalations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.decimal "base_rent_annual", precision: 12, scale: 2
+    t.decimal "base_rent_monthly", precision: 12, scale: 2
+    t.uuid "contract_id", null: false
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.date "effective_date", null: false
+    t.string "escalation_type", null: false
+    t.decimal "escalation_value", precision: 10, scale: 4
+    t.integer "position", default: 0
+    t.datetime "updated_at", null: false
+    t.index ["contract_id", "effective_date"], name: "index_rent_escalations_on_contract_id_and_effective_date"
+    t.index ["contract_id"], name: "index_rent_escalations_on_contract_id"
+  end
+
   create_table "sessions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "ip_address"
@@ -387,11 +479,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_27_210748) do
   add_foreign_key "invitations", "users", column: "inviter_id"
   add_foreign_key "key_clauses", "contract_documents", column: "source_document_id", on_delete: :cascade
   add_foreign_key "key_clauses", "contracts", on_delete: :cascade
+  add_foreign_key "lease_details", "contracts", on_delete: :cascade
+  add_foreign_key "lease_milestones", "contracts", on_delete: :cascade
+  add_foreign_key "lease_milestones", "organizations"
+  add_foreign_key "lease_options", "contracts", on_delete: :cascade
   add_foreign_key "memberships", "organizations"
   add_foreign_key "memberships", "users"
   add_foreign_key "pay_charges", "pay_customers", column: "customer_id"
   add_foreign_key "pay_charges", "pay_subscriptions", column: "subscription_id"
   add_foreign_key "pay_payment_methods", "pay_customers", column: "customer_id"
   add_foreign_key "pay_subscriptions", "pay_customers", column: "customer_id"
+  add_foreign_key "rent_escalations", "contracts", on_delete: :cascade
   add_foreign_key "sessions", "users"
 end

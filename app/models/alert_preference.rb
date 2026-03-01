@@ -7,6 +7,10 @@ class AlertPreference < ApplicationRecord
   validates :user_id, uniqueness: { scope: :organization_id }
   validates :days_before_renewal, numericality: { only_integer: true, greater_than: 0 }
   validates :days_before_expiry, numericality: { only_integer: true, greater_than: 0 }
+  validates :days_before_option_exercise, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
+  validates :days_before_rent_escalation, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
+  validates :days_before_cam_reconciliation, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
+  validates :days_before_milestone, numericality: { only_integer: true, greater_than: 0 }, allow_nil: true
 
   def self.for(user, organization)
     find_or_initialize_by(user: user, organization: organization)

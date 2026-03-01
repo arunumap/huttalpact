@@ -1,0 +1,62 @@
+<%= form_with model: [contract, lease_option], class: "space-y-6" do |form| %>
+  <% if lease_option.errors.any? %>
+    <div class="rounded-md bg-red-50 p-4">
+      <div class="text-sm text-red-700">
+        <ul class="list-disc space-y-1 pl-5">
+          <% lease_option.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h3 class="text-base font-semibold text-gray-900">Option Details</h3>
+    </div>
+    <div class="px-6 py-5 space-y-5">
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <%= form.label :option_type, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.select :option_type, options_for_select(LeaseOption::OPTION_TYPES.map { |t| [t.titleize.gsub("_", " "), t] }, lease_option.option_type), { include_blank: "Select..." }, required: true, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+        <div>
+          <%= form.label :term_length_months, "Term Length (months)", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.number_field :term_length_months, min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <%= form.label :exercise_deadline, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.date_field :exercise_deadline, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+        <div>
+          <%= form.label :notice_deadline, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.date_field :notice_deadline, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div>
+          <%= form.label :penalty_amount, "Penalty Amount ($)", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.number_field :penalty_amount, step: "0.01", min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+        <div>&nbsp;</div>
+      </div>
+      <div>
+        <%= form.label :rent_terms, class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_area :rent_terms, rows: 2, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm", placeholder: "e.g., Fair market value at time of renewal" %>
+      </div>
+      <div>
+        <%= form.label :conditions, class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_area :conditions, rows: 2, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm", placeholder: "e.g., No outstanding defaults, written notice required" %>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-end gap-3">
+    <%= link_to "Cancel", contract, class: "rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900" %>
+    <%= form.submit lease_option.persisted? ? "Update Option" : "Add Option", data: { turbo_submits_with: "Saving..." },
+        class: "rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 cursor-pointer" %>
+  </div>
+<% end %>

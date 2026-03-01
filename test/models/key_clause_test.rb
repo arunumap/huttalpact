@@ -86,7 +86,10 @@ class KeyClauseTest < ActiveSupport::TestCase
   end
 
   test "CLAUSE_TYPES constant" do
-    expected = %w[termination renewal penalty sla price_escalation liability insurance_requirement]
+    expected = %w[termination renewal penalty sla price_escalation liability insurance_requirement
+                  security_deposit cam_provision maintenance_responsibility subletting_assignment
+                  exclusivity co_tenancy parking signage hazmat ada_compliance subordination
+                  use_restriction tenant_improvement]
     assert_equal expected, KeyClause::CLAUSE_TYPES
   end
 end

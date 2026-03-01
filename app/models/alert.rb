@@ -5,7 +5,16 @@ class Alert < ApplicationRecord
   belongs_to :contract
   has_many :alert_recipients, dependent: :destroy
 
-  ALERT_TYPES = %w[renewal_upcoming expiry_warning notice_period_start].freeze
+  ALERT_TYPES = %w[
+    renewal_upcoming
+    expiry_warning
+    notice_period_start
+    option_exercise_deadline
+    rent_escalation_date
+    cam_reconciliation
+    ti_deadline
+    milestone_reminder
+  ].freeze
   STATUSES = %w[pending sent acknowledged snoozed cancelled].freeze
 
   validates :alert_type, presence: true, inclusion: { in: ALERT_TYPES }
@@ -86,6 +95,46 @@ class Alert < ApplicationRecord
       else
         "#{contract.title} renews in #{pluralize_days(days_until)} — #{event_date_str}"
       end
+    when "option_exercise_deadline"
+      if overdue?
+        "Option exercise deadline for #{contract.title} passed #{pluralize_days(days_until.abs)} ago"
+      elsif due_today?
+        "Option exercise deadline for #{contract.title} is today!"
+      else
+        "Option exercise deadline for #{contract.title} in #{pluralize_days(days_until)} — #{trigger_date.strftime('%b %-d, %Y')}"
+      end
+    when "rent_escalation_date"
+      if overdue?
+        "Rent escalation for #{contract.title} took effect #{pluralize_days(days_until.abs)} ago"
+      elsif due_today?
+        "Rent escalation for #{contract.title} takes effect today"
+      else
+        "Rent escalation for #{contract.title} in #{pluralize_days(days_until)} — #{trigger_date.strftime('%b %-d, %Y')}"
+      end
+    when "cam_reconciliation"
+      if overdue?
+        "CAM reconciliation for #{contract.title} was due #{pluralize_days(days_until.abs)} ago"
+      elsif due_today?
+        "CAM reconciliation for #{contract.title} is due today"
+      else
+        "CAM reconciliation for #{contract.title} in #{pluralize_days(days_until)} — #{trigger_date.strftime('%b %-d, %Y')}"
+      end
+    when "ti_deadline"
+      if overdue?
+        "TI allowance deadline for #{contract.title} passed #{pluralize_days(days_until.abs)} ago"
+      elsif due_today?
+        "TI allowance deadline for #{contract.title} is today — use it or lose it!"
+      else
+        "TI allowance deadline for #{contract.title} in #{pluralize_days(days_until)} — #{trigger_date.strftime('%b %-d, %Y')}"
+      end
+    when "milestone_reminder"
+      if overdue?
+        "#{message || 'Lease milestone'} for #{contract.title} was due #{pluralize_days(days_until.abs)} ago"
+      elsif due_today?
+        "#{message || 'Lease milestone'} for #{contract.title} is due today"
+      else
+        "#{message || 'Lease milestone'} for #{contract.title} in #{pluralize_days(days_until)}"
+      end
     else
       message
     end
@@ -113,6 +162,11 @@ class Alert < ApplicationRecord
     when "expiry_warning" then contract.end_date
     when "renewal_upcoming" then contract.next_renewal_date
     when "notice_period_start" then contract.next_renewal_date || contract.end_date
+    when "option_exercise_deadline" then trigger_date
+    when "rent_escalation_date" then trigger_date
+    when "cam_reconciliation" then trigger_date
+    when "ti_deadline" then contract.lease_detail&.ti_deadline
+    when "milestone_reminder" then trigger_date
     end
   end
 

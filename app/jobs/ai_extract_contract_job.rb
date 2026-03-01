@@ -16,6 +16,11 @@ class AiExtractContractJob < ApplicationJob
     # Broadcast updated contract show page
     contract.reload
     broadcast_contract_update(contract)
+
+    # After lease extraction, regenerate alerts based on newly extracted lease data
+    if contract.lease? && contract.lease_detail.present?
+      GenerateContractAlertsJob.perform_later(contract.id)
+    end
   rescue ActiveRecord::RecordNotFound
     Rails.logger.warn("Contract #{contract_id} not found, skipping AI extraction")
   rescue => e
@@ -41,6 +46,16 @@ class AiExtractContractJob < ApplicationJob
       partial: "contracts/key_clauses",
       locals: { contract: contract }
     )
+
+    # Broadcast lease details for lease contracts
+    if contract.lease? && contract.lease_detail.present?
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "contract_#{contract.id}",
+        target: "contract_lease_details",
+        partial: "contracts/lease_details",
+        locals: { contract: contract }
+      )
+    end
 
     # For draft contracts, also broadcast form and extraction status updates
     if contract.draft?

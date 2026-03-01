@@ -169,6 +169,148 @@
     <% end %>
   </div>
 
+  <%# Lease Insights — only shown when lease contracts exist %>
+  <% if @lease_contract_count&.positive? %>
+    <div class="space-y-6">
+      <h2 class="text-lg font-semibold text-gray-900">Lease Insights</h2>
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+        <%# Option Deadlines %>
+        <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+          <div class="border-b border-gray-200 px-6 py-4">
+            <h3 class="text-base font-semibold text-gray-900">Option Deadlines</h3>
+            <p class="mt-0.5 text-xs text-gray-500">Exercise & notice deadlines in the next 90 days</p>
+          </div>
+          <% if @upcoming_option_deadlines.any? %>
+            <ul class="divide-y divide-gray-100">
+              <% @upcoming_option_deadlines.each do |opt| %>
+                <li class="px-6 py-3 flex items-center justify-between gap-4">
+                  <div class="min-w-0">
+                    <%= link_to opt.contract.title, opt.contract, class: "text-sm font-medium text-amber-600 hover:text-amber-500 truncate block" %>
+                    <span class="text-xs text-gray-500"><%= opt.option_type&.titleize %></span>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <% deadline = opt.notice_deadline || opt.exercise_deadline %>
+                    <% days = (deadline - Date.current).to_i if deadline %>
+                    <span class="text-sm font-medium <%= days && days <= 14 ? 'text-red-600' : days && days <= 30 ? 'text-amber-600' : 'text-gray-900' %>">
+                      <%= deadline ? format_date(deadline) : "—" %>
+                    </span>
+                    <% if days %>
+                      <span class="block text-xs text-gray-500"><%= days %> days</span>
+                    <% end %>
+                  </div>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <div class="px-6 py-8 text-center">
+              <p class="text-sm text-gray-500">No option deadlines in the next 90 days.</p>
+            </div>
+          <% end %>
+        </div>
+
+        <%# Upcoming Rent Changes %>
+        <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+          <div class="border-b border-gray-200 px-6 py-4">
+            <h3 class="text-base font-semibold text-gray-900">Upcoming Rent Changes</h3>
+            <p class="mt-0.5 text-xs text-gray-500">Escalations effective in the next 12 months</p>
+          </div>
+          <% if @upcoming_escalations.any? %>
+            <ul class="divide-y divide-gray-100">
+              <% @upcoming_escalations.each do |esc| %>
+                <li class="px-6 py-3 flex items-center justify-between gap-4">
+                  <div class="min-w-0">
+                    <%= link_to esc.contract.title, esc.contract, class: "text-sm font-medium text-amber-600 hover:text-amber-500 truncate block" %>
+                    <span class="text-xs text-gray-500"><%= esc.escalation_description %></span>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <span class="text-sm font-medium text-gray-900"><%= format_date(esc.effective_date) %></span>
+                    <% if esc.base_rent_monthly %>
+                      <span class="block text-xs text-gray-500"><%= format_currency(esc.base_rent_monthly) %>/mo</span>
+                    <% end %>
+                  </div>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <div class="px-6 py-8 text-center">
+              <p class="text-sm text-gray-500">No rent changes in the next 12 months.</p>
+            </div>
+          <% end %>
+        </div>
+
+        <%# TI Deadlines %>
+        <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+          <div class="border-b border-gray-200 px-6 py-4">
+            <h3 class="text-base font-semibold text-gray-900">TI Deadlines</h3>
+            <p class="mt-0.5 text-xs text-gray-500">Tenant improvement utilization deadlines</p>
+          </div>
+          <% if @upcoming_ti_deadlines.any? %>
+            <ul class="divide-y divide-gray-100">
+              <% @upcoming_ti_deadlines.each do |ld| %>
+                <li class="px-6 py-3 flex items-center justify-between gap-4">
+                  <div class="min-w-0">
+                    <%= link_to ld.contract.title, ld.contract, class: "text-sm font-medium text-amber-600 hover:text-amber-500 truncate block" %>
+                    <% if ld.ti_total_amount.present? %>
+                      <span class="text-xs text-gray-500"><%= format_currency(ld.ti_total_amount) %> allowance</span>
+                    <% end %>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <% days_remaining = ld.ti_days_remaining %>
+                    <span class="text-sm font-medium <%= days_remaining && days_remaining <= 30 ? 'text-red-600' : days_remaining && days_remaining <= 90 ? 'text-amber-600' : 'text-gray-900' %>">
+                      <%= format_date(ld.ti_deadline) %>
+                    </span>
+                    <% if days_remaining && days_remaining > 0 %>
+                      <span class="block text-xs text-gray-500"><%= days_remaining %> days left</span>
+                    <% end %>
+                  </div>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <div class="px-6 py-8 text-center">
+              <p class="text-sm text-gray-500">No TI deadlines in the next 6 months.</p>
+            </div>
+          <% end %>
+        </div>
+
+        <%# Upcoming Milestones %>
+        <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+          <div class="border-b border-gray-200 px-6 py-4">
+            <h3 class="text-base font-semibold text-gray-900">Lease Milestones</h3>
+            <p class="mt-0.5 text-xs text-gray-500">Upcoming milestones in the next 90 days</p>
+          </div>
+          <% if @upcoming_milestones.any? %>
+            <ul class="divide-y divide-gray-100">
+              <% @upcoming_milestones.each do |ms| %>
+                <li class="px-6 py-3 flex items-center justify-between gap-4">
+                  <div class="min-w-0">
+                    <%= link_to ms.contract.title, ms.contract, class: "text-sm font-medium text-amber-600 hover:text-amber-500 truncate block" %>
+                    <span class="text-xs text-gray-500"><%= ms.milestone_type&.titleize&.gsub("_", " ") %></span>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <% days = ms.days_until_due %>
+                    <span class="text-sm font-medium <%= days && days <= 7 ? 'text-red-600' : days && days <= 30 ? 'text-amber-600' : 'text-gray-900' %>">
+                      <%= format_date(ms.due_date) %>
+                    </span>
+                    <% if days && days > 0 %>
+                      <span class="block text-xs text-gray-500"><%= days %> days</span>
+                    <% end %>
+                  </div>
+                </li>
+              <% end %>
+            </ul>
+          <% else %>
+            <div class="px-6 py-8 text-center">
+              <p class="text-sm text-gray-500">No milestones due in the next 90 days.</p>
+            </div>
+          <% end %>
+        </div>
+
+      </div>
+    </div>
+  <% end %>
+
   <%# Analytics row: Status Distribution + Revenue by Type + Spend by Type %>
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
     <%# Status Distribution %>

@@ -1,0 +1,215 @@
+<% content_for :page_title, "Edit Lease Details — #{@contract.title}" %>
+
+<div class="mx-auto max-w-4xl space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Edit Lease Details</h2>
+      <p class="mt-1 text-sm text-gray-500"><%= @contract.title %></p>
+    </div>
+    <%= link_to "Back to Contract", @contract, class: "text-sm font-medium text-amber-600 hover:text-amber-500" %>
+  </div>
+
+  <%= form_with model: @lease_detail, url: contract_lease_detail_path(@contract), method: :patch, class: "space-y-8" do |form| %>
+    <% if @lease_detail.errors.any? %>
+      <div class="rounded-md bg-red-50 p-4">
+        <div class="text-sm text-red-700">
+          <ul class="list-disc space-y-1 pl-5">
+            <% @lease_detail.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    <% end %>
+
+    <%# Space & Use %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-base font-semibold text-gray-900">Space & Use</h3>
+      </div>
+      <div class="px-6 py-5 space-y-5">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-4">
+          <div>
+            <%= form.label :lease_type, "Lease Type", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.select :lease_type, options_for_select(LeaseDetail::LEASE_TYPES.map { |t| [t.titleize.gsub("_", " "), t] }, @lease_detail.lease_type), { include_blank: "Select..." }, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :rentable_sqft, "Rentable SF", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :rentable_sqft, step: "0.01", min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :usable_sqft, "Usable SF", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :usable_sqft, step: "0.01", min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :load_factor, class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :load_factor, step: "0.01", min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+        </div>
+        <div>
+          <%= form.label :permitted_use, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_field :permitted_use, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+      </div>
+    </div>
+
+    <%# Security & Parking %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-base font-semibold text-gray-900">Security Deposit & Parking</h3>
+      </div>
+      <div class="px-6 py-5 space-y-5">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div>
+            <%= form.label :security_deposit, "Security Deposit ($)", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :security_deposit, step: "0.01", min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :security_deposit_conditions, "Conditions", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.text_field :security_deposit_conditions, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div>
+            <%= form.label :parking_spaces, class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :parking_spaces, min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :parking_monthly_cost, "Parking $/mo", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :parking_monthly_cost, step: "0.01", min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :free_rent_months, class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :free_rent_months, min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+        </div>
+        <div>
+          <%= form.label :rent_commencement_date, class: "block text-sm font-medium text-gray-700" %>
+          <%= form.date_field :rent_commencement_date, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm sm:max-w-xs" %>
+        </div>
+      </div>
+    </div>
+
+    <%# CAM / Operating Expenses %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-base font-semibold text-gray-900">CAM / Operating Expenses</h3>
+      </div>
+      <div class="px-6 py-5 space-y-5">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div>
+            <%= form.label :cam_base_amount, "Base Amount ($/yr)", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :cam_base_amount, step: "0.01", min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :cam_base_year, "Base Year", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :cam_base_year, min: "1900", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :cam_cap_percentage, "CAM Cap %", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :cam_cap_percentage, step: "0.01", min: "0", max: "100", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div>
+            <%= form.label :cam_cap_type, "Cap Type", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.select :cam_cap_type, options_for_select(LeaseDetail::CAM_CAP_TYPES.map { |t| [t.titleize.gsub("_", " "), t] }, @lease_detail.cam_cap_type), { include_blank: "Select..." }, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :cam_reconciliation_month, "Reconciliation Month", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.select :cam_reconciliation_month, options_for_select((1..12).map { |m| [Date::MONTHNAMES[m], m] }, @lease_detail.cam_reconciliation_month), { include_blank: "Select..." }, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :cam_controllable_cap, "Controllable Cap %", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :cam_controllable_cap, step: "0.01", min: "0", max: "100", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+        </div>
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2">
+            <%= form.check_box :cam_audit_rights, class: "h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600" %>
+            <%= form.label :cam_audit_rights, "Audit Rights", class: "text-sm font-medium text-gray-700" %>
+          </div>
+          <div class="flex items-center gap-2">
+            <%= form.check_box :cam_gross_up_provision, class: "h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600" %>
+            <%= form.label :cam_gross_up_provision, "Gross-Up Provision", class: "text-sm font-medium text-gray-700" %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%# Tenant Improvements %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-base font-semibold text-gray-900">Tenant Improvements</h3>
+      </div>
+      <div class="px-6 py-5 space-y-5">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div>
+            <%= form.label :ti_allowance_psf, "TI Allowance ($/SF)", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :ti_allowance_psf, step: "0.01", min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :ti_total_amount, "TI Total ($)", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :ti_total_amount, step: "0.01", min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :ti_deadline, "Utilization Deadline", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.date_field :ti_deadline, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div>
+            <%= form.label :ti_disbursement_type, "Disbursement Type", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.select :ti_disbursement_type, options_for_select(LeaseDetail::TI_DISBURSEMENT_TYPES.map { |t| [t.titleize.gsub("_", " "), t] }, @lease_detail.ti_disbursement_type), { include_blank: "Select..." }, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :ti_amortization_rate, "Amortization Rate %", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :ti_amortization_rate, step: "0.01", min: "0", max: "100", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :ti_amortization_term_months, "Amortization Term (months)", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :ti_amortization_term_months, min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+        </div>
+        <div>
+          <%= form.label :ti_landlord_work_description, "Landlord Work", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_area :ti_landlord_work_description, rows: 2, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+        <div>
+          <%= form.label :ti_tenant_work_description, "Tenant Work", class: "block text-sm font-medium text-gray-700" %>
+          <%= form.text_area :ti_tenant_work_description, rows: 2, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+        </div>
+      </div>
+    </div>
+
+    <%# Percentage Rent %>
+    <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h3 class="text-base font-semibold text-gray-900">Percentage Rent</h3>
+      </div>
+      <div class="px-6 py-5">
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          <div>
+            <%= form.label :percentage_rent_breakpoint, "Annual Breakpoint ($)", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :percentage_rent_breakpoint, step: "0.01", min: "0", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :percentage_rent_rate, "Rate Above Breakpoint %", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.number_field :percentage_rent_rate, step: "0.01", min: "0", max: "100", class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+          <div>
+            <%= form.label :percentage_rent_report_date, "Report Date", class: "block text-sm font-medium text-gray-700" %>
+            <%= form.date_field :percentage_rent_report_date, class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <%# Actions %>
+    <div class="flex items-center justify-end gap-3">
+      <%= link_to "Cancel", @contract, class: "rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900" %>
+      <%= form.submit "Save Lease Details", data: { turbo_submits_with: "Saving..." },
+          class: "rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 cursor-pointer" %>
+    </div>
+  <% end %>
+</div>

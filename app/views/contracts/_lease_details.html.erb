@@ -1,0 +1,464 @@
+<%# Lease-specific details panel — only rendered when contract_type is "lease" and lease_detail exists %>
+<% lease = contract.lease_detail %>
+<% escalations = contract.rent_escalations.to_a %>
+<% options = contract.lease_options.to_a %>
+<% milestones = contract.lease_milestones.to_a %>
+
+<%# Lease Overview %>
+<div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+  <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <h3 class="text-base font-semibold text-gray-900">Lease Details</h3>
+      <% if lease.lease_type.present? %>
+        <%= lease_type_badge(lease.lease_type) %>
+      <% end %>
+    </div>
+    <%= link_to edit_contract_lease_detail_path(contract), class: "inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" do %>
+      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
+      Edit
+    <% end %>
+  </div>
+  <dl class="divide-y divide-gray-200">
+    <% if lease.rentable_sqft.present? || lease.usable_sqft.present? %>
+      <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+        <dt class="text-sm font-medium text-gray-500">Space</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+          <% if lease.rentable_sqft.present? %>
+            <span><%= number_with_delimiter(lease.rentable_sqft.to_i) %> RSF</span>
+          <% end %>
+          <% if lease.usable_sqft.present? %>
+            <span class="ml-3 text-gray-500">(<%= number_with_delimiter(lease.usable_sqft.to_i) %> USF)</span>
+          <% end %>
+          <% if lease.load_factor.present? %>
+            <span class="ml-3 text-xs text-gray-400">Load factor: <%= lease.load_factor %></span>
+          <% end %>
+          <% if lease.annual_rent_per_sqft %>
+            <span class="ml-3 text-xs font-medium text-amber-600"><%= format_currency(lease.annual_rent_per_sqft) %>/RSF/yr</span>
+          <% end %>
+        </dd>
+      </div>
+    <% end %>
+    <% if lease.permitted_use.present? %>
+      <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+        <dt class="text-sm font-medium text-gray-500">Permitted Use</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= lease.permitted_use %></dd>
+      </div>
+    <% end %>
+    <% if lease.security_deposit.present? %>
+      <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+        <dt class="text-sm font-medium text-gray-500">Security Deposit</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+          <%= format_currency(lease.security_deposit) %>
+          <% if lease.security_deposit_conditions.present? %>
+            <p class="mt-1 text-xs text-gray-500"><%= lease.security_deposit_conditions %></p>
+          <% end %>
+        </dd>
+      </div>
+    <% end %>
+    <% if lease.parking_spaces.present? %>
+      <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+        <dt class="text-sm font-medium text-gray-500">Parking</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+          <%= pluralize(lease.parking_spaces, "space") %>
+          <% if lease.parking_monthly_cost.present? %>
+            <span class="text-gray-500">at <%= format_currency(lease.parking_monthly_cost) %>/mo</span>
+          <% end %>
+        </dd>
+      </div>
+    <% end %>
+    <% if lease.free_rent_months.present? && lease.free_rent_months > 0 %>
+      <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+        <dt class="text-sm font-medium text-gray-500">Free Rent</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+          <%= pluralize(lease.free_rent_months, "month") %>
+          <% if lease.rent_commencement_date.present? %>
+            <span class="text-gray-500">— rent starts <%= format_date(lease.rent_commencement_date) %></span>
+          <% end %>
+        </dd>
+      </div>
+    <% end %>
+  </dl>
+</div>
+
+<%# Rent Escalation Schedule %>
+<div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <h3 class="text-base font-semibold text-gray-900">Rent Schedule</h3>
+      <%= link_to new_contract_rent_escalation_path(contract), class: "inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" do %>
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        Add
+      <% end %>
+    </div>
+  <% if escalations.any? %>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Effective Date</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Monthly Rent</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Annual Rent</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">$/RSF</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Type</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Change</th>
+            <th scope="col" class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          <% escalations.each do |esc| %>
+            <tr class="<%= 'bg-amber-50' if esc.current? %>">
+              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                <%= format_date(esc.effective_date) %>
+                <% if esc.current? %>
+                  <span class="ml-1 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Current</span>
+                <% end %>
+              </td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900"><%= format_currency(esc.base_rent_monthly) %></td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500"><%= format_currency(esc.base_rent_annual) %></td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                <% if esc.base_rent_annual.present? && lease.rentable_sqft&.positive? %>
+                  <%= format_currency((esc.base_rent_annual / lease.rentable_sqft).round(2)) %>
+                <% else %>
+                  —
+                <% end %>
+              </td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm"><%= escalation_type_badge(esc.escalation_type) %></td>
+              <td class="px-6 py-4 text-sm text-gray-500"><%= esc.escalation_description %></td>
+              <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
+                <%= link_to "Edit", edit_contract_rent_escalation_path(contract, esc), class: "text-amber-600 hover:text-amber-500 font-medium" %>
+                <%= button_to "Delete", contract_rent_escalation_path(contract, esc), method: :delete, data: { turbo_confirm: "Remove this escalation?" }, class: "ml-2 text-red-600 hover:text-red-500 font-medium cursor-pointer" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% else %>
+    <div class="px-6 py-8 text-center">
+      <p class="text-sm text-gray-500">No rent escalations recorded.</p>
+      <%= link_to new_contract_rent_escalation_path(contract), class: "mt-2 inline-flex items-center gap-1 text-sm font-medium text-amber-600 hover:text-amber-500" do %>
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        Add an escalation
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<%# CAM / Operating Expenses %>
+<% if lease.has_cam? %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h3 class="text-base font-semibold text-gray-900">CAM / Operating Expenses</h3>
+    </div>
+    <dl class="divide-y divide-gray-200">
+      <% if lease.cam_base_amount.present? %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Base Amount</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            <%= format_currency(lease.cam_base_amount) %>/year
+            <% if lease.cam_base_year.present? %>
+              <span class="text-gray-500">(Base year: <%= lease.cam_base_year %>)</span>
+            <% end %>
+          </dd>
+        </div>
+      <% end %>
+      <% if lease.cam_cap_percentage.present? %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-amber-700 font-semibold">
+            <svg class="inline-block h-4 w-4 mr-1 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            CAM Cap
+          </dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            <span class="font-semibold text-amber-700"><%= lease.cam_cap_percentage %>%</span>
+            <% if lease.cam_cap_type.present? %>
+              <span class="text-gray-500">(<%= lease.cam_cap_type_label %>)</span>
+            <% end %>
+            <% if lease.cam_controllable_cap.present? %>
+              <span class="block mt-1 text-xs text-gray-500">Controllable expense cap: <%= lease.cam_controllable_cap %>%</span>
+            <% end %>
+          </dd>
+        </div>
+      <% end %>
+      <% if lease.cam_reconciliation_month.present? %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Reconciliation</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= Date::MONTHNAMES[lease.cam_reconciliation_month] %></dd>
+        </div>
+      <% end %>
+      <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+        <dt class="text-sm font-medium text-gray-500">Provisions</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0 space-x-3">
+          <% if lease.cam_audit_rights? %>
+            <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Audit Rights</span>
+          <% end %>
+          <% if lease.cam_gross_up_provision? %>
+            <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-600/20">Gross-Up</span>
+          <% end %>
+          <% unless lease.cam_audit_rights? || lease.cam_gross_up_provision? %>
+            <span class="text-gray-400">None identified</span>
+          <% end %>
+        </dd>
+      </div>
+    </dl>
+  </div>
+<% end %>
+
+<%# Tenant Improvements %>
+<% if lease.has_ti? %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h3 class="text-base font-semibold text-gray-900">Tenant Improvements</h3>
+    </div>
+    <dl class="divide-y divide-gray-200">
+      <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+        <dt class="text-sm font-medium text-gray-500">TI Allowance</dt>
+        <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+          <% if lease.ti_allowance_psf.present? %>
+            <span class="font-semibold"><%= format_currency(lease.ti_allowance_psf) %>/SF</span>
+          <% end %>
+          <% if lease.ti_total_amount.present? %>
+            <span class="<%= 'ml-2 text-gray-500' if lease.ti_allowance_psf.present? %>">
+              (<%= format_currency(lease.ti_total_amount) %> total)
+            </span>
+          <% end %>
+        </dd>
+      </div>
+      <% if lease.ti_deadline.present? %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Utilization Deadline</dt>
+          <dd class="mt-1 text-sm sm:col-span-2 sm:mt-0">
+            <span class="<%= lease.ti_days_remaining && lease.ti_days_remaining <= 90 ? 'font-semibold text-red-600' : 'text-gray-900' %>">
+              <%= format_date(lease.ti_deadline) %>
+            </span>
+            <% if lease.ti_days_remaining %>
+              <% if lease.ti_days_remaining > 0 %>
+                <span class="ml-2 text-xs <%= lease.ti_days_remaining <= 90 ? 'text-red-500 font-medium' : 'text-gray-400' %>">
+                  (<%= lease.ti_days_remaining %> days remaining)
+                </span>
+              <% elsif lease.ti_days_remaining == 0 %>
+                <span class="ml-2 text-xs text-red-600 font-semibold">Due today!</span>
+              <% else %>
+                <span class="ml-2 text-xs text-red-500">(expired <%= lease.ti_days_remaining.abs %> days ago)</span>
+              <% end %>
+            <% end %>
+          </dd>
+        </div>
+      <% end %>
+      <% if lease.ti_disbursement_type.present? %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Disbursement</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= lease.ti_disbursement_type_label %></dd>
+        </div>
+      <% end %>
+      <% if lease.ti_amortization_rate.present? %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Amortization</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0">
+            <%= lease.ti_amortization_rate %>% over
+            <% if lease.ti_amortization_term_months.present? %>
+              <%= pluralize(lease.ti_amortization_term_months, "month") %>
+            <% else %>
+              lease term
+            <% end %>
+          </dd>
+        </div>
+      <% end %>
+      <% if lease.ti_landlord_work_description.present? || lease.ti_tenant_work_description.present? %>
+        <div class="px-6 py-4">
+          <dt class="text-sm font-medium text-gray-500 mb-2">Work Split</dt>
+          <dd class="space-y-2">
+            <% if lease.ti_landlord_work_description.present? %>
+              <div>
+                <span class="text-xs font-medium text-gray-500 uppercase">Landlord Work</span>
+                <p class="text-sm text-gray-900"><%= lease.ti_landlord_work_description %></p>
+              </div>
+            <% end %>
+            <% if lease.ti_tenant_work_description.present? %>
+              <div>
+                <span class="text-xs font-medium text-gray-500 uppercase">Tenant Work</span>
+                <p class="text-sm text-gray-900"><%= lease.ti_tenant_work_description %></p>
+              </div>
+            <% end %>
+          </dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+<% end %>
+
+<%# Percentage Rent %>
+<% if lease.has_percentage_rent? %>
+  <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4">
+      <h3 class="text-base font-semibold text-gray-900">Percentage Rent</h3>
+    </div>
+    <dl class="divide-y divide-gray-200">
+      <% if lease.percentage_rent_breakpoint.present? %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Annual Breakpoint</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= format_currency(lease.percentage_rent_breakpoint) %></dd>
+        </div>
+      <% end %>
+      <% if lease.percentage_rent_rate.present? %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Rate Above Breakpoint</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= lease.percentage_rent_rate %>%</dd>
+        </div>
+      <% end %>
+      <% if lease.percentage_rent_report_date.present? %>
+        <div class="px-6 py-4 sm:grid sm:grid-cols-3 sm:gap-4">
+          <dt class="text-sm font-medium text-gray-500">Report Date</dt>
+          <dd class="mt-1 text-sm text-gray-900 sm:col-span-2 sm:mt-0"><%= format_date(lease.percentage_rent_report_date) %></dd>
+        </div>
+      <% end %>
+    </dl>
+  </div>
+<% end %>
+
+<%# Lease Options %>
+<div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <h3 class="text-base font-semibold text-gray-900">Options</h3>
+      <%= link_to new_contract_lease_option_path(contract), class: "inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" do %>
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        Add
+      <% end %>
+    </div>
+  <% if options.any? %>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Type</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Notice Deadline</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Exercise Deadline</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Term</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Details</th>
+            <th scope="col" class="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 bg-white">
+          <% options.each do |opt| %>
+            <tr class="<%= 'bg-red-50' if opt.urgent? %>">
+              <td class="whitespace-nowrap px-6 py-4 text-sm"><%= option_type_badge(opt.option_type) %></td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm">
+                <% if opt.notice_deadline.present? %>
+                  <span class="<%= opt.urgent? ? 'font-bold text-red-600' : (opt.notice_deadline_passed? ? 'text-gray-400 line-through' : 'text-gray-900') %>">
+                    <%= format_date(opt.notice_deadline) %>
+                  </span>
+                  <% if opt.days_until_notice_deadline && !opt.notice_deadline_passed? %>
+                    <span class="block text-xs <%= opt.urgent? ? 'text-red-500 font-medium' : 'text-gray-400' %>">
+                      <%= opt.days_until_notice_deadline %> days
+                    </span>
+                  <% elsif opt.notice_deadline_passed? %>
+                    <span class="block text-xs text-gray-400">Expired</span>
+                  <% end %>
+                <% else %>
+                  <span class="text-gray-400">—</span>
+                <% end %>
+              </td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900"><%= format_date(opt.exercise_deadline) %></td>
+              <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900"><%= opt.term_length_label || "—" %></td>
+              <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                <% if opt.rent_terms.present? %>
+                  <span title="<%= opt.rent_terms %>"><%= truncate(opt.rent_terms, length: 60) %></span>
+                <% end %>
+                <% if opt.penalty_amount.present? %>
+                  <span class="block text-xs text-red-600">Penalty: <%= format_currency(opt.penalty_amount) %></span>
+                <% end %>
+              </td>
+              <td class="whitespace-nowrap px-6 py-4 text-right text-sm">
+                <%= link_to "Edit", edit_contract_lease_option_path(contract, opt), class: "text-amber-600 hover:text-amber-500 font-medium" %>
+                <%= button_to "Delete", contract_lease_option_path(contract, opt), method: :delete, data: { turbo_confirm: "Remove this option?" }, class: "ml-2 text-red-600 hover:text-red-500 font-medium cursor-pointer" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% else %>
+    <div class="px-6 py-8 text-center">
+      <p class="text-sm text-gray-500">No lease options recorded.</p>
+      <%= link_to new_contract_lease_option_path(contract), class: "mt-2 inline-flex items-center gap-1 text-sm font-medium text-amber-600 hover:text-amber-500" do %>
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        Add an option
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<%# Lease Milestones %>
+<div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5">
+    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+      <h3 class="text-base font-semibold text-gray-900">Lease Milestones</h3>
+      <%= link_to new_contract_lease_milestone_path(contract), class: "inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" do %>
+        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        Add
+      <% end %>
+    </div>
+  <% if milestones.any? %>
+    <div class="divide-y divide-gray-200">
+      <% milestones.each do |ms| %>
+        <div class="px-6 py-4 flex items-start gap-4">
+          <div class="flex-shrink-0 mt-0.5">
+            <% if ms.overdue? %>
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-100">
+                <svg class="h-3.5 w-3.5 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+              </span>
+            <% elsif ms.urgent? %>
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100">
+                <svg class="h-3.5 w-3.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+            <% else %>
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100">
+                <svg class="h-3.5 w-3.5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+              </span>
+            <% end %>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <%= milestone_type_badge(ms.milestone_type) %>
+              <% if ms.recurring? %>
+                <span class="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-600/20">
+                  Recurring (<%= ms.recurrence_interval %>)
+                </span>
+              <% end %>
+            </div>
+            <% if ms.description.present? %>
+              <p class="mt-1 text-sm text-gray-700"><%= ms.description %></p>
+            <% end %>
+            <p class="mt-1 text-xs <%= ms.overdue? ? 'text-red-600 font-medium' : (ms.urgent? ? 'text-amber-600' : 'text-gray-500') %>">
+              <% target = ms.recurring? ? ms.next_occurrence_date : ms.due_date %>
+              Due: <%= format_date(target) %>
+              <% if ms.days_until_due && ms.days_until_due > 0 %>
+                (<%= ms.days_until_due %> days)
+              <% elsif ms.overdue? %>
+                (overdue by <%= ms.days_until_due.abs %> days)
+              <% end %>
+            </p>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <%= link_to "Edit", edit_contract_lease_milestone_path(contract, ms), class: "text-xs text-amber-600 hover:text-amber-500 font-medium" %>
+            <%= button_to "Delete", contract_lease_milestone_path(contract, ms), method: :delete, data: { turbo_confirm: "Remove this milestone?" }, class: "text-xs text-red-600 hover:text-red-500 font-medium cursor-pointer" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="px-6 py-8 text-center">
+      <p class="text-sm text-gray-500">No lease milestones recorded.</p>
+      <%= link_to new_contract_lease_milestone_path(contract), class: "mt-2 inline-flex items-center gap-1 text-sm font-medium text-amber-600 hover:text-amber-500" do %>
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        Add a milestone
+      <% end %>
+    </div>
+  <% end %>
+</div>

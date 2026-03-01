@@ -28,8 +28,8 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
 
   test "displays correct contract counts" do
     get dashboard_path
-    # Organization one has: hvac_maintenance (active), landscaping (expiring_soon), expired_insurance (expired)
-    assert_select "dd span.text-3xl", text: "3" # total
+    # Organization one has: hvac_maintenance (active), landscaping (expiring_soon), expired_insurance (expired), commercial_lease (active)
+    assert_select "dd span.text-3xl", text: "4" # total
   end
 
   test "displays quick-add contract button in header" do
@@ -123,5 +123,71 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_select "span", text: "Revenue (inbound)"
     assert_select "span", text: "Spend (outbound)"
     assert_select "span", text: "Net"
+  end
+
+  # --- Lease Insights tests (QA #3) ---
+
+  test "displays Lease Insights section when lease contracts exist" do
+    # commercial_lease fixture is a lease contract in org :one
+    get dashboard_path
+    assert_response :success
+    assert_select "h2", text: "Lease Insights"
+  end
+
+  test "displays Option Deadlines widget" do
+    get dashboard_path
+    assert_select "h3", text: "Option Deadlines"
+  end
+
+  test "displays Upcoming Rent Changes widget" do
+    get dashboard_path
+    assert_select "h3", text: "Upcoming Rent Changes"
+  end
+
+  test "displays TI Deadlines widget" do
+    get dashboard_path
+    assert_select "h3", text: "TI Deadlines"
+  end
+
+  test "displays Lease Milestones widget" do
+    get dashboard_path
+    assert_select "h3", text: "Lease Milestones"
+  end
+
+  test "shows option with upcoming notice deadline" do
+    # termination_option has notice_deadline ~90 days from now
+    get dashboard_path
+    assert_select "span", text: /Termination/i
+  end
+
+  test "shows upcoming rent escalation" do
+    # future_cpi escalation is ~2 years from now (within 12 months check fails)
+    # Create one within range
+    contracts(:commercial_lease).rent_escalations.create!(
+      effective_date: 3.months.from_now.to_date,
+      base_rent_monthly: 9200,
+      base_rent_annual: 110400,
+      escalation_type: "fixed_percentage",
+      escalation_value: 3.0,
+      description: "Mid-term adjustment",
+      position: 10
+    )
+    get dashboard_path
+    # escalation_description returns "3.0% increase" for fixed_percentage type
+    assert_select "span", text: /3\.0% increase/
+  end
+
+  test "shows upcoming milestone" do
+    # insurance_renewal milestone is 45 days from now (within 90 day range)
+    get dashboard_path
+    assert_select "span", text: /Insurance Renewal/i
+  end
+
+  test "does not display Lease Insights when no lease contracts" do
+    # Remove all lease contracts from org :one
+    Contract.where(contract_type: "lease").update_all(contract_type: "service_agreement")
+    get dashboard_path
+    assert_response :success
+    assert_select "h2", text: "Lease Insights", count: 0
   end
 end

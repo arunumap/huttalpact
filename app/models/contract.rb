@@ -8,8 +8,13 @@ class Contract < ApplicationRecord
   has_many :alerts, dependent: :destroy
   has_many :audit_logs, dependent: :nullify
   has_many :ai_usage_logs, dependent: :nullify
+  has_one :lease_detail, dependent: :destroy
+  has_many :rent_escalations, dependent: :destroy
+  has_many :lease_options, dependent: :destroy
+  has_many :lease_milestones, dependent: :destroy
 
   normalizes :vendor_name, with: ->(v) { v.strip.squeeze(" ") }
+  normalizes :premises_address, with: ->(v) { v.strip.squeeze(" ") }
 
   validates :title, presence: true, length: { maximum: 255 }, unless: :draft?
   validates :title, length: { maximum: 255 }, if: :draft?
@@ -23,6 +28,8 @@ class Contract < ApplicationRecord
   validates :renewal_term, inclusion: { in: %w[month-to-month annual 2-year custom] }, allow_blank: true
   validates :extraction_status, inclusion: { in: %w[pending processing completed failed] }
   validates :notes, length: { maximum: 10_000 }, allow_nil: true
+  validates :ai_summary, length: { maximum: 10_000 }, allow_nil: true
+  validates :premises_address, length: { maximum: 500 }, allow_nil: true
 
   validate :within_contract_limit, on: :create, unless: :draft?
   validate :within_contract_limit_on_reactivation, on: :update
@@ -42,7 +49,7 @@ class Contract < ApplicationRecord
   scope :by_status, ->(status) { where(status: status) }
   scope :by_direction, ->(direction) { where(direction: direction) }
   scope :search, ->(query) {
-    where("title ILIKE :q OR vendor_name ILIKE :q", q: "%#{sanitize_sql_like(query)}%")
+    where("title ILIKE :q OR vendor_name ILIKE :q OR premises_address ILIKE :q", q: "%#{sanitize_sql_like(query)}%")
   }
   scope :expiring_within, ->(days) { where(end_date: ..days.days.from_now.to_date).where.not(status: %w[expired archived]) }
   scope :renewal_within, ->(days) { where(next_renewal_date: ..days.days.from_now.to_date) }
@@ -89,6 +96,18 @@ class Contract < ApplicationRecord
   def days_until_renewal
     return nil unless next_renewal_date
     (next_renewal_date - Date.current).to_i
+  end
+
+  def lease?
+    contract_type == "lease"
+  end
+
+  def current_rent
+    rent_escalations.past_or_current.last
+  end
+
+  def next_rent_escalation
+    rent_escalations.future.first
   end
 
   private

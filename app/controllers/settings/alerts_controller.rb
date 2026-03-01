@@ -18,7 +18,9 @@ class Settings::AlertsController < ApplicationController
   def alert_preference_params
     params.require(:alert_preference).permit(
       :email_enabled, :in_app_enabled,
-      :days_before_renewal, :days_before_expiry
+      :days_before_renewal, :days_before_expiry,
+      :days_before_option_exercise, :days_before_rent_escalation,
+      :days_before_cam_reconciliation, :days_before_milestone
     )
   end
 end

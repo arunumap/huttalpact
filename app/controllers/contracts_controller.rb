@@ -165,7 +165,7 @@ class ContractsController < ApplicationController
 
   def contract_params
     params.require(:contract).permit(
-      :title, :vendor_name, :status, :contract_type, :direction,
+      :title, :vendor_name, :premises_address, :status, :contract_type, :direction,
       :start_date, :end_date, :next_renewal_date, :notice_period_days,
       :monthly_value, :total_value, :auto_renews, :renewal_term, :notes
     )
@@ -181,16 +181,18 @@ class ContractsController < ApplicationController
 
   def generate_csv(contracts)
     CSV.generate(headers: true) do |csv|
-      csv << %w[Title Vendor Status Type Direction Start\ Date End\ Date Notice\ Period\ Days Monthly\ Value Total\ Value Auto\ Renews Renewal\ Term Notes]
+      csv << %w[Title Vendor Premises\ Address Status Type Direction Start\ Date End\ Date Next\ Renewal Notice\ Period\ Days Monthly\ Value Total\ Value Auto\ Renews Renewal\ Term Notes]
       contracts.find_each(batch_size: 500) do |c|
         csv << [
           c.title,
           c.vendor_name,
+          c.premises_address,
           c.status&.titleize,
           c.contract_type&.titleize&.gsub("_", " "),
           c.direction&.titleize,
           c.start_date,
           c.end_date,
+          c.next_renewal_date,
           c.notice_period_days,
           c.monthly_value,
           c.total_value,

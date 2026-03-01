@@ -1,0 +1,30 @@
+renewal_option:
+  contract: commercial_lease
+  option_type: renewal
+  exercise_deadline: <%= Date.new(2030, 6, 30) %>
+  notice_deadline: <%= Date.new(2030, 1, 1) %>
+  term_length_months: 60
+  rent_terms: FMV with 10% cap over current rent
+  conditions: No uncured defaults at time of exercise
+  position: 1
+
+termination_option:
+  contract: commercial_lease
+  option_type: termination
+  exercise_deadline: <%= Date.new(2028, 12, 31) %>
+  notice_deadline: <%= 90.days.from_now.to_date %>
+  term_length_months:
+  rent_terms:
+  penalty_amount: 50000.00
+  conditions: 12 months' notice required, penalty equals 6 months rent
+  position: 2
+
+expansion_option:
+  contract: commercial_lease
+  option_type: expansion
+  exercise_deadline: <%= Date.new(2027, 12, 31) %>
+  notice_deadline: <%= Date.new(2027, 6, 30) %>
+  term_length_months: 36
+  rent_terms: Adjacent Suite 200, same PSF rate
+  conditions: Subject to space availability
+  position: 3

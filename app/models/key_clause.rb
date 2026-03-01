@@ -10,6 +10,19 @@ class KeyClause < ApplicationRecord
     price_escalation
     liability
     insurance_requirement
+    security_deposit
+    cam_provision
+    maintenance_responsibility
+    subletting_assignment
+    exclusivity
+    co_tenancy
+    parking
+    signage
+    hazmat
+    ada_compliance
+    subordination
+    use_restriction
+    tenant_improvement
   ].freeze
 
   validates :clause_type, presence: true, inclusion: { in: CLAUSE_TYPES }

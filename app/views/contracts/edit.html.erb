@@ -22,6 +22,83 @@
       <p class="mt-1 text-sm text-gray-500">Update the details for "<%= @contract.title %>".</p>
     </div>
 
+    <% if @contract.lease? && @contract.lease_detail %>
+      <div class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-amber-800">Lease Details (AI-Extracted)</h3>
+            <p class="mt-1 text-xs text-amber-600">These fields were extracted by AI and are read-only. To update, upload an amendment and re-extract.</p>
+          </div>
+          <%= lease_type_badge(@contract.lease_detail.lease_type) if @contract.lease_detail.lease_type.present? %>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+          <% lease = @contract.lease_detail %>
+
+          <% if lease.rentable_sqft.present? %>
+            <div>
+              <dt class="text-xs font-medium text-amber-700">Rentable SF</dt>
+              <dd class="text-sm text-gray-900"><%= format_sqft(lease.rentable_sqft) %></dd>
+            </div>
+          <% end %>
+
+          <% if lease.usable_sqft.present? %>
+            <div>
+              <dt class="text-xs font-medium text-amber-700">Usable SF</dt>
+              <dd class="text-sm text-gray-900"><%= format_sqft(lease.usable_sqft) %></dd>
+            </div>
+          <% end %>
+
+          <% if lease.security_deposit.present? %>
+            <div>
+              <dt class="text-xs font-medium text-amber-700">Security Deposit</dt>
+              <dd class="text-sm text-gray-900"><%= format_currency(lease.security_deposit) %></dd>
+            </div>
+          <% end %>
+
+          <% if lease.free_rent_months.present? && lease.free_rent_months > 0 %>
+            <div>
+              <dt class="text-xs font-medium text-amber-700">Free Rent</dt>
+              <dd class="text-sm text-gray-900"><%= lease.free_rent_months %> months</dd>
+            </div>
+          <% end %>
+
+          <% if lease.parking_spaces.present? %>
+            <div>
+              <dt class="text-xs font-medium text-amber-700">Parking</dt>
+              <dd class="text-sm text-gray-900"><%= lease.parking_spaces %> spaces<%= " (#{format_currency(lease.parking_monthly_cost)}/mo)" if lease.parking_monthly_cost.present? %></dd>
+            </div>
+          <% end %>
+
+          <% if lease.has_ti? %>
+            <div>
+              <dt class="text-xs font-medium text-amber-700">TI Allowance</dt>
+              <dd class="text-sm text-gray-900">
+                <%= format_currency(lease.ti_allowance_psf) %>/SF
+                <% if lease.ti_deadline.present? %>
+                  <span class="text-xs text-gray-500">(due <%= format_date(lease.ti_deadline) %>)</span>
+                <% end %>
+              </dd>
+            </div>
+          <% end %>
+        </div>
+
+        <% if @contract.rent_escalations.any? %>
+          <div class="mt-3 border-t border-amber-200 pt-3">
+            <dt class="text-xs font-medium text-amber-700">Rent Schedule</dt>
+            <dd class="text-sm text-gray-900"><%= @contract.rent_escalations.size %> escalation periods defined</dd>
+          </div>
+        <% end %>
+
+        <% if @contract.lease_options.any? %>
+          <div class="mt-2">
+            <dt class="text-xs font-medium text-amber-700">Options</dt>
+            <dd class="text-sm text-gray-900"><%= @contract.lease_options.map { |o| o.option_type_label }.join(", ") %></dd>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
     <%= render "form", contract: @contract %>
   <% end %>
 </div>

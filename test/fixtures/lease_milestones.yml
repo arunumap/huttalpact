@@ -1,0 +1,33 @@
+cam_reconciliation:
+  contract: commercial_lease
+  organization: one
+  milestone_type: cam_reconciliation
+  due_date: <%= Date.new(Date.current.year + 1, 3, 1) %>
+  description: Annual CAM reconciliation due
+  recurring: true
+  recurrence_interval: annual
+
+insurance_renewal:
+  contract: commercial_lease
+  organization: one
+  milestone_type: insurance_renewal
+  due_date: <%= 45.days.from_now.to_date %>
+  description: Provide updated certificate of insurance
+  recurring: true
+  recurrence_interval: annual
+
+ti_completion:
+  contract: commercial_lease
+  organization: one
+  milestone_type: ti_completion
+  due_date: <%= 180.days.from_now.to_date %>
+  description: Complete tenant improvement buildout
+  recurring: false
+
+overdue_milestone:
+  contract: commercial_lease
+  organization: one
+  milestone_type: estoppel_response
+  due_date: <%= 5.days.ago.to_date %>
+  description: Respond to estoppel certificate request
+  recurring: false

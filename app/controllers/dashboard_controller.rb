@@ -56,5 +56,43 @@ class DashboardController < ApplicationController
 
     # Recently added
     @recent_contracts = Contract.order(created_at: :desc).limit(5)
+
+    # Lease insights — only load when lease contracts exist
+    @lease_contract_count = Contract.not_archived.where(contract_type: "lease").count
+    if @lease_contract_count > 0
+      # Upcoming option deadlines (exercise or notice deadline within 90 days)
+      @upcoming_option_deadlines = LeaseOption
+        .joins(:contract)
+        .merge(Contract.not_archived.where(contract_type: "lease"))
+        .where("lease_options.exercise_deadline >= ? OR lease_options.notice_deadline >= ?", Date.current, Date.current)
+        .where("lease_options.exercise_deadline <= ? OR lease_options.notice_deadline <= ?", 90.days.from_now.to_date, 90.days.from_now.to_date)
+        .order(Arel.sql("COALESCE(lease_options.notice_deadline, lease_options.exercise_deadline) ASC"))
+        .limit(5)
+
+      # Upcoming rent escalations (next 12 months)
+      @upcoming_escalations = RentEscalation
+        .joins(:contract)
+        .merge(Contract.not_archived.where(contract_type: "lease"))
+        .where(effective_date: Date.current..12.months.from_now.to_date)
+        .order(effective_date: :asc)
+        .limit(5)
+
+      # TI deadlines approaching (within 6 months)
+      @upcoming_ti_deadlines = LeaseDetail
+        .joins(:contract)
+        .merge(Contract.not_archived.where(contract_type: "lease"))
+        .where.not(ti_deadline: nil)
+        .where(ti_deadline: Date.current..6.months.from_now.to_date)
+        .order(ti_deadline: :asc)
+        .limit(5)
+
+      # Upcoming milestones (next 90 days)
+      @upcoming_milestones = LeaseMilestone
+        .joins(:contract)
+        .merge(Contract.not_archived.where(contract_type: "lease"))
+        .where(due_date: Date.current..90.days.from_now.to_date)
+        .order(due_date: :asc)
+        .limit(5)
+    end
   end
 end

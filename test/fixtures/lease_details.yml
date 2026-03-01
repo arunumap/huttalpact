@@ -1,0 +1,32 @@
+commercial_lease_detail:
+  contract: commercial_lease
+  lease_type: nnn
+  rentable_sqft: 3500.00
+  usable_sqft: 3200.00
+  load_factor: 1.0937
+  permitted_use: Retail sales and office
+  security_deposit: 25500.00
+  security_deposit_conditions: Reducible by 50% after Year 3 with clean payment history
+  parking_spaces: 8
+  parking_monthly_cost: 150.00
+  free_rent_months: 3
+  rent_commencement_date: <%= Date.new(2025, 4, 1) %>
+  percentage_rent_breakpoint: 500000.00
+  percentage_rent_rate: 6.00
+  percentage_rent_report_date: <%= Date.new(2026, 3, 31) %>
+  cam_base_amount: 12000.00
+  cam_base_year: 2025
+  cam_cap_percentage: 5.00
+  cam_cap_type: cumulative
+  cam_reconciliation_month: 3
+  cam_audit_rights: true
+  cam_gross_up_provision: true
+  cam_controllable_cap: 3.50
+  ti_allowance_psf: 35.00
+  ti_total_amount: 122500.00
+  ti_deadline: <%= 180.days.from_now.to_date %>
+  ti_disbursement_type: draw_schedule
+  ti_amortization_rate: 8.00
+  ti_amortization_term_months: 60
+  ti_landlord_work_description: Base building HVAC, electrical, and plumbing
+  ti_tenant_work_description: Interior buildout, fixtures, and finishes
