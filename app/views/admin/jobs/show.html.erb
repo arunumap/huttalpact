@@ -1,11 +1,119 @@
-<% content_for :title, "Failed Job" %>
-<% content_for :page_title, "Failed Job #{@failed_execution.id}" %>
+<% content_for :title, "Job ##{@job.id}" %>
+<% content_for :page_title, "Job ##{@job.id}" %>
 
-<div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
-  <dl class="space-y-3 text-sm text-slate-700">
-    <div><dt class="font-semibold text-slate-900">Job Class</dt><dd><%= @job&.class_name %></dd></div>
-    <div><dt class="font-semibold text-slate-900">Queue</dt><dd><%= @job&.queue_name %></dd></div>
-    <div><dt class="font-semibold text-slate-900">Arguments</dt><dd><pre class="overflow-x-auto rounded-md bg-slate-50 p-3 text-xs"><%= JSON.pretty_generate(@job.arguments || []) rescue @job.arguments.inspect %></pre></dd></div>
-    <div><dt class="font-semibold text-slate-900">Error</dt><dd><pre class="overflow-x-auto rounded-md bg-red-50 p-3 text-xs text-red-700"><%= @failed_execution.error %></pre></dd></div>
-  </dl>
+<div class="space-y-4">
+  <%# ── Back Link ── %>
+  <div>
+    <%= link_to "← Back to Jobs", admin_jobs_path(status: params[:from_status]),
+          class: "text-sm text-amber-700 hover:text-amber-600" %>
+  </div>
+
+  <%# ── Job Overview ── %>
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <h3 class="mb-3 text-sm font-semibold text-slate-900">Job Details</h3>
+    <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+      <div>
+        <dt class="font-medium text-slate-500">Job Class</dt>
+        <dd class="mt-0.5 font-mono text-slate-900"><%= @job.class_name %></dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-500">Queue</dt>
+        <dd class="mt-0.5 text-slate-900"><%= @job.queue_name %></dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-500">Status</dt>
+        <dd class="mt-0.5">
+          <% status = if @failed_execution then "failed"
+                      elsif @claimed_execution then "running"
+                      elsif @scheduled_execution then "scheduled"
+                      elsif @job.finished_at then "completed"
+                      else "pending"
+                      end %>
+          <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium <%= job_status_badge_class(status) %>">
+            <%= status.titleize %>
+          </span>
+        </dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-500">Priority</dt>
+        <dd class="mt-0.5 text-slate-900"><%= @job.priority %></dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-500">Created At</dt>
+        <dd class="mt-0.5 text-slate-900"><%= @job.created_at.to_fs(:db) %></dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-500">Scheduled At</dt>
+        <dd class="mt-0.5 text-slate-900"><%= @job.scheduled_at&.to_fs(:db) || "—" %></dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-500">Finished At</dt>
+        <dd class="mt-0.5 text-slate-900"><%= @job.finished_at&.to_fs(:db) || "—" %></dd>
+      </div>
+      <div>
+        <dt class="font-medium text-slate-500">Active Job ID</dt>
+        <dd class="mt-0.5 font-mono text-xs text-slate-700"><%= @job.active_job_id || "—" %></dd>
+      </div>
+    </dl>
+  </div>
+
+  <%# ── Arguments ── %>
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <h3 class="mb-2 text-sm font-semibold text-slate-900">Arguments</h3>
+    <pre class="overflow-x-auto rounded-md bg-slate-50 p-3 text-xs text-slate-700"><%= JSON.pretty_generate(@job.arguments || []) rescue @job.arguments.inspect %></pre>
+  </div>
+
+  <%# ── Failure Details ── %>
+  <% if @failed_execution %>
+    <div class="rounded-lg bg-red-50 p-4 shadow-sm ring-1 ring-red-200">
+      <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold text-red-800">
+        <svg class="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+        Failure Details
+      </h3>
+      <dl class="space-y-3 text-sm">
+        <div>
+          <dt class="font-medium text-red-700">Failed At</dt>
+          <dd class="mt-0.5 text-red-900"><%= @failed_execution.created_at.to_fs(:db) %></dd>
+        </div>
+        <div>
+          <dt class="font-medium text-red-700">Error</dt>
+          <dd class="mt-1">
+            <pre class="overflow-x-auto whitespace-pre-wrap rounded-md bg-white p-3 text-xs text-red-700 ring-1 ring-red-200"><%= @failed_execution.error %></pre>
+          </dd>
+        </div>
+      </dl>
+    </div>
+  <% end %>
+
+  <%# ── Running Details ── %>
+  <% if @claimed_execution %>
+    <div class="rounded-lg bg-blue-50 p-4 shadow-sm ring-1 ring-blue-200">
+      <h3 class="mb-2 text-sm font-semibold text-blue-800">Running Details</h3>
+      <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="font-medium text-blue-700">Claimed At</dt>
+          <dd class="mt-0.5 text-blue-900"><%= @claimed_execution.created_at.to_fs(:db) %></dd>
+        </div>
+        <div>
+          <dt class="font-medium text-blue-700">Process ID</dt>
+          <dd class="mt-0.5 text-blue-900"><%= @claimed_execution.process_id || "—" %></dd>
+        </div>
+      </dl>
+    </div>
+  <% end %>
+
+  <%# ── Scheduled Details ── %>
+  <% if @scheduled_execution %>
+    <div class="rounded-lg bg-yellow-50 p-4 shadow-sm ring-1 ring-yellow-200">
+      <h3 class="mb-2 text-sm font-semibold text-yellow-800">Scheduled Details</h3>
+      <dl class="text-sm">
+        <div>
+          <dt class="font-medium text-yellow-700">Scheduled At</dt>
+          <dd class="mt-0.5 text-yellow-900"><%= @scheduled_execution.scheduled_at.to_fs(:db) %></dd>
+        </div>
+      </dl>
+    </div>
+  <% end %>
 </div>

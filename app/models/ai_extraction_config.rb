@@ -16,12 +16,15 @@ class AiExtractionConfig < ApplicationRecord
 
   AVAILABLE_MODEL_IDS = AVAILABLE_MODELS.map { |m| m[:id] }.freeze
 
+  DEFAULT_REQUEST_TIMEOUT = 120 # seconds — gem default
+  LEASE_REQUEST_TIMEOUT = 300   # seconds — lease extractions need more time
+
   # Fallback defaults if no active config exists in DB
   DEFAULTS = {
-    "generic_full" => { ai_model: "claude-sonnet-4-20250514", max_tokens: 4096, input_cost_per_million: 3.0, output_cost_per_million: 15.0 },
-    "generic_incremental" => { ai_model: "claude-sonnet-4-20250514", max_tokens: 4096, input_cost_per_million: 3.0, output_cost_per_million: 15.0 },
-    "lease_full" => { ai_model: "claude-sonnet-4-20250514", max_tokens: 8192, input_cost_per_million: 3.0, output_cost_per_million: 15.0 },
-    "lease_incremental" => { ai_model: "claude-sonnet-4-20250514", max_tokens: 8192, input_cost_per_million: 3.0, output_cost_per_million: 15.0 }
+    "generic_full" => { ai_model: "claude-sonnet-4-20250514", max_tokens: 4096, input_cost_per_million: 3.0, output_cost_per_million: 15.0, request_timeout: DEFAULT_REQUEST_TIMEOUT },
+    "generic_incremental" => { ai_model: "claude-sonnet-4-20250514", max_tokens: 4096, input_cost_per_million: 3.0, output_cost_per_million: 15.0, request_timeout: DEFAULT_REQUEST_TIMEOUT },
+    "lease_full" => { ai_model: "claude-sonnet-4-20250514", max_tokens: 16384, input_cost_per_million: 3.0, output_cost_per_million: 15.0, request_timeout: LEASE_REQUEST_TIMEOUT },
+    "lease_incremental" => { ai_model: "claude-sonnet-4-20250514", max_tokens: 16384, input_cost_per_million: 3.0, output_cost_per_million: 15.0, request_timeout: LEASE_REQUEST_TIMEOUT }
   }.freeze
 
   # Returns [[label, id], ...] for use with form.select
@@ -55,6 +58,7 @@ class AiExtractionConfig < ApplicationRecord
   validates :top_k, numericality: { greater_than_or_equal_to: 1, only_integer: true }, allow_nil: true
   validates :input_cost_per_million, presence: true, numericality: { greater_than: 0 }
   validates :output_cost_per_million, presence: true, numericality: { greater_than: 0 }
+  validates :request_timeout, numericality: { greater_than_or_equal_to: 30, less_than_or_equal_to: 600, only_integer: true }, allow_nil: true
   validates :version, presence: true, uniqueness: { scope: :extraction_type }
 
   scope :active, -> { where(active: true) }
@@ -86,6 +90,13 @@ class AiExtractionConfig < ApplicationRecord
   # Label for display
   def type_label
     extraction_type.titleize
+  end
+
+  # Resolved timeout in seconds — uses configured value, or a sensible default
+  def resolved_timeout
+    return request_timeout if request_timeout.present?
+
+    extraction_type&.start_with?("lease") ? LEASE_REQUEST_TIMEOUT : DEFAULT_REQUEST_TIMEOUT
   end
 
   # Build API parameters hash (only non-nil sampling params included)

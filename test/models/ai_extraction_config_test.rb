@@ -59,6 +59,25 @@ class AiExtractionConfigTest < ActiveSupport::TestCase
     assert @config.valid?
   end
 
+  test "request_timeout must be between 30 and 600" do
+    @config.request_timeout = 29
+    assert_not @config.valid?
+    @config.request_timeout = 601
+    assert_not @config.valid?
+    @config.request_timeout = 300
+    assert @config.valid?
+  end
+
+  test "request_timeout can be nil" do
+    @config.request_timeout = nil
+    assert @config.valid?
+  end
+
+  test "request_timeout must be an integer" do
+    @config.request_timeout = 120.5
+    assert_not @config.valid?
+  end
+
   test "requires positive cost rates" do
     @config.input_cost_per_million = 0
     assert_not @config.valid?
@@ -171,6 +190,31 @@ class AiExtractionConfigTest < ActiveSupport::TestCase
     assert_equal 50, params[:top_k]
   end
 
+  # --- resolved_timeout ---
+
+  test "resolved_timeout returns configured value when present" do
+    @config.request_timeout = 180
+    assert_equal 180, @config.resolved_timeout
+  end
+
+  test "resolved_timeout returns default for generic types when nil" do
+    @config.request_timeout = nil
+    @config.extraction_type = "generic_full"
+    assert_equal AiExtractionConfig::DEFAULT_REQUEST_TIMEOUT, @config.resolved_timeout
+  end
+
+  test "resolved_timeout returns lease default for lease types when nil" do
+    @config.request_timeout = nil
+    @config.extraction_type = "lease_full"
+    assert_equal AiExtractionConfig::LEASE_REQUEST_TIMEOUT, @config.resolved_timeout
+  end
+
+  test "resolved_timeout returns lease default for lease_incremental when nil" do
+    @config.request_timeout = nil
+    @config.extraction_type = "lease_incremental"
+    assert_equal AiExtractionConfig::LEASE_REQUEST_TIMEOUT, @config.resolved_timeout
+  end
+
   # --- type_label ---
 
   test "type_label returns titleized extraction_type" do
@@ -218,6 +262,13 @@ class AiExtractionConfigTest < ActiveSupport::TestCase
   end
 
   # --- model_pricing ---
+
+  test "DEFAULTS include request_timeout for all types" do
+    AiExtractionConfig::DEFAULTS.each do |type, defaults|
+      assert defaults.key?(:request_timeout), "DEFAULTS[#{type}] missing request_timeout"
+      assert_kind_of Integer, defaults[:request_timeout]
+    end
+  end
 
   test "model_pricing returns costs for known model" do
     pricing = AiExtractionConfig.model_pricing("claude-sonnet-4-6")

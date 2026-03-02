@@ -25,7 +25,7 @@ generic_incremental_v1:
 lease_full_v1:
   extraction_type: lease_full
   ai_model: claude-sonnet-4-20250514
-  max_tokens: 8192
+  max_tokens: 16384
   input_cost_per_million: 3.0
   output_cost_per_million: 15.0
   active: true
@@ -37,7 +37,7 @@ lease_full_v1:
 lease_incremental_v1:
   extraction_type: lease_incremental
   ai_model: claude-sonnet-4-20250514
-  max_tokens: 8192
+  max_tokens: 16384
   input_cost_per_million: 3.0
   output_cost_per_million: 15.0
   active: true

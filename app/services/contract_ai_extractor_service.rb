@@ -307,6 +307,23 @@ class ContractAiExtractorService
     input_tokens = response.dig("usage", "input_tokens").to_i
     output_tokens = response.dig("usage", "output_tokens").to_i
 
+    # Check if the response was truncated due to max_tokens limit
+    stop_reason = response["stop_reason"]
+    if stop_reason == "max_tokens"
+      max_tok = extraction_config.max_tokens
+      Rails.logger.warn("AI extraction truncated for contract #{@contract.id}: hit max_tokens limit (#{max_tok}). Increase max_tokens in AI config.")
+      @contract.update!(extraction_status: "failed")
+      log_ai_usage!(
+        ai_model: extraction_config.ai_model,
+        input_tokens:,
+        output_tokens:,
+        duration_ms:,
+        success: false,
+        error_message: "Response truncated: output hit max_tokens limit (#{max_tok}). Increase max_tokens in AI config."
+      )
+      raise ExtractionError, "AI response truncated at #{max_tok} max_tokens — increase max_tokens in the AI extraction config for this type"
+    end
+
     raw_text = response.dig("content", 0, "text")
     raise ExtractionError, "No content in AI response" if raw_text.blank?
 
@@ -382,6 +399,21 @@ class ContractAiExtractorService
     body = e.response&.dig(:body) rescue nil
     Rails.logger.error("AI extraction API error for contract #{@contract.id}: #{e.message} — #{body}")
     raise e
+  rescue Net::ReadTimeout, Net::OpenTimeout => e
+    duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round rescue nil
+    timeout_secs = extraction_config.resolved_timeout
+    error_msg = "API timeout after #{timeout_secs}s (#{e.class.name}) — try increasing request_timeout in AI config"
+    @contract.update!(extraction_status: "failed")
+    log_ai_usage!(
+      ai_model: extraction_config.ai_model,
+      input_tokens:,
+      output_tokens:,
+      duration_ms:,
+      success: false,
+      error_message: error_msg
+    )
+    Rails.logger.error("AI extraction timeout for contract #{@contract.id}: #{error_msg}")
+    raise e
   rescue => e
     @contract.update!(extraction_status: "failed")
     log_ai_usage!(
@@ -399,7 +431,10 @@ class ContractAiExtractorService
   private
 
   def client
-    @client ||= Anthropic::Client.new(access_token: api_key)
+    @client ||= Anthropic::Client.new(
+      access_token: api_key,
+      request_timeout: extraction_config.resolved_timeout
+    )
   end
 
   def api_key

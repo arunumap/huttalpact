@@ -1,26 +1,46 @@
 <% content_for :title, "Failed Jobs" %>
 <% content_for :page_title, "Failed Jobs" %>
 
-<div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
-  <table class="min-w-full divide-y divide-slate-200 text-sm">
-    <thead class="bg-slate-50">
-      <tr>
-        <th class="px-3 py-2 text-left font-medium text-slate-600">ID</th>
-        <th class="px-3 py-2 text-left font-medium text-slate-600">Job Class</th>
-        <th class="px-3 py-2 text-left font-medium text-slate-600">Queue</th>
-        <th class="px-3 py-2 text-left font-medium text-slate-600">Failed At</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-slate-200 bg-white">
-      <% @failed_executions.each do |execution| %>
+<div class="space-y-4">
+  <div>
+    <%= link_to "← Back to Jobs", admin_jobs_path(status: "failed"),
+          class: "text-sm text-amber-700 hover:text-amber-600" %>
+  </div>
+
+  <div class="rounded-lg bg-white shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
         <tr>
-          <td class="px-3 py-2"><%= link_to execution.id, admin_job_path(execution.id), class: "text-indigo-700 hover:text-indigo-600" %></td>
-          <td class="px-3 py-2"><%= execution.job&.class_name %></td>
-          <td class="px-3 py-2"><%= execution.job&.queue_name %></td>
-          <td class="px-3 py-2"><%= execution.created_at.to_fs(:db) %></td>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">ID</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Job Class</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Queue</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Failed At</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Error Preview</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
-  <%== pagy_nav(@pagy) if @pagy.pages > 1 %>
+      </thead>
+      <tbody class="divide-y divide-slate-100 bg-white">
+        <% if @failed_executions.empty? %>
+          <tr>
+            <td colspan="5" class="px-3 py-8 text-center text-sm text-slate-400">No failed jobs.</td>
+          </tr>
+        <% end %>
+        <% @failed_executions.each do |execution| %>
+          <tr class="hover:bg-slate-50">
+            <td class="px-3 py-2">
+              <%= link_to execution.job_id, admin_job_path(execution.job_id), class: "text-amber-700 hover:text-amber-600 font-medium" %>
+            </td>
+            <td class="px-3 py-2 font-mono text-xs"><%= execution.job&.class_name %></td>
+            <td class="px-3 py-2"><%= execution.job&.queue_name %></td>
+            <td class="px-3 py-2 whitespace-nowrap text-slate-500"><%= execution.created_at.to_fs(:db) %></td>
+            <td class="max-w-sm truncate px-3 py-2 text-xs text-red-600" title="<%= h(execution.error.to_s.first(500)) %>">
+              <%= execution.error.to_s.first(120) %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+  <% if @pagy.pages > 1 %>
+    <div class="mt-2"><%== pagy_nav(@pagy) %></div>
+  <% end %>
 </div>

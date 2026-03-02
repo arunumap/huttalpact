@@ -162,11 +162,67 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     assert_not usage_log.success?
   end
 
+  test "sets status to failed with descriptive message on Net::ReadTimeout" do
+    fake_client = Object.new
+    fake_client.define_singleton_method(:messages) { |**_kwargs| raise Net::ReadTimeout, "Net::ReadTimeout" }
+
+    Anthropic::Client.stub(:new, fake_client) do
+      assert_raises Net::ReadTimeout do
+        ContractAiExtractorService.new(@contract).call
+      end
+    end
+
+    @contract.reload
+    assert_equal "failed", @contract.extraction_status
+
+    usage_log = AiUsageLog.order(:created_at).last
+    assert_not usage_log.success?
+    assert_includes usage_log.error_message, "API timeout"
+    assert_includes usage_log.error_message, "request_timeout"
+  end
+
+  test "passes resolved_timeout to Anthropic client" do
+    # Set up a lease config with a custom timeout
+    lease_config = ai_extraction_configs(:lease_full_v1)
+    lease_config.update!(request_timeout: 420)
+
+    lease_contract = contracts(:commercial_lease)
+    lease_contract.update!(extraction_status: "pending")
+
+    service = ContractAiExtractorService.new(lease_contract)
+
+    # Verify the extraction config resolves the correct timeout
+    config = service.send(:extraction_config)
+    assert_equal 420, config.resolved_timeout
+  end
+
   test "skips extraction when no completed documents" do
     @contract.contract_documents.update_all(extraction_status: "pending")
 
     result = ContractAiExtractorService.new(@contract).call
     assert_nil result
+  end
+
+  test "raises ExtractionError with descriptive message when response is truncated" do
+    truncated_response = {
+      "content" => [ { "text" => '{"title": "Incomplete lease dat' } ],
+      "usage" => { "input_tokens" => 5000, "output_tokens" => 8192 },
+      "stop_reason" => "max_tokens"
+    }
+
+    stub_anthropic_client(truncated_response) do
+      assert_raises ContractAiExtractorService::ExtractionError do
+        ContractAiExtractorService.new(@contract).call
+      end
+    end
+
+    @contract.reload
+    assert_equal "failed", @contract.extraction_status
+
+    usage_log = AiUsageLog.order(:created_at).last
+    assert_not usage_log.success?
+    assert_includes usage_log.error_message, "truncated"
+    assert_includes usage_log.error_message, "max_tokens"
   end
 
   test "raises ExtractionError when no API key configured" do

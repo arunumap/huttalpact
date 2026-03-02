@@ -32,7 +32,8 @@ class Admin::AiExtractionConfigsController < Admin::BaseController
       top_p: source.top_p,
       top_k: source.top_k,
       input_cost_per_million: source.input_cost_per_million,
-      output_cost_per_million: source.output_cost_per_million
+      output_cost_per_million: source.output_cost_per_million,
+      request_timeout: source.request_timeout
     )
   end
 
@@ -67,7 +68,8 @@ class Admin::AiExtractionConfigsController < Admin::BaseController
     params.require(:ai_extraction_config).permit(
       :extraction_type, :ai_model, :max_tokens,
       :temperature, :top_p, :top_k,
-      :input_cost_per_million, :output_cost_per_million, :notes
+      :input_cost_per_million, :output_cost_per_million,
+      :request_timeout, :notes
     )
   end
 end
