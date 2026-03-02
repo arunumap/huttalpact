@@ -1,0 +1,117 @@
+<% content_for :title, "AI Config — #{@config.type_label} v#{@config.version}" %>
+<% content_for :page_title, "#{@config.type_label} — Version #{@config.version}" %>
+
+<div class="mb-4">
+  <%= link_to "← Back to AI Config", admin_ai_extraction_configs_path, class: "text-sm text-indigo-600 hover:text-indigo-500" %>
+</div>
+
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
+  <%# Main config details %>
+  <div class="lg:col-span-2 rounded-lg bg-white p-5 shadow-sm ring-1 ring-slate-200">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h3 class="text-sm font-semibold text-slate-900"><%= @config.type_label %></h3>
+        <div class="flex items-center gap-2 mt-1">
+          <% if @config.active? %>
+            <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">Active</span>
+          <% else %>
+            <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">Inactive</span>
+          <% end %>
+          <span class="text-xs text-slate-500">Version <%= @config.version %></span>
+        </div>
+      </div>
+      <% unless @config.active? %>
+        <%= button_to "Activate This Version", activate_admin_ai_extraction_config_path(@config),
+            method: :post,
+            class: "rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-500",
+            data: { turbo_confirm: "Activate v#{@config.version}? This will deactivate the current active config for #{@config.type_label}." } %>
+      <% end %>
+    </div>
+
+    <dl class="grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
+      <div>
+        <dt class="text-slate-500">AI Model</dt>
+        <dd class="font-medium text-slate-900"><%= @config.ai_model %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Max Tokens</dt>
+        <dd class="font-medium text-slate-900"><%= number_with_delimiter(@config.max_tokens) %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Temperature</dt>
+        <dd class="font-medium text-slate-900"><%= @config.temperature || "API default" %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Top P</dt>
+        <dd class="font-medium text-slate-900"><%= @config.top_p || "API default" %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Top K</dt>
+        <dd class="font-medium text-slate-900"><%= @config.top_k || "API default" %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Input Cost / 1M</dt>
+        <dd class="font-medium text-slate-900"><%= number_to_currency(@config.input_cost_per_million) %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Output Cost / 1M</dt>
+        <dd class="font-medium text-slate-900"><%= number_to_currency(@config.output_cost_per_million) %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Created</dt>
+        <dd class="font-medium text-slate-900"><%= @config.created_at.to_fs(:long) %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Created By</dt>
+        <dd class="font-medium text-slate-900"><%= @config.created_by&.email_address || "System" %></dd>
+      </div>
+    </dl>
+
+    <% if @config.notes.present? %>
+      <div class="mt-4 rounded-md bg-slate-50 p-3">
+        <p class="text-xs font-medium text-slate-600">Notes</p>
+        <p class="mt-1 text-sm text-slate-700"><%= @config.notes %></p>
+      </div>
+    <% end %>
+  </div>
+
+  <%# Diff from previous version %>
+  <div class="rounded-lg bg-white p-5 shadow-sm ring-1 ring-slate-200">
+    <h3 class="text-sm font-semibold text-slate-900 mb-3">Changes from Previous</h3>
+    <% if @previous_version %>
+      <div class="space-y-2 text-xs">
+        <% %w[ai_model max_tokens temperature top_p top_k input_cost_per_million output_cost_per_million].each do |field| %>
+          <% old_val = @previous_version.send(field) %>
+          <% new_val = @config.send(field) %>
+          <% next if old_val == new_val %>
+          <div class="rounded-md bg-amber-50 p-2">
+            <p class="font-medium text-amber-800"><%= field.titleize %></p>
+            <p class="text-amber-700">
+              <span class="line-through"><%= old_val || "default" %></span>
+              →
+              <span class="font-semibold"><%= new_val || "default" %></span>
+            </p>
+          </div>
+        <% end %>
+
+        <% if %w[ai_model max_tokens temperature top_p top_k input_cost_per_million output_cost_per_million].all? { |f| @previous_version.send(f) == @config.send(f) } %>
+          <p class="text-slate-500">No parameter changes from v<%= @previous_version.version %>.</p>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="text-xs text-slate-500">This is the first version — no prior version to compare.</p>
+    <% end %>
+
+    <%# Usage stats for this config %>
+    <% usage_count = @config.persisted? ? @config.ai_usage_logs.count : 0 %>
+    <% if usage_count > 0 %>
+      <div class="mt-4 border-t border-slate-200 pt-3">
+        <h4 class="text-xs font-semibold text-slate-700 mb-2">Usage Stats</h4>
+        <div class="space-y-1 text-xs">
+          <p class="text-slate-600">Extractions: <span class="font-medium text-slate-900"><%= usage_count %></span></p>
+          <p class="text-slate-600">Success rate: <span class="font-medium text-slate-900"><%= number_to_percentage(@config.ai_usage_logs.successful.count.to_f / usage_count * 100, precision: 1) %></span></p>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

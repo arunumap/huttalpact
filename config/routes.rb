@@ -7,6 +7,11 @@ Rails.application.routes.draw do
     resources :users, only: %i[index show]
     resources :organizations, only: %i[index show]
     resources :ai_usage, only: %i[index], controller: "ai_usage"
+    resources :ai_extraction_configs, only: %i[index new create show] do
+      member do
+        post :activate
+      end
+    end
     resources :jobs, only: %i[index show] do
       collection do
         get :failed
@@ -37,6 +42,7 @@ Rails.application.routes.draw do
     resource :extraction, only: %i[create], controller: "contract_extractions" do
       post :redetect
     end
+    resources :extraction_feedbacks, only: %i[create]
     resource :lease_detail, only: %i[edit update]
     resources :rent_escalations, only: %i[new create edit update destroy]
     resources :lease_options, only: %i[new create edit update destroy]

@@ -1,0 +1,8 @@
+one:
+  contract: hvac_maintenance
+  user: one
+  organization: one
+  rating: positive
+  comment: Great extraction!
+  created_at: <%= 1.day.ago %>
+  updated_at: <%= 1.day.ago %>

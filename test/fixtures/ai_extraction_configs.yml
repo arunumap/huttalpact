@@ -1,0 +1,61 @@
+generic_full_v1:
+  extraction_type: generic_full
+  ai_model: claude-sonnet-4-20250514
+  max_tokens: 4096
+  input_cost_per_million: 3.0
+  output_cost_per_million: 15.0
+  active: true
+  version: 1
+  notes: Initial config
+  created_at: <%= 1.week.ago %>
+  updated_at: <%= 1.week.ago %>
+
+generic_incremental_v1:
+  extraction_type: generic_incremental
+  ai_model: claude-sonnet-4-20250514
+  max_tokens: 4096
+  input_cost_per_million: 3.0
+  output_cost_per_million: 15.0
+  active: true
+  version: 1
+  notes: Initial config
+  created_at: <%= 1.week.ago %>
+  updated_at: <%= 1.week.ago %>
+
+lease_full_v1:
+  extraction_type: lease_full
+  ai_model: claude-sonnet-4-20250514
+  max_tokens: 8192
+  input_cost_per_million: 3.0
+  output_cost_per_million: 15.0
+  active: true
+  version: 1
+  notes: Initial config
+  created_at: <%= 1.week.ago %>
+  updated_at: <%= 1.week.ago %>
+
+lease_incremental_v1:
+  extraction_type: lease_incremental
+  ai_model: claude-sonnet-4-20250514
+  max_tokens: 8192
+  input_cost_per_million: 3.0
+  output_cost_per_million: 15.0
+  active: true
+  version: 1
+  notes: Initial config
+  created_at: <%= 1.week.ago %>
+  updated_at: <%= 1.week.ago %>
+
+generic_full_v2_inactive:
+  extraction_type: generic_full
+  ai_model: claude-sonnet-4-20250514
+  max_tokens: 8192
+  temperature: 0.1
+  input_cost_per_million: 3.0
+  output_cost_per_million: 15.0
+  active: false
+  version: 2
+  notes: Increased max_tokens and added low temperature
+  created_by: one
+  created_at: <%= 1.day.ago %>
+  updated_at: <%= 1.day.ago %>

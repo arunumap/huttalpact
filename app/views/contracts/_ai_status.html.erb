@@ -20,20 +20,20 @@
       </div>
     </div>
   <% when "completed" %>
-    <div class="rounded-xl bg-green-50 ring-1 ring-green-200 px-6 py-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
-          </svg>
-          <div>
-            <p class="text-sm font-semibold text-green-800">AI extraction complete</p>
-            <% doc_count = contract.contract_documents.completed.count %>
-            <p class="text-xs text-green-600">
-              Extracted from <%= pluralize(doc_count, "document") %>.
-            </p>
-          </div>
+    <div class="rounded-xl bg-green-50 ring-1 ring-green-200 px-5 py-4">
+      <div class="flex items-start gap-3">
+        <svg class="h-5 w-5 mt-0.5 flex-shrink-0 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+        </svg>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-green-800">AI extraction complete</p>
+          <% doc_count = contract.contract_documents.completed.count %>
+          <p class="text-xs text-green-600">
+            Extracted from <%= pluralize(doc_count, "document") %>.
+          </p>
         </div>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
         <%= button_to contract_extraction_path(contract), method: :post,
             class: "inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1.5 text-xs font-medium text-green-700 shadow-sm ring-1 ring-inset ring-green-300 hover:bg-green-50" do %>
           <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -56,6 +56,7 @@
           <p class="text-xs text-green-700 mt-0.5"><%= contract.last_changes_summary %></p>
         </div>
       <% end %>
+      <%= render "extraction_feedbacks/form", contract: contract %>
     </div>
   <% when "failed" %>
     <div class="rounded-xl bg-red-50 ring-1 ring-red-200 px-6 py-4">

@@ -298,12 +298,10 @@ class ContractAiExtractorService
     output_tokens = 0
 
     response = client.messages(
-      parameters: {
-        model: "claude-sonnet-4-20250514",
-        max_tokens: lease_extraction? ? 8192 : 4096,
+      parameters: extraction_config.api_parameters.merge(
         system: "You are a contract analysis assistant. Respond with ONLY valid JSON. No preamble, no explanation, no markdown fences — just the raw JSON object.",
         messages: [ { role: "user", content: prompt } ]
-      }
+      )
     )
     duration_ms = ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1000).round
     input_tokens = response.dig("usage", "input_tokens").to_i
@@ -348,7 +346,7 @@ class ContractAiExtractorService
     @contract.organization&.increment_extraction_count!
 
     log_ai_usage!(
-      ai_model: "claude-sonnet-4-20250514",
+      ai_model: extraction_config.ai_model,
       input_tokens:,
       output_tokens:,
       duration_ms:,
@@ -359,7 +357,7 @@ class ContractAiExtractorService
   rescue JSON::ParserError => e
     @contract.update!(extraction_status: "failed")
     log_ai_usage!(
-      ai_model: "claude-sonnet-4-20250514",
+      ai_model: extraction_config.ai_model,
       input_tokens:,
       output_tokens:,
       duration_ms:,
@@ -374,7 +372,7 @@ class ContractAiExtractorService
   rescue Faraday::ClientError => e
     @contract.update!(extraction_status: "failed")
     log_ai_usage!(
-      ai_model: "claude-sonnet-4-20250514",
+      ai_model: extraction_config.ai_model,
       input_tokens:,
       output_tokens:,
       duration_ms:,
@@ -387,7 +385,7 @@ class ContractAiExtractorService
   rescue => e
     @contract.update!(extraction_status: "failed")
     log_ai_usage!(
-      ai_model: "claude-sonnet-4-20250514",
+      ai_model: extraction_config.ai_model,
       input_tokens:,
       output_tokens:,
       duration_ms:,
@@ -444,7 +442,8 @@ class ContractAiExtractorService
       extraction_mode: @mode.to_s,
       success:,
       error_message:,
-      duration_ms:
+      duration_ms:,
+      ai_extraction_config: extraction_config.persisted? ? extraction_config : nil
     )
   rescue => e
     Rails.logger.error("Failed to write AI usage log for contract #{@contract.id}: #{e.message}")
@@ -497,6 +496,18 @@ class ContractAiExtractorService
 
   def lease_extraction?
     @lease_extraction ||= @contract.contract_type == "lease"
+  end
+
+  # Resolve the extraction type string and fetch active DB config
+  def extraction_config
+    @extraction_config ||= begin
+      type = if lease_extraction?
+               @mode == :incremental ? "lease_incremental" : "lease_full"
+      else
+               @mode == :incremental ? "generic_incremental" : "generic_full"
+      end
+      AiExtractionConfig.active_for(type)
+    end
   end
 
   def detect_and_set_lease_type!(document_text)

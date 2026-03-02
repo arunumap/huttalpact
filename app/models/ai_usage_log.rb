@@ -1,9 +1,12 @@
 class AiUsageLog < ApplicationRecord
+  # Legacy fallback cost constants — used for rows without an ai_extraction_config
   MODEL_INPUT_COST_PER_MILLION = 3.0
   MODEL_OUTPUT_COST_PER_MILLION = 15.0
 
   belongs_to :organization
   belongs_to :contract, optional: true
+  belongs_to :ai_extraction_config, optional: true
+  has_one :extraction_feedback, primary_key: :contract_id, foreign_key: :contract_id
 
   validates :ai_model, presence: true
   validates :input_tokens, :output_tokens, :total_tokens, numericality: { greater_than_or_equal_to: 0, only_integer: true }
@@ -38,6 +41,15 @@ class AiUsageLog < ApplicationRecord
 
     ((input_tokens / 1_000_000.0) * MODEL_INPUT_COST_PER_MILLION) +
       ((output_tokens / 1_000_000.0) * MODEL_OUTPUT_COST_PER_MILLION)
+  end
+
+  # Per-row cost using linked config's rates, falling back to hardcoded constants
+  def estimated_cost
+    input_rate = ai_extraction_config&.input_cost_per_million || MODEL_INPUT_COST_PER_MILLION
+    output_rate = ai_extraction_config&.output_cost_per_million || MODEL_OUTPUT_COST_PER_MILLION
+
+    ((input_tokens / 1_000_000.0) * input_rate) +
+      ((output_tokens / 1_000_000.0) * output_rate)
   end
 
   private

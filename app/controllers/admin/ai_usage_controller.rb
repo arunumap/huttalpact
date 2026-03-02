@@ -14,7 +14,39 @@ class Admin::AiUsageController < Admin::BaseController
     @estimated_cost = AiUsageLog.total_cost(logs)
     @daily_usage = logs.group("DATE(created_at)").order("DATE(created_at) DESC").sum(:total_tokens)
 
-    @pagy, @usage_logs = pagy(logs.includes(:organization, :contract).order(created_at: :desc), limit: 50)
+    # Feedback analytics
+    feedbacks = ExtractionFeedback.in_period(@start_date.beginning_of_day, @end_date.end_of_day)
+    @feedback_count = feedbacks.count
+    @positive_feedback_count = feedbacks.positive.count
+    @negative_feedback_count = feedbacks.negative.count
+    @feedback_positive_pct = @feedback_count > 0 ? (@positive_feedback_count.to_f / @feedback_count * 100).round(1) : nil
+
+    # Stats by extraction mode
+    @mode_stats = logs.group(:extraction_mode).select(
+      "extraction_mode",
+      "COUNT(*) AS total_count",
+      "SUM(CASE WHEN success THEN 1 ELSE 0 END) AS success_count",
+      "AVG(duration_ms) AS avg_duration_ms",
+      "AVG(total_tokens) AS avg_tokens"
+    )
+
+    # Stats by config version
+    @config_stats = logs.where.not(ai_extraction_config_id: nil)
+      .joins(:ai_extraction_config)
+      .group("ai_extraction_configs.extraction_type", "ai_extraction_configs.version", "ai_extraction_configs.ai_model")
+      .select(
+        "ai_extraction_configs.extraction_type",
+        "ai_extraction_configs.version",
+        "ai_extraction_configs.ai_model",
+        "COUNT(*) AS total_count",
+        "SUM(CASE WHEN ai_usage_logs.success THEN 1 ELSE 0 END) AS success_count",
+        "AVG(ai_usage_logs.duration_ms) AS avg_duration_ms"
+      )
+
+    @pagy, @usage_logs = pagy(
+      logs.includes(:organization, :contract, :ai_extraction_config).order(created_at: :desc),
+      limit: 50
+    )
     @organizations = Organization.order(:name)
   end
 

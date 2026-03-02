@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_02_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_02_030936) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -62,7 +62,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_000000) do
     t.index ["email_address"], name: "index_admin_users_on_email_address", unique: true
   end
 
+  create_table "ai_extraction_configs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.boolean "active", default: false, null: false
+    t.string "ai_model", null: false
+    t.datetime "created_at", null: false
+    t.uuid "created_by_id"
+    t.string "extraction_type", null: false
+    t.decimal "input_cost_per_million", precision: 10, scale: 4, null: false
+    t.integer "max_tokens", null: false
+    t.text "notes"
+    t.decimal "output_cost_per_million", precision: 10, scale: 4, null: false
+    t.decimal "temperature", precision: 3, scale: 2
+    t.integer "top_k"
+    t.decimal "top_p", precision: 3, scale: 2
+    t.datetime "updated_at", null: false
+    t.integer "version", null: false
+    t.index ["created_by_id"], name: "index_ai_extraction_configs_on_created_by_id"
+    t.index ["extraction_type", "active"], name: "index_ai_extraction_configs_on_extraction_type_and_active"
+    t.index ["extraction_type", "version"], name: "index_ai_extraction_configs_on_extraction_type_and_version", unique: true
+  end
+
   create_table "ai_usage_logs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "ai_extraction_config_id"
     t.string "ai_model", null: false
     t.uuid "contract_id"
     t.datetime "created_at", null: false
@@ -74,6 +95,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_000000) do
     t.integer "output_tokens", default: 0, null: false
     t.boolean "success", default: true, null: false
     t.integer "total_tokens", default: 0, null: false
+    t.index ["ai_extraction_config_id"], name: "index_ai_usage_logs_on_ai_extraction_config_id"
     t.index ["contract_id"], name: "index_ai_usage_logs_on_contract_id"
     t.index ["created_at"], name: "index_ai_usage_logs_on_created_at"
     t.index ["organization_id"], name: "index_ai_usage_logs_on_organization_id"
@@ -191,6 +213,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_000000) do
     t.index ["premises_address"], name: "index_contracts_on_premises_address"
     t.index ["status"], name: "index_contracts_on_status"
     t.index ["uploaded_by_id"], name: "index_contracts_on_uploaded_by_id"
+  end
+
+  create_table "extraction_feedbacks", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "ai_usage_log_id"
+    t.text "comment"
+    t.uuid "contract_id", null: false
+    t.datetime "created_at", null: false
+    t.uuid "organization_id", null: false
+    t.string "rating", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "user_id", null: false
+    t.index ["ai_usage_log_id"], name: "index_extraction_feedbacks_on_ai_usage_log_id"
+    t.index ["contract_id", "user_id"], name: "index_extraction_feedbacks_on_contract_id_and_user_id", unique: true
+    t.index ["contract_id"], name: "index_extraction_feedbacks_on_contract_id"
+    t.index ["organization_id"], name: "index_extraction_feedbacks_on_organization_id"
+    t.index ["user_id"], name: "index_extraction_feedbacks_on_user_id"
   end
 
   create_table "invitations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -461,6 +499,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_000000) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "admin_sessions", "admin_users"
+  add_foreign_key "ai_extraction_configs", "admin_users", column: "created_by_id"
+  add_foreign_key "ai_usage_logs", "ai_extraction_configs"
   add_foreign_key "ai_usage_logs", "contracts"
   add_foreign_key "ai_usage_logs", "organizations"
   add_foreign_key "alert_preferences", "organizations"
@@ -475,6 +515,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_000000) do
   add_foreign_key "contract_documents", "contracts", on_delete: :cascade
   add_foreign_key "contracts", "organizations"
   add_foreign_key "contracts", "users", column: "uploaded_by_id"
+  add_foreign_key "extraction_feedbacks", "ai_usage_logs"
+  add_foreign_key "extraction_feedbacks", "contracts"
+  add_foreign_key "extraction_feedbacks", "organizations"
+  add_foreign_key "extraction_feedbacks", "users"
   add_foreign_key "invitations", "organizations"
   add_foreign_key "invitations", "users", column: "inviter_id"
   add_foreign_key "key_clauses", "contract_documents", column: "source_document_id", on_delete: :cascade

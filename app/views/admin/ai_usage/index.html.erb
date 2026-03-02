@@ -9,14 +9,106 @@
     <%= form.submit "Apply", class: "rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500" %>
   <% end %>
 
-  <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4 text-sm">
+  <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 text-sm">
     <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Input Tokens</p><p class="mt-1 font-semibold text-slate-900"><%= number_with_delimiter(@total_input_tokens) %></p></div>
     <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Output Tokens</p><p class="mt-1 font-semibold text-slate-900"><%= number_with_delimiter(@total_output_tokens) %></p></div>
     <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Total Tokens</p><p class="mt-1 font-semibold text-slate-900"><%= number_with_delimiter(@total_tokens) %></p></div>
     <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Estimated Cost</p><p class="mt-1 font-semibold text-slate-900"><%= number_to_currency(@estimated_cost) %></p></div>
+    <div class="rounded-md bg-slate-50 p-3">
+      <p class="text-slate-500">User Feedback</p>
+      <p class="mt-1 font-semibold text-slate-900">
+        <% if @feedback_positive_pct %>
+          <%= @feedback_positive_pct %>% positive
+        <% else %>
+          No feedback
+        <% end %>
+      </p>
+      <p class="text-xs text-slate-400"><%= @feedback_count %> ratings (<span class="text-green-600"><%= @positive_feedback_count %> &uarr;</span> / <span class="text-red-600"><%= @negative_feedback_count %> &darr;</span>)</p>
+    </div>
+    <div class="rounded-md bg-slate-50 p-3">
+      <p class="text-slate-500">Success Rate</p>
+      <p class="mt-1 font-semibold text-slate-900">
+        <% total = @success_count + @failure_count %>
+        <% if total > 0 %>
+          <%= number_to_percentage((@success_count.to_f / total * 100), precision: 1) %>
+        <% else %>
+          N/A
+        <% end %>
+      </p>
+      <p class="text-xs text-slate-400"><span class="text-green-600"><%= @success_count %> ok</span> / <span class="text-red-600"><%= @failure_count %> failed</span></p>
+    </div>
   </div>
 </div>
 
+<%# Extraction stats by mode %>
+<div class="mt-4 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+  <h3 class="mb-3 text-sm font-semibold text-slate-900">Extraction Stats by Mode</h3>
+  <% if @mode_stats.any? %>
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Mode</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Extractions</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Success Rate</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Avg Duration</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Avg Tokens</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200 bg-white">
+        <% @mode_stats.each do |stat| %>
+          <tr>
+            <td class="px-3 py-2 font-medium"><%= stat.extraction_mode.titleize %></td>
+            <td class="px-3 py-2"><%= stat.total_count %></td>
+            <td class="px-3 py-2">
+              <% rate = stat.total_count.to_i > 0 ? (stat.success_count.to_i.to_f / stat.total_count.to_i * 100) : 0 %>
+              <span class="<%= rate >= 90 ? 'text-green-600' : rate >= 70 ? 'text-amber-600' : 'text-red-600' %>"><%= number_to_percentage(rate, precision: 1) %></span>
+            </td>
+            <td class="px-3 py-2"><%= stat.avg_duration_ms ? "#{stat.avg_duration_ms.to_i}ms" : "—" %></td>
+            <td class="px-3 py-2"><%= stat.avg_tokens ? number_with_delimiter(stat.avg_tokens.to_i) : "—" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="text-sm text-slate-500">No data for the selected period.</p>
+  <% end %>
+</div>
+
+<%# Extraction stats by config version %>
+<% if @config_stats.any? %>
+  <div class="mt-4 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+    <h3 class="mb-3 text-sm font-semibold text-slate-900">Extraction Stats by Config Version</h3>
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Type</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Version</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Model</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Extractions</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Success Rate</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Avg Duration</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200 bg-white">
+        <% @config_stats.each do |stat| %>
+          <tr>
+            <td class="px-3 py-2"><%= stat.extraction_type.titleize %></td>
+            <td class="px-3 py-2">v<%= stat.version %></td>
+            <td class="px-3 py-2"><%= stat.ai_model %></td>
+            <td class="px-3 py-2"><%= stat.total_count %></td>
+            <td class="px-3 py-2">
+              <% rate = stat.total_count.to_i > 0 ? (stat.success_count.to_i.to_f / stat.total_count.to_i * 100) : 0 %>
+              <span class="<%= rate >= 90 ? 'text-green-600' : rate >= 70 ? 'text-amber-600' : 'text-red-600' %>"><%= number_to_percentage(rate, precision: 1) %></span>
+            </td>
+            <td class="px-3 py-2"><%= stat.avg_duration_ms ? "#{stat.avg_duration_ms.to_i}ms" : "—" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
+
+<%# Enhanced usage logs table %>
 <div class="mt-4 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
   <h3 class="mb-3 text-sm font-semibold text-slate-900">Usage Logs</h3>
   <% if @usage_logs.any? %>
@@ -25,19 +117,39 @@
       <tr>
         <th class="px-3 py-2 text-left font-medium text-slate-600">When</th>
         <th class="px-3 py-2 text-left font-medium text-slate-600">Organization</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Contract</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Mode</th>
         <th class="px-3 py-2 text-left font-medium text-slate-600">Model</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Config</th>
         <th class="px-3 py-2 text-left font-medium text-slate-600">Tokens</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Duration</th>
         <th class="px-3 py-2 text-left font-medium text-slate-600">Status</th>
       </tr>
     </thead>
     <tbody class="divide-y divide-slate-200 bg-white">
       <% @usage_logs.each do |log| %>
         <tr>
-          <td class="px-3 py-2"><%= log.created_at.to_fs(:db) %></td>
-          <td class="px-3 py-2"><%= log.organization.name %></td>
-          <td class="px-3 py-2"><%= log.ai_model %></td>
+          <td class="px-3 py-2 whitespace-nowrap"><%= log.created_at.to_fs(:db) %></td>
+          <td class="px-3 py-2"><%= log.organization&.name %></td>
+          <td class="px-3 py-2 max-w-[150px] truncate" title="<%= log.contract&.title %>"><%= log.contract&.title || "—" %></td>
+          <td class="px-3 py-2"><%= log.extraction_mode&.titleize %></td>
+          <td class="px-3 py-2 text-xs"><%= log.ai_model %></td>
+          <td class="px-3 py-2 text-xs">
+            <% if log.ai_extraction_config %>
+              <%= link_to "v#{log.ai_extraction_config.version}", admin_ai_extraction_config_path(log.ai_extraction_config), class: "text-indigo-600 hover:text-indigo-500" %>
+            <% else %>
+              <span class="text-slate-400">—</span>
+            <% end %>
+          </td>
           <td class="px-3 py-2"><%= number_with_delimiter(log.total_tokens) %></td>
-          <td class="px-3 py-2"><%= log.success? ? "Success" : "Failed" %></td>
+          <td class="px-3 py-2"><%= log.duration_ms ? "#{number_with_delimiter(log.duration_ms)}ms" : "—" %></td>
+          <td class="px-3 py-2">
+            <% if log.success? %>
+              <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">OK</span>
+            <% else %>
+              <span class="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700" title="<%= log.error_message %>">Failed</span>
+            <% end %>
+          </td>
         </tr>
       <% end %>
     </tbody>

@@ -84,8 +84,15 @@ class LeaseDetail < ApplicationRecord
   end
 
   # Annual rent per square foot — the standard CRE comparison metric
+  # Prefers the current rent escalation period; falls back to contract.monthly_value
   def annual_rent_per_sqft
-    return nil unless rentable_sqft&.positive? && contract.monthly_value&.positive?
-    (contract.monthly_value * 12 / rentable_sqft).round(2)
+    return nil unless rentable_sqft&.positive?
+
+    current = contract.current_rent
+    annual = current&.base_rent_annual
+    annual ||= contract.monthly_value.present? ? contract.monthly_value * 12 : nil
+    return nil unless annual&.positive?
+
+    (annual / rentable_sqft).round(2)
   end
 end

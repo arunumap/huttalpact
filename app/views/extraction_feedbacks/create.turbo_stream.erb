@@ -1,0 +1,3 @@
+<%= turbo_stream.replace "extraction_feedback" do %>
+  <%= render "extraction_feedbacks/form", contract: @contract, feedback: @feedback %>
+<% end %>

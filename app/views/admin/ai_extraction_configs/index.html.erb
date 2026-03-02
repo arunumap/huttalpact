@@ -1,0 +1,95 @@
+<% content_for :title, "Admin AI Config" %>
+<% content_for :page_title, "AI Extraction Config" %>
+
+<p class="mb-4 text-sm text-slate-500">Manage model and API parameters for each extraction type. Each change creates a new version — activate a version to make it live.</p>
+
+<div class="space-y-6">
+  <% AiExtractionConfig::EXTRACTION_TYPES.each do |type| %>
+    <% active = @active_configs[type] %>
+    <% versions = @configs_by_type[type] %>
+
+    <div class="rounded-lg bg-white shadow-sm ring-1 ring-slate-200">
+      <div class="border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-900"><%= type.titleize %></h3>
+          <% if active %>
+            <p class="text-xs text-slate-500">Active: v<%= active.version %> &middot; <%= active.ai_model %> &middot; max_tokens: <%= number_with_delimiter(active.max_tokens) %></p>
+          <% else %>
+            <p class="text-xs text-red-500">No active config — using hardcoded fallback</p>
+          <% end %>
+        </div>
+        <%= link_to "New Version", new_admin_ai_extraction_config_path(extraction_type: type),
+            class: "rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500" %>
+      </div>
+
+      <% if active %>
+        <div class="px-4 py-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-3 lg:grid-cols-6">
+          <div>
+            <p class="text-slate-500">Model</p>
+            <p class="font-medium text-slate-900"><%= active.ai_model %></p>
+          </div>
+          <div>
+            <p class="text-slate-500">Max Tokens</p>
+            <p class="font-medium text-slate-900"><%= number_with_delimiter(active.max_tokens) %></p>
+          </div>
+          <div>
+            <p class="text-slate-500">Temperature</p>
+            <p class="font-medium text-slate-900"><%= active.temperature || "default" %></p>
+          </div>
+          <div>
+            <p class="text-slate-500">Top P</p>
+            <p class="font-medium text-slate-900"><%= active.top_p || "default" %></p>
+          </div>
+          <div>
+            <p class="text-slate-500">Top K</p>
+            <p class="font-medium text-slate-900"><%= active.top_k || "default" %></p>
+          </div>
+          <div>
+            <p class="text-slate-500">Cost (in/out per 1M)</p>
+            <p class="font-medium text-slate-900">$<%= active.input_cost_per_million %> / $<%= active.output_cost_per_million %></p>
+          </div>
+        </div>
+      <% end %>
+
+      <% if versions.size > 1 %>
+        <div class="border-t border-slate-100 px-4 py-2">
+          <details class="text-xs">
+            <summary class="cursor-pointer font-medium text-slate-600 hover:text-slate-900">Version history (<%= versions.size %> versions)</summary>
+            <table class="mt-2 min-w-full divide-y divide-slate-200">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-2 py-1 text-left font-medium text-slate-600">Version</th>
+                  <th class="px-2 py-1 text-left font-medium text-slate-600">Model</th>
+                  <th class="px-2 py-1 text-left font-medium text-slate-600">Max Tokens</th>
+                  <th class="px-2 py-1 text-left font-medium text-slate-600">Status</th>
+                  <th class="px-2 py-1 text-left font-medium text-slate-600">Created</th>
+                  <th class="px-2 py-1 text-left font-medium text-slate-600"></th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <% versions.each do |config| %>
+                  <tr>
+                    <td class="px-2 py-1">v<%= config.version %></td>
+                    <td class="px-2 py-1"><%= config.ai_model %></td>
+                    <td class="px-2 py-1"><%= number_with_delimiter(config.max_tokens) %></td>
+                    <td class="px-2 py-1">
+                      <% if config.active? %>
+                        <span class="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Active</span>
+                      <% else %>
+                        <span class="text-slate-400">Inactive</span>
+                      <% end %>
+                    </td>
+                    <td class="px-2 py-1"><%= config.created_at.to_fs(:short) %></td>
+                    <td class="px-2 py-1">
+                      <%= link_to "View", admin_ai_extraction_config_path(config), class: "text-indigo-600 hover:text-indigo-500" %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </details>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>
