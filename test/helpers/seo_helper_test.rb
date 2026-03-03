@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "ostruct"
 
 class SeoHelperTest < ActionView::TestCase
   include SeoHelper
@@ -114,5 +115,22 @@ class SeoHelperTest < ActionView::TestCase
     assert_match(/"@type":"BreadcrumbList"/, result)
     assert_match(/"position":1/, result)
     assert_match(/"name":"Pricing"/, result)
+  end
+
+  test "structured_data blog_posting renders blog schema" do
+    post = OpenStruct.new(
+      title: "Blog title",
+      meta_description: "Blog description",
+      display_excerpt: "Fallback excerpt",
+      published_at: Time.current,
+      created_at: Time.current,
+      updated_at: Time.current,
+      admin_user: OpenStruct.new(full_name: "Admin Author")
+    )
+
+    result = structured_data(type: :blog_posting, post: post, canonical_url: "https://pactbadger.com/blog/blog-title", image_url: "https://pactbadger.com/og.png")
+    assert_match(/"@type":"BlogPosting"/, result)
+    assert_match(/"headline":"Blog title"/, result)
+    assert_match(/"name":"Admin Author"/, result)
   end
 end

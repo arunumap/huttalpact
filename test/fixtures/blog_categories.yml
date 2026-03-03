@@ -1,0 +1,11 @@
+guides:
+  name: Guides
+  slug: guides
+  description: Practical contract and compliance guides.
+  position: 1
+
+product_updates:
+  name: Product Updates
+  slug: product-updates
+  description: New features and release notes.
+  position: 2

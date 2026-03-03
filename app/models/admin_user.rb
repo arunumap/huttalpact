@@ -2,6 +2,7 @@ class AdminUser < ApplicationRecord
   has_secure_password
 
   has_many :admin_sessions, dependent: :destroy
+  has_many :blog_posts, dependent: :nullify
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 

@@ -1,0 +1,82 @@
+<%= form_with model: [ :admin, @blog_post ], class: "space-y-5", local: true do |form| %>
+  <% if @blog_post.errors.any? %>
+    <div class="rounded-md bg-red-50 p-3">
+      <ul class="list-inside list-disc text-sm text-red-700">
+        <% @blog_post.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div class="sm:col-span-2">
+      <%= form.label :title, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.text_field :title, class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    </div>
+
+    <div class="sm:col-span-2">
+      <%= form.label :slug, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.text_field :slug, placeholder: "auto-generated-if-blank", class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    </div>
+
+    <div>
+      <%= form.label :status, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.select :status, options_for_select(BlogPost::STATUSES.map { |status| [status.titleize, status] }, @blog_post.status), {}, class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    </div>
+
+    <div>
+      <%= form.label :published_at, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.datetime_field :published_at, class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    </div>
+
+    <div>
+      <%= form.label :blog_category_id, "Category", class: "block text-sm font-medium text-slate-700" %>
+      <%= form.select :blog_category_id,
+          options_for_select([["Uncategorized", ""]] + @categories.map { |category| [category.name, category.id] }, @blog_post.blog_category_id),
+          {},
+          class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    </div>
+
+    <div>
+      <%= form.label :featured_image, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.file_field :featured_image, class: "mt-1 block w-full rounded-md border-slate-300 text-sm" %>
+      <% if @blog_post.featured_image.attached? %>
+        <p class="mt-1 text-xs text-slate-500">Current: <%= @blog_post.featured_image.filename %></p>
+      <% end %>
+    </div>
+
+    <div class="sm:col-span-2">
+      <%= form.label :excerpt, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.text_area :excerpt, rows: 3, class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    </div>
+
+    <div class="sm:col-span-2">
+      <%= form.label :body, "Body (Markdown)", class: "block text-sm font-medium text-slate-700" %>
+      <%= form.text_area :body, rows: 18, class: "mt-1 block w-full rounded-md border-slate-300 font-mono text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    </div>
+  </div>
+
+  <details class="rounded-md border border-slate-200 p-4">
+    <summary class="cursor-pointer text-sm font-medium text-slate-700">SEO Overrides</summary>
+    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+      <div class="sm:col-span-2">
+        <%= form.label :meta_description, class: "block text-sm font-medium text-slate-700" %>
+        <%= form.text_field :meta_description, maxlength: 160, class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+      </div>
+      <div class="sm:col-span-2">
+        <%= form.label :canonical_url, class: "block text-sm font-medium text-slate-700" %>
+        <%= form.url_field :canonical_url, class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+      </div>
+      <div class="sm:col-span-2">
+        <%= form.label :og_image_url, class: "block text-sm font-medium text-slate-700" %>
+        <%= form.url_field :og_image_url, class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+      </div>
+    </div>
+  </details>
+
+  <div class="flex items-center gap-3 pt-2">
+    <%= form.submit class: "rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500" %>
+    <%= link_to "Cancel", admin_blog_posts_path, class: "text-sm text-slate-600 hover:text-slate-900" %>
+  </div>
+<% end %>

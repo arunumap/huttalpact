@@ -1,0 +1,49 @@
+published_one:
+  title: Avoid Missing Contract Renewals
+  slug: avoid-missing-contract-renewals
+  body: |
+    ## Renewals checklist
+
+    Keep an active renewal calendar and set notice-period alerts.
+  excerpt: A practical checklist for contract renewal workflows.
+  meta_description: Learn how to avoid missed contract renewals with practical workflows.
+  status: published
+  published_at: <%= 5.days.ago %>
+  admin_user: one
+  blog_category: guides
+
+published_two:
+  title: March 2026 Product Roundup
+  slug: march-2026-product-roundup
+  body: |
+    ## What's new
+
+    We shipped better extraction quality and improved alert controls.
+  excerpt: A summary of new PactBadger features in March 2026.
+  status: published
+  published_at: <%= 2.days.ago %>
+  admin_user: one
+  blog_category: product_updates
+
+draft_one:
+  title: Draft Post
+  slug: draft-post
+  body: |
+    ## Draft heading
+
+    This should not appear in the public index.
+  status: draft
+  admin_user: one
+  blog_category: guides
+
+archived_one:
+  title: Old Archived Post
+  slug: old-archived-post
+  body: |
+    ## Archive
+
+    This post is archived.
+  status: archived
+  published_at: <%= 60.days.ago %>
+  admin_user: one
+  blog_category: guides

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_02_044557) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_02_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -166,6 +166,38 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_044557) do
     t.index ["organization_id", "created_at"], name: "index_audit_logs_on_organization_id_and_created_at"
     t.index ["organization_id"], name: "index_audit_logs_on_organization_id"
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
+  create_table "blog_categories", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.string "slug", null: false
+    t.datetime "updated_at", null: false
+    t.index ["position"], name: "index_blog_categories_on_position"
+    t.index ["slug"], name: "index_blog_categories_on_slug", unique: true
+  end
+
+  create_table "blog_posts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "admin_user_id", null: false
+    t.uuid "blog_category_id"
+    t.text "body", null: false
+    t.string "canonical_url"
+    t.datetime "created_at", null: false
+    t.text "excerpt"
+    t.string "meta_description"
+    t.string "og_image_url"
+    t.datetime "published_at"
+    t.string "slug", null: false
+    t.string "status", default: "draft", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.index ["admin_user_id"], name: "index_blog_posts_on_admin_user_id"
+    t.index ["blog_category_id"], name: "index_blog_posts_on_blog_category_id"
+    t.index ["published_at"], name: "index_blog_posts_on_published_at"
+    t.index ["slug"], name: "index_blog_posts_on_slug", unique: true
+    t.index ["status"], name: "index_blog_posts_on_status"
   end
 
   create_table "contract_documents", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -513,6 +545,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_044557) do
   add_foreign_key "audit_logs", "contracts", on_delete: :nullify
   add_foreign_key "audit_logs", "organizations"
   add_foreign_key "audit_logs", "users"
+  add_foreign_key "blog_posts", "admin_users"
+  add_foreign_key "blog_posts", "blog_categories"
   add_foreign_key "contract_documents", "contracts", on_delete: :cascade
   add_foreign_key "contracts", "organizations"
   add_foreign_key "contracts", "users", column: "uploaded_by_id"

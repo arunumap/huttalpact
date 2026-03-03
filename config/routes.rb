@@ -25,6 +25,13 @@ Rails.application.routes.draw do
       post :sync_organization
     end
     resources :audit_logs, only: %i[index]
+    resources :blog_posts do
+      member do
+        post :publish
+        post :unpublish
+      end
+    end
+    resources :blog_categories
     resource :storage, only: %i[show], controller: "storage"
     resource :health, only: %i[show], controller: "health"
   end
@@ -97,6 +104,12 @@ Rails.application.routes.draw do
 
   # Pricing
   resource :pricing, only: %i[show], controller: "pricing"
+
+  # Blog
+  get "blog", to: "blog#index", as: :blog
+  get "blog/feed", to: "blog#feed", as: :blog_feed, defaults: { format: :atom }
+  get "blog/:slug", to: "blog#show", as: :blog_post
+
   mount Pay::Engine, at: "/pay", as: "pay_engine" if defined?(Pay::Engine)
 
   # Dashboard

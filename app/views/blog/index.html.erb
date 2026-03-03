@@ -1,0 +1,70 @@
+<% content_for :title, "Blog — PactBadger" %>
+<% content_for :meta_description, "Contract management insights, AI extraction tips, and product updates from PactBadger." %>
+<% content_for :canonical_url, blog_url %>
+
+<section class="bg-white border-b border-gray-200">
+  <div class="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
+    <p class="text-sm font-semibold uppercase tracking-wide text-amber-600">PactBadger Blog</p>
+    <h1 class="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">Contract insights for growing teams</h1>
+    <p class="mt-4 max-w-3xl text-lg text-gray-600">Practical guidance on renewals, clauses, compliance, and workflow automation.</p>
+  </div>
+</section>
+
+<section class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+  <% if @categories.any? %>
+    <div class="mb-8 flex flex-wrap gap-2">
+      <%= link_to "All", blog_path,
+          class: "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium #{@selected_category.nil? ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
+      <% @categories.each do |category| %>
+        <%= link_to category.name, blog_path(category: category.slug),
+            class: "inline-flex items-center rounded-full px-3 py-1 text-sm font-medium #{@selected_category == category ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}" %>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if @blog_posts.any? %>
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <% @blog_posts.each do |post| %>
+        <article class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <% if post.featured_image.attached? %>
+            <%= link_to blog_post_path(post.slug), class: "block" do %>
+              <%= image_tag post.featured_image, alt: post.title, class: "h-48 w-full object-cover" %>
+            <% end %>
+          <% else %>
+            <%= link_to blog_post_path(post.slug), class: "block h-48 bg-gradient-to-br from-amber-50 to-amber-100" do %>
+              <div class="flex h-full items-center justify-center text-amber-700 font-semibold">PactBadger</div>
+            <% end %>
+          <% end %>
+
+          <div class="p-5">
+            <% if post.blog_category %>
+              <p class="text-xs font-semibold uppercase tracking-wide text-amber-700"><%= post.blog_category.name %></p>
+            <% end %>
+
+            <h2 class="mt-2 text-xl font-semibold text-gray-900">
+              <%= link_to post.title, blog_post_path(post.slug), class: "hover:text-amber-700" %>
+            </h2>
+
+            <p class="mt-3 text-sm text-gray-600"><%= post.display_excerpt %></p>
+
+            <div class="mt-4 flex items-center justify-between text-xs text-gray-500">
+              <span><%= post.published_on.strftime("%b %-d, %Y") %></span>
+              <span><%= pluralize(post.reading_time, "min") %> read</span>
+            </div>
+          </div>
+        </article>
+      <% end %>
+    </div>
+
+    <% if @pagy.pages > 1 %>
+      <div class="mt-10 flex justify-center">
+        <%== pagy_nav(@pagy) %>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="rounded-lg border border-dashed border-gray-300 bg-white p-10 text-center">
+      <h2 class="text-lg font-semibold text-gray-900">No posts yet</h2>
+      <p class="mt-2 text-sm text-gray-600">Check back soon for contract tips, AI workflows, and product updates.</p>
+    </div>
+  <% end %>
+</section>

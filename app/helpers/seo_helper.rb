@@ -39,6 +39,8 @@ module SeoHelper
       faq_schema(options[:items] || [])
     when :breadcrumb
       breadcrumb_schema(options[:items] || [])
+    when :blog_posting
+      blog_posting_schema(options)
     end
 
     return unless data
@@ -180,6 +182,37 @@ module SeoHelper
           "item" => item[:url]
         }
       end
+    }
+  end
+
+  def blog_posting_schema(options)
+    post = options[:post]
+    return nil unless post
+
+    canonical = options[:canonical_url].presence || request.original_url.split("?").first
+    image = options[:image_url].presence || og_image_url
+
+    {
+      "@context" => "https://schema.org",
+      "@type" => "BlogPosting",
+      "headline" => post.title,
+      "description" => post.meta_description.presence || post.display_excerpt,
+      "datePublished" => (post.published_at || post.created_at)&.iso8601,
+      "dateModified" => post.updated_at&.iso8601,
+      "mainEntityOfPage" => canonical,
+      "image" => image,
+      "author" => {
+        "@type" => "Person",
+        "name" => post.admin_user&.full_name || DEFAULT_SITE_NAME
+      },
+      "publisher" => {
+        "@type" => "Organization",
+        "name" => DEFAULT_SITE_NAME,
+        "logo" => {
+          "@type" => "ImageObject",
+          "url" => image_url("pact_badger_log.svg")
+        }
+      }
     }
   end
 end

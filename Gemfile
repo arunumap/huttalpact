@@ -42,6 +42,13 @@ gem "docx"
 # Inline SVG rendering
 gem "inline_svg"
 
+# Blog markdown rendering
+gem "redcarpet"
+gem "rouge"
+
+# SEO sitemap generation
+gem "sitemap_generator"
+
 # Transactional email via Postmark
 gem "postmark-rails"
 

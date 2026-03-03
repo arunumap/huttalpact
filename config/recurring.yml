@@ -29,3 +29,7 @@ production:
   clean_stale_drafts:
     class: CleanStaleDraftsJob
     schedule: at 3am every day
+
+  refresh_sitemap:
+    command: "SitemapGenerator::Sitemap.create"
+    schedule: at 4am every day

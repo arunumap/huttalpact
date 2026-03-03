@@ -1,5 +1,5 @@
 <% content_for :title, "PactBadger — Smart Contract Tracking That Won't Let You Forget" %>
-<% content_for :meta_description, "AI-powered contract tracking for SMBs. Upload PDF or DOCX contracts, auto-extract key dates, values, and clauses with AI, and get automated renewal and expiration alerts. Free plan available." %>
+<% content_for :meta_description, "AI-powered contract tracking for SMBs. Upload PDF, DOCX, or TXT contract files, auto-extract key dates, values, and clauses with AI, and get automated renewal and expiration alerts. Free plan available." %>
 <% content_for :canonical_url, root_url %>
 
 <%= structured_data(type: :organization) %>
@@ -114,7 +114,7 @@
       <div class="text-center">
         <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-amber-600 text-xl font-bold text-white">1</div>
         <h3 class="mt-5 text-lg font-semibold text-gray-900">Upload your contracts</h3>
-        <p class="mt-3 text-sm leading-6 text-gray-600">Drop in your PDF, DOCX, or TXT files. Drag and drop or browse — upload as many as you need.</p>
+        <p class="mt-3 text-sm leading-6 text-gray-600">Drop in your PDF, DOCX, or TXT files. Drag and drop or browse — upload what you need within your plan limits.</p>
         <div class="mt-6 rounded-lg shadow-lg ring-1 ring-gray-900/10 overflow-hidden">
           <%= image_tag "screenshots/upload.png",
               alt: "Contract upload interface with drag and drop",
@@ -240,6 +240,6 @@
       <%= link_to "Get Started Free", new_registration_path,
           class: "rounded-lg bg-amber-600 px-6 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-amber-500 transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600" %>
     </div>
-    <p class="mt-4 text-sm text-gray-400">No credit card required. Free plan available forever.</p>
+    <p class="mt-4 text-sm text-gray-400">No credit card required. Free plan available.</p>
   </div>
 </section>

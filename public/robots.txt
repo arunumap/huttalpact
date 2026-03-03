@@ -10,4 +10,4 @@ Disallow: /billing
 Disallow: /onboarding
 Disallow: /pay
 
-# Sitemap: https://pactbadger.com/sitemap.xml
+Sitemap: https://pactbadger.com/sitemap.xml.gz
