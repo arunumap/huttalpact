@@ -21,7 +21,7 @@
 
   <%# Filters %>
   <%= form_with url: audit_logs_path, method: :get, class: "flex flex-wrap items-end gap-4" do |form| %>
-    <div class="w-48">
+    <div class="w-full sm:w-48">
       <%= form.label :action_type, "Action", class: "block text-sm font-medium text-gray-700" %>
       <%= form.select :action_type,
           options_for_select(AuditLog::ACTIONS.map { |a| [a == "alert_sent" ? "Alert Sent" : a.titleize, a] }, params[:action_type]),
@@ -29,7 +29,7 @@
           class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
     </div>
 
-    <div class="w-56">
+    <div class="w-full sm:w-56">
       <%= form.label :contract_id, "Contract", class: "block text-sm font-medium text-gray-700" %>
       <%= form.select :contract_id,
           options_for_select(Contract.order(:title).pluck(:title, :id), params[:contract_id]),

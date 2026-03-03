@@ -5,10 +5,18 @@ export default class extends Controller {
 
   connect() {
     this.clickOutsideHandler = this.clickOutside.bind(this)
+    this.escapeHandler = this.handleEscape.bind(this)
   }
 
   disconnect() {
     document.removeEventListener("click", this.clickOutsideHandler)
+    document.removeEventListener("keydown", this.escapeHandler)
+  }
+
+  handleEscape(event) {
+    if (event.key === "Escape") {
+      this.close()
+    }
   }
 
   toggle(event) {
@@ -24,11 +32,13 @@ export default class extends Controller {
   open() {
     this.dropdownTarget.classList.remove("hidden")
     document.addEventListener("click", this.clickOutsideHandler)
+    document.addEventListener("keydown", this.escapeHandler)
   }
 
   close() {
     this.dropdownTarget.classList.add("hidden")
     document.removeEventListener("click", this.clickOutsideHandler)
+    document.removeEventListener("keydown", this.escapeHandler)
   }
 
   clickOutside(event) {

@@ -1,24 +1,9 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Connects to data-controller="sidebar"
-// Toggles mobile sidebar with overlay. On desktop (lg+), sidebar is always visible.
+// Connects to data-controller="admin-sidebar"
+// Toggles mobile sidebar drawer on the admin layout
 export default class extends Controller {
   static targets = ["sidebar", "overlay"]
-
-  connect() {
-    this.escapeHandler = this.handleEscape.bind(this)
-    document.addEventListener("keydown", this.escapeHandler)
-  }
-
-  disconnect() {
-    document.removeEventListener("keydown", this.escapeHandler)
-  }
-
-  handleEscape(event) {
-    if (event.key === "Escape") {
-      this.close()
-    }
-  }
 
   toggle() {
     const isOpen = !this.sidebarTarget.classList.contains("-translate-x-full")
@@ -39,12 +24,5 @@ export default class extends Controller {
     this.sidebarTarget.classList.add("-translate-x-full")
     this.overlayTarget.classList.add("hidden")
     document.body.classList.remove("overflow-hidden", "lg:overflow-auto")
-  }
-
-  // Close sidebar when clicking a nav link (mobile)
-  navigate() {
-    if (window.innerWidth < 1024) {
-      this.close()
-    }
   }
 }

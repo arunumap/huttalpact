@@ -21,7 +21,7 @@
 
   <body class="h-full">
     <%# Simple top nav %>
-    <nav class="border-b border-gray-200 bg-white">
+    <nav class="border-b border-gray-200 bg-white" data-controller="mobile-nav">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
           <% if Current.user %>
@@ -34,7 +34,8 @@
             <% end %>
           <% end %>
 
-          <div class="flex items-center gap-4">
+          <%# Desktop nav %>
+          <div class="hidden sm:flex items-center gap-4">
             <% if Current.user %>
               <%= link_to "← Back to Dashboard", dashboard_path, class: "text-sm font-medium text-gray-600 hover:text-gray-900" %>
             <% else %>
@@ -42,6 +43,23 @@
               <%= link_to "Sign Up", new_registration_path, class: "rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-500 transition" %>
             <% end %>
           </div>
+
+          <%# Mobile hamburger %>
+          <button data-action="click->mobile-nav#toggle" type="button" class="sm:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500" aria-label="Open menu">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+        </div>
+
+        <%# Mobile menu %>
+        <div data-mobile-nav-target="menu" class="hidden sm:hidden border-t border-gray-200 py-3 space-y-2">
+          <% if Current.user %>
+            <%= link_to "← Back to Dashboard", dashboard_path, class: "block rounded-md px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900" %>
+          <% else %>
+            <%= link_to "Sign In", new_session_path, class: "block rounded-md px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900" %>
+            <%= link_to "Sign Up", new_registration_path, class: "block rounded-md px-3 py-2 text-base font-medium text-white bg-amber-600 hover:bg-amber-500 text-center" %>
+          <% end %>
         </div>
       </div>
     </nav>

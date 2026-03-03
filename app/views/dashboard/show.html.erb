@@ -2,7 +2,7 @@
 
 <div class="space-y-8">
   <%# Welcome header + Quick-add %>
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <h2 class="text-2xl font-bold text-gray-900">Welcome back<%= ", #{Current.user.first_name}" if Current.user&.first_name.present? %>!</h2>
       <p class="mt-1 text-sm text-gray-500">Here's an overview of your contracts and upcoming deadlines.</p>
@@ -51,7 +51,7 @@
 
   <%# Upcoming Renewals with 30/60/90 day tabs %>
   <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-900/5" data-controller="tabs" data-tabs-active-class="border-amber-500 text-amber-600" data-tabs-inactive-class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700">
-    <div class="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+    <div class="border-b border-gray-200 px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h3 class="text-base font-semibold text-gray-900">Upcoming Renewals</h3>
       <div class="flex gap-1">
         <button data-tabs-target="tab" data-action="click->tabs#select" data-tabs-panel-param="30" class="rounded-md px-3 py-1.5 text-xs font-medium border border-amber-500 text-amber-600 bg-amber-50">
@@ -485,12 +485,12 @@
       <ul class="divide-y divide-gray-200">
         <% @recent_contracts.each do |contract| %>
           <li class="px-6 py-4 hover:bg-gray-50">
-            <%= link_to contract, class: "flex items-center justify-between" do %>
+            <%= link_to contract, class: "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between" do %>
               <div class="min-w-0 flex-1">
                 <p class="text-sm font-medium text-gray-900 truncate"><%= contract.title %></p>
                 <p class="text-xs text-gray-500"><%= contract.vendor_name %> · Added <%= time_ago_in_words(contract.created_at) %> ago</p>
               </div>
-              <div class="ml-4 flex items-center gap-3">
+              <div class="flex items-center gap-3 sm:ml-4">
                 <%= direction_badge(contract.direction) %>
                 <span class="text-sm text-gray-500"><%= format_currency(contract.monthly_value) %>/mo</span>
                 <%= contract_status_badge(contract.status) %>
