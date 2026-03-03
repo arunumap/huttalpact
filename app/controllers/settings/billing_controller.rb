@@ -41,6 +41,7 @@ class Settings::BillingController < ApplicationController
       cancel_url: settings_billing_url
     )
 
+    track_analytics_event("begin_checkout", plan: PlanLimits::LOOKUP_KEYS[lookup_key])
     redirect_to session.url, allow_other_host: true, status: :see_other
   rescue StripePriceResolver::PriceNotFound => e
     Rails.logger.error("Stripe price not found for org #{current_organization.id}: #{e.message}")
@@ -63,6 +64,7 @@ class Settings::BillingController < ApplicationController
 
     if result.success?
       target_plan = PlanLimits::LOOKUP_KEYS[lookup_key]
+      track_analytics_event("plan_upgraded", plan: target_plan)
       redirect_to settings_billing_path, notice: "You've been upgraded to the #{target_plan.titleize} plan! Changes are effective immediately."
     else
       redirect_to settings_billing_path, alert: result.error
@@ -162,6 +164,7 @@ class Settings::BillingController < ApplicationController
   def success
     current_organization.sync_plan_from_subscription!
     current_organization.reload
+    track_analytics_event("purchase", plan: current_organization.plan, value: current_organization.plan == "pro" ? 149 : 49, currency: "USD")
     redirect_to settings_billing_path, notice: "Welcome to the #{current_organization.plan_display_name} plan! Your subscription is now active."
   end
 

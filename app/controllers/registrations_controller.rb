@@ -55,6 +55,7 @@ class RegistrationsController < ApplicationController
 
     UserMailer.welcome(@user).deliver_later
     start_new_session_for @user
+    track_analytics_event("sign_up", method: "email")
     destination = if @invitation&.organization&.onboarding_complete?
       root_path
     else

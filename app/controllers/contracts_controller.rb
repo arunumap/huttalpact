@@ -54,6 +54,7 @@ class ContractsController < ApplicationController
 
       GenerateContractAlertsJob.perform_later(@contract.id)
       log_audit("created", contract: @contract, details: "Created contract: #{@contract.title}")
+      track_analytics_event("contract_created", contract_type: @contract.contract_type)
       redirect_to @contract, notice: "Contract was successfully created."
     else
       render :new, status: :unprocessable_entity

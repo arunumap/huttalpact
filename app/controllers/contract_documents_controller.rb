@@ -12,6 +12,7 @@ class ContractDocumentsController < ApplicationController
 
     if @contract_document.save
       log_audit("updated", contract: @contract, details: "Uploaded document: #{@contract_document.file.filename}")
+      track_analytics_event("document_uploaded", document_type: @contract_document.document_type)
       respond_to do |format|
         format.turbo_stream do
           render turbo_stream: turbo_stream.append(

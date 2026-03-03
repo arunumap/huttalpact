@@ -5,7 +5,21 @@
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
-
     gtag('config', 'G-KQLR3PQZ4W');
   </script>
+
+  <% if flash[:ga_event].present? %>
+    <script>
+      (function() {
+        try {
+          var data = <%= raw flash[:ga_event] %>;
+          if (typeof gtag === 'function' && data.event) {
+            gtag('event', data.event, data.params || {});
+          }
+        } catch(e) {
+          console.warn('GA event error:', e);
+        }
+      })();
+    </script>
+  <% end %>
 <% end %>

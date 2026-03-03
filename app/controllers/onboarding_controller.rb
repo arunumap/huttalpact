@@ -79,6 +79,7 @@ class OnboardingController < ApplicationController
 
   def complete
     @organization.complete_onboarding!
+    track_analytics_event("onboarding_complete")
     redirect_to root_path, notice: "You're all set!"
   end
 
