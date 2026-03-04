@@ -5,7 +5,7 @@ class StripeAdminServiceTest < ActiveSupport::TestCase
   # ── verify_products_and_prices ──
 
   test "verify_products_and_prices returns complete when all 4 lookup key prices exist" do
-    mock_prices = PlanLimits::LOOKUP_KEYS.keys.map.with_index do |key, i|
+    mock_prices = PlanCatalogService.lookup_keys.keys.map.with_index do |key, i|
       OpenStruct.new(
         lookup_key: key,
         id: "price_#{i}",
@@ -85,7 +85,7 @@ class StripeAdminServiceTest < ActiveSupport::TestCase
 
   test "setup_products_and_prices skips existing prices (idempotent)" do
     # All prices already exist
-    mock_prices = PlanLimits::LOOKUP_KEYS.keys.map do |key|
+    mock_prices = PlanCatalogService.lookup_keys.keys.map do |key|
       OpenStruct.new(lookup_key: key, id: "price_existing")
     end
     mock_list = OpenStruct.new(data: mock_prices)

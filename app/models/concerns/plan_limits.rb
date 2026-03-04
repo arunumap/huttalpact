@@ -1,21 +1,6 @@
 module PlanLimits
   extend ActiveSupport::Concern
 
-  PLAN_LIMITS = {
-    "free" => { contracts: 10, extractions: 5, users: 1, audit_log_days: 7 },
-    "starter" => { contracts: 100, extractions: 50, users: 5, audit_log_days: 30 },
-    "pro" => { contracts: Float::INFINITY, extractions: Float::INFINITY, users: Float::INFINITY, audit_log_days: nil }
-  }.freeze
-
-  LOOKUP_KEYS = {
-    "starter_monthly" => "starter",
-    "starter_annual"  => "starter",
-    "pro_monthly"     => "pro",
-    "pro_annual"      => "pro"
-  }.freeze
-
-  PLAN_HIERARCHY = { "free" => 0, "starter" => 1, "pro" => 2 }.freeze
-
   def plan_contract_limit
     current_plan_limits[:contracts] || 10
   end
@@ -119,8 +104,25 @@ module PlanLimits
     PlanCatalogService.paid_plan_slug?(plan)
   end
 
+  def extraction_period_start
+    sub = active_subscription if respond_to?(:active_subscription)
+    anchor_time = sub&.current_period_start
+
+    if anchor_time.present?
+      anchor_day = anchor_time.day
+      today = Time.current
+      # Use the subscription's anchor day within the current month, clamped for short months
+      period_start = today.change(day: [ anchor_day, today.end_of_month.day ].min).beginning_of_day
+      # If that date is still in the future, roll back one month
+      period_start = (period_start - 1.month).change(day: [ anchor_day, (period_start - 1.month).end_of_month.day ].min).beginning_of_day if period_start > today
+      period_start
+    else
+      Time.current.beginning_of_month
+    end
+  end
+
   def reset_monthly_extractions_if_needed!
-    return if ai_extractions_reset_at.present? && ai_extractions_reset_at >= Time.current.beginning_of_month
+    return if ai_extractions_reset_at.present? && ai_extractions_reset_at >= extraction_period_start
 
     reset_monthly_extractions!
   end

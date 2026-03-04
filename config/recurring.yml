@@ -24,7 +24,7 @@ production:
 
   reset_monthly_extractions:
     class: ResetMonthlyExtractionsJob
-    schedule: "0 0 1 * *"
+    schedule: at midnight every day
 
   clean_stale_drafts:
     class: CleanStaleDraftsJob

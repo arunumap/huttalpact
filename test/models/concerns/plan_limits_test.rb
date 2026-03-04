@@ -118,12 +118,65 @@ class PlanLimitsTest < ActiveSupport::TestCase
 
   # Auto-reset: at_extraction_limit? no longer auto-resets (side-effect removed)
   # Reset must be called explicitly via reset_monthly_extractions_if_needed!
-  test "reset_monthly_extractions_if_needed! resets when new month" do
+  test "reset_monthly_extractions_if_needed! resets when new period for free org" do
     @org.plan = "free"
     @org.update!(ai_extractions_count: 5, ai_extractions_reset_at: 2.months.ago)
     @org.reset_monthly_extractions_if_needed!
     assert_not @org.at_extraction_limit?
     assert_equal 0, @org.reload.ai_extractions_count
+  end
+
+  test "extraction_period_start falls back to beginning_of_month for free org" do
+    @org.plan = "free"
+    assert_equal Time.current.beginning_of_month, @org.extraction_period_start
+  end
+
+  test "extraction_period_start uses subscription anchor day for paid org" do
+    @org.plan = "starter"
+    anchor = Time.current.change(day: 15) - 1.month
+    mock_sub = OpenStruct.new(current_period_start: anchor)
+
+    @org.stub(:active_subscription, mock_sub) do
+      period_start = @org.extraction_period_start
+      # Should be the 15th of the current or previous month
+      assert_equal 15, period_start.day
+    end
+  end
+
+  test "extraction_period_start clamps anchor day for short months" do
+    @org.plan = "starter"
+    # Anchor day 31, but test in a month that may have fewer days
+    mock_sub = OpenStruct.new(current_period_start: Time.utc(2025, 1, 31))
+
+    travel_to Time.utc(2026, 2, 15) do
+      @org.stub(:active_subscription, mock_sub) do
+        period_start = @org.extraction_period_start
+        # Feb has 28 days, so anchor clamps to 28; but 28 > 15, so rolls back to Jan 31
+        assert_equal Time.utc(2026, 1, 31).beginning_of_day, period_start
+      end
+    end
+  end
+
+  test "reset_monthly_extractions_if_needed! resets when billing period rolls over for paid org" do
+    @org.plan = "starter"
+    mock_sub = OpenStruct.new(current_period_start: Time.current.change(day: 1))
+
+    @org.update!(ai_extractions_count: 5, ai_extractions_reset_at: 2.months.ago)
+    @org.stub(:active_subscription, mock_sub) do
+      @org.reset_monthly_extractions_if_needed!
+    end
+    assert_equal 0, @org.reload.ai_extractions_count
+  end
+
+  test "reset_monthly_extractions_if_needed! is a no-op within billing period for paid org" do
+    @org.plan = "starter"
+    mock_sub = OpenStruct.new(current_period_start: Time.current.change(day: 1))
+
+    @org.update!(ai_extractions_count: 3, ai_extractions_reset_at: Time.current)
+    @org.stub(:active_subscription, mock_sub) do
+      @org.reset_monthly_extractions_if_needed!
+    end
+    assert_equal 3, @org.reload.ai_extractions_count
   end
 
   # contracts_remaining
@@ -223,7 +276,7 @@ class PlanLimitsTest < ActiveSupport::TestCase
     assert_equal 10000, @org.reload.ai_extractions_count
   end
 
-  test "increment_extraction_count! resets if new month before incrementing" do
+  test "increment_extraction_count! resets if new billing period before incrementing" do
     @org.plan = "free"
     @org.update!(ai_extractions_count: 5, ai_extractions_reset_at: 2.months.ago)
     assert @org.increment_extraction_count!
@@ -231,7 +284,7 @@ class PlanLimitsTest < ActiveSupport::TestCase
     assert_equal 1, @org.reload.ai_extractions_count
   end
 
-  test "reset_monthly_extractions_if_needed! is a no-op when already reset this month" do
+  test "reset_monthly_extractions_if_needed! is a no-op when already reset this period" do
     @org.update!(ai_extractions_count: 3, ai_extractions_reset_at: Time.current)
     @org.reset_monthly_extractions_if_needed!
     assert_equal 3, @org.reload.ai_extractions_count
