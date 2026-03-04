@@ -1,6 +1,7 @@
 class Admin::BlogPostsController < Admin::BaseController
   before_action :set_blog_post, only: %i[show edit update destroy publish unpublish]
   before_action :set_categories, only: %i[new create edit update]
+  before_action :set_admin_users, only: %i[edit update]
 
   def index
     @status = params[:status].presence
@@ -73,8 +74,13 @@ class Admin::BlogPostsController < Admin::BaseController
     @categories = BlogCategory.ordered
   end
 
+  def set_admin_users
+    @admin_users = AdminUser.order(:first_name, :last_name, :email_address)
+  end
+
   def blog_post_params
     params.require(:blog_post).permit(
+      :admin_user_id,
       :title,
       :slug,
       :body,

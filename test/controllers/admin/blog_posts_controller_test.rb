@@ -54,4 +54,23 @@ class Admin::BlogPostsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_blog_post_path(@blog_post)
     assert_equal "draft", @blog_post.reload.status
   end
+
+  test "update can change post author" do
+    sign_in_as_admin(@admin_user)
+    new_author = AdminUser.create!(
+      email_address: "secondary-admin@example.com",
+      password: "password",
+      first_name: "Second",
+      last_name: "Author"
+    )
+
+    patch admin_blog_post_path(@blog_post), params: {
+      blog_post: {
+        admin_user_id: new_author.id
+      }
+    }
+
+    assert_redirected_to admin_blog_post_path(@blog_post)
+    assert_equal new_author, @blog_post.reload.admin_user
+  end
 end
