@@ -9,9 +9,13 @@ class Admin::AiUsageController < Admin::BaseController
     @total_input_tokens = logs.sum(:input_tokens)
     @total_output_tokens = logs.sum(:output_tokens)
     @total_tokens = logs.sum(:total_tokens)
+    @total_extractions = logs.count
     @success_count = logs.successful.count
     @failure_count = logs.failed.count
     @estimated_cost = AiUsageLog.total_cost(logs)
+    @average_cost_per_extraction = if @total_extractions.positive?
+      @estimated_cost / @total_extractions
+    end
     @daily_usage = logs.group("DATE(created_at)").order("DATE(created_at) DESC").sum(:total_tokens)
 
     # Feedback analytics

@@ -26,4 +26,28 @@ class Admin::AiUsageControllerTest < ActionDispatch::IntegrationTest
     }
     assert_response :success
   end
+
+  test "index shows average cost and per-log approximate cost" do
+    sign_in_as_admin(@admin_user)
+
+    config = ai_extraction_configs(:generic_full_v1)
+    AiUsageLog.create!(
+      organization: organizations(:one),
+      contract: contracts(:hvac_maintenance),
+      ai_model: config.ai_model,
+      input_tokens: 200_000,
+      output_tokens: 100_000,
+      extraction_mode: "full",
+      success: true,
+      ai_extraction_config: config
+    )
+
+    get admin_ai_usage_index_path
+
+    assert_response :success
+    assert_select "p", text: "Avg Cost / Extraction"
+    assert_select "th", text: "Approx Cost"
+    assert_select "p", text: "in 200,000 / out 100,000"
+    assert_select "td", text: "$2.1"
+  end
 end

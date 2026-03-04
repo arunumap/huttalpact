@@ -9,11 +9,18 @@
     <%= form.submit "Apply", class: "rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500" %>
   <% end %>
 
-  <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 text-sm">
+  <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7 text-sm">
     <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Input Tokens</p><p class="mt-1 font-semibold text-slate-900"><%= number_with_delimiter(@total_input_tokens) %></p></div>
     <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Output Tokens</p><p class="mt-1 font-semibold text-slate-900"><%= number_with_delimiter(@total_output_tokens) %></p></div>
     <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Total Tokens</p><p class="mt-1 font-semibold text-slate-900"><%= number_with_delimiter(@total_tokens) %></p></div>
     <div class="rounded-md bg-slate-50 p-3"><p class="text-slate-500">Estimated Cost</p><p class="mt-1 font-semibold text-slate-900"><%= number_to_currency(@estimated_cost) %></p></div>
+    <div class="rounded-md bg-slate-50 p-3">
+      <p class="text-slate-500">Avg Cost / Extraction</p>
+      <p class="mt-1 font-semibold text-slate-900">
+        <%= @average_cost_per_extraction ? number_to_currency(@average_cost_per_extraction, precision: 4, strip_insignificant_zeros: true) : "N/A" %>
+      </p>
+      <p class="text-xs text-slate-400"><%= number_with_delimiter(@total_extractions) %> extractions</p>
+    </div>
     <div class="rounded-md bg-slate-50 p-3">
       <p class="text-slate-500">User Feedback</p>
       <p class="mt-1 font-semibold text-slate-900">
@@ -122,6 +129,7 @@
         <th class="px-3 py-2 text-left font-medium text-slate-600">Model</th>
         <th class="px-3 py-2 text-left font-medium text-slate-600">Config</th>
         <th class="px-3 py-2 text-left font-medium text-slate-600">Tokens</th>
+        <th class="px-3 py-2 text-left font-medium text-slate-600">Approx Cost</th>
         <th class="px-3 py-2 text-left font-medium text-slate-600">Duration</th>
         <th class="px-3 py-2 text-left font-medium text-slate-600">Status</th>
       </tr>
@@ -141,7 +149,11 @@
               <span class="text-slate-400">—</span>
             <% end %>
           </td>
-          <td class="px-3 py-2"><%= number_with_delimiter(log.total_tokens) %></td>
+          <td class="px-3 py-2">
+            <p><%= number_with_delimiter(log.total_tokens) %></p>
+            <p class="text-xs text-slate-400">in <%= number_with_delimiter(log.input_tokens) %> / out <%= number_with_delimiter(log.output_tokens) %></p>
+          </td>
+          <td class="px-3 py-2"><%= number_to_currency(log.estimated_cost, precision: 4, strip_insignificant_zeros: true) %></td>
           <td class="px-3 py-2"><%= log.duration_ms ? "#{number_with_delimiter(log.duration_ms)}ms" : "—" %></td>
           <td class="px-3 py-2">
             <% if log.success? %>

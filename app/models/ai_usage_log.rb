@@ -36,11 +36,7 @@ class AiUsageLog < ApplicationRecord
   end
 
   def self.total_cost(scope = all)
-    input_tokens = scope.sum(:input_tokens)
-    output_tokens = scope.sum(:output_tokens)
-
-    ((input_tokens / 1_000_000.0) * MODEL_INPUT_COST_PER_MILLION) +
-      ((output_tokens / 1_000_000.0) * MODEL_OUTPUT_COST_PER_MILLION)
+    scope.includes(:ai_extraction_config).sum(&:estimated_cost)
   end
 
   # Per-row cost using linked config's rates, falling back to hardcoded constants
