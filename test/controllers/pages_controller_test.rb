@@ -14,6 +14,12 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "a[href='#{pricing_path}']"
   end
 
+  test "landing page links to leases page" do
+    get root_path
+    assert_response :success
+    assert_select "a[href='#{leases_path}']", text: "Leases"
+  end
+
   test "authenticated user is redirected to dashboard" do
     sign_in_as(users(:one))
     get root_path
@@ -36,5 +42,19 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     get root_path
     assert_response :success
     assert_select "h2", /Simple, transparent pricing/
+  end
+
+  test "leases page is accessible to unauthenticated users" do
+    get leases_path
+    assert_response :success
+    assert_select "h1", /How we approach leases/
+  end
+
+  test "leases page highlights lease offerings and CTAs" do
+    get leases_path
+    assert_response :success
+    assert_select "h2", /What we offer for leases/
+    assert_select "a[href='#{new_registration_path}']"
+    assert_select "a[href='#{pricing_path}']"
   end
 end

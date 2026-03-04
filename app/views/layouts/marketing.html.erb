@@ -31,6 +31,7 @@
 
           <%# Desktop nav %>
           <div class="hidden sm:flex items-center gap-4">
+            <%= link_to "Leases", leases_path, class: "text-sm font-medium text-gray-600 hover:text-gray-900" %>
             <%= link_to "Pricing", pricing_path, class: "text-sm font-medium text-gray-600 hover:text-gray-900" %>
             <%= link_to "Blog", blog_path, class: "text-sm font-medium text-gray-600 hover:text-gray-900" %>
             <%= link_to "Sign In", new_session_path, class: "text-sm font-medium text-gray-600 hover:text-gray-900" %>
@@ -47,6 +48,7 @@
 
         <%# Mobile menu %>
         <div data-mobile-nav-target="menu" class="hidden sm:hidden border-t border-gray-200 py-3 space-y-2">
+          <%= link_to "Leases", leases_path, class: "block rounded-md px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900" %>
           <%= link_to "Pricing", pricing_path, class: "block rounded-md px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900" %>
           <%= link_to "Blog", blog_path, class: "block rounded-md px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900" %>
           <%= link_to "Sign In", new_session_path, class: "block rounded-md px-3 py-2 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900" %>

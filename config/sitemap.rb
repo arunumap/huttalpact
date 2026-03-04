@@ -2,6 +2,7 @@ SitemapGenerator::Sitemap.default_host = ENV.fetch("APP_BASE_URL", "https://pact
 
 SitemapGenerator::Sitemap.create do
   add root_path, changefreq: "weekly", priority: 1.0
+  add leases_path, changefreq: "weekly", priority: 0.9
   add pricing_path, changefreq: "weekly", priority: 0.9
   add blog_path, changefreq: "daily", priority: 0.9
   add privacy_path, changefreq: "monthly", priority: 0.5

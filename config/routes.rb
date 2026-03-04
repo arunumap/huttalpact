@@ -118,6 +118,7 @@ Rails.application.routes.draw do
 
   # Static pages
   get "privacy", to: "pages#privacy", as: :privacy
+  get "leases", to: "pages#leases", as: :leases
 
   # Landing page (context-sensitive root)
   root "pages#home"
