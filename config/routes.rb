@@ -5,6 +5,7 @@ Rails.application.routes.draw do
     root to: "dashboard#show"
 
     resources :users, only: %i[index show]
+    resources :admin_users
     resources :organizations, only: %i[index show]
     resources :ai_usage, only: %i[index], controller: "ai_usage"
     resources :ai_extraction_configs, only: %i[index new create show] do

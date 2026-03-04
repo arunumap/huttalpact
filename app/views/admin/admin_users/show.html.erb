@@ -1,0 +1,60 @@
+<% content_for :title, "Admin User" %>
+<% content_for :page_title, @admin_user.full_name %>
+
+<div class="mb-4 flex items-center justify-end gap-2">
+  <%= link_to "Edit", edit_admin_admin_user_path(@admin_user), class: "rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500" %>
+  <% unless @admin_user == Current.admin_user %>
+    <%= button_to "Delete", admin_admin_user_path(@admin_user), method: :delete, form: { class: "inline", data: { turbo_confirm: "Delete this admin user?" } }, class: "rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500" %>
+  <% end %>
+</div>
+
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <h3 class="text-sm font-semibold text-slate-900">Profile</h3>
+    <dl class="mt-3 space-y-2 text-sm text-slate-700">
+      <div class="flex justify-between"><dt>Email</dt><dd><%= @admin_user.email_address %></dd></div>
+      <div class="flex justify-between"><dt>Created</dt><dd><%= @admin_user.created_at.to_date %></dd></div>
+      <div class="flex justify-between"><dt>Last Updated</dt><dd><%= @admin_user.updated_at.to_date %></dd></div>
+      <div class="flex justify-between"><dt>Sessions</dt><dd><%= @admin_user.admin_sessions.count %></dd></div>
+    </dl>
+  </div>
+
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <h3 class="text-sm font-semibold text-slate-900">Recent Sessions</h3>
+    <% if @sessions.any? %>
+      <ul class="mt-3 space-y-2 text-sm text-slate-700">
+        <% @sessions.each do |session| %>
+          <li><%= session.created_at.to_fs(:db) %> · <%= session.ip_address.presence || "n/a" %> · <%= session.user_agent.to_s.truncate(60) %></li>
+        <% end %>
+      </ul>
+    <% else %>
+      <p class="mt-3 text-sm text-slate-500">No sessions found for this admin user.</p>
+    <% end %>
+  </div>
+</div>
+
+<div class="mt-6 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+  <h3 class="text-sm font-semibold text-slate-900">Recent Authored Blog Posts</h3>
+  <% if @blog_posts.any? %>
+    <table class="mt-3 min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Title</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Status</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Created</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200 bg-white">
+        <% @blog_posts.each do |blog_post| %>
+          <tr>
+            <td class="px-3 py-2"><%= link_to blog_post.title, admin_blog_post_path(blog_post), class: "text-indigo-700 hover:text-indigo-600" %></td>
+            <td class="px-3 py-2"><%= blog_post.status.titleize %></td>
+            <td class="px-3 py-2"><%= blog_post.created_at.to_date %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="mt-3 text-sm text-slate-500">No blog posts authored by this admin user.</p>
+  <% end %>
+</div>

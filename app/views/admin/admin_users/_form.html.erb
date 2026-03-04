@@ -1,0 +1,48 @@
+<%= form_with model: [ :admin, @admin_user ], class: "space-y-4", local: true do |form| %>
+  <% if @admin_user.errors.any? %>
+    <div class="rounded-md bg-red-50 p-3">
+      <ul class="list-inside list-disc text-sm text-red-700">
+        <% @admin_user.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :email_address, "Email", class: "block text-sm font-medium text-slate-700" %>
+    <%= form.email_field :email_address, autocomplete: "email", class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div>
+      <%= form.label :first_name, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.text_field :first_name, autocomplete: "given-name", class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    </div>
+
+    <div>
+      <%= form.label :last_name, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.text_field :last_name, autocomplete: "family-name", class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    </div>
+  </div>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <div>
+      <%= form.label :password, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.password_field :password, autocomplete: "new-password", class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+      <% if @admin_user.persisted? %>
+        <p class="mt-1 text-xs text-slate-500">Leave blank to keep current password.</p>
+      <% end %>
+    </div>
+
+    <div>
+      <%= form.label :password_confirmation, class: "block text-sm font-medium text-slate-700" %>
+      <%= form.password_field :password_confirmation, autocomplete: "new-password", class: "mt-1 block w-full rounded-md border-slate-300 text-sm focus:border-indigo-600 focus:ring-indigo-600" %>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <%= form.submit @admin_user.persisted? ? "Update Admin User" : "Create Admin User", class: "rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500" %>
+    <%= link_to "Cancel", @admin_user.persisted? ? admin_admin_user_path(@admin_user) : admin_admin_users_path, class: "text-sm text-slate-600 hover:text-slate-900" %>
+  </div>
+<% end %>
