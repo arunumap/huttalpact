@@ -54,7 +54,7 @@ gem "postmark-rails"
 
 # Billing
 gem "pay", "~> 11.4"
-gem "stripe", "~> 18.0"
+gem "stripe", "~> 18.4"
 
 # Error tracking
 gem "sentry-ruby"
