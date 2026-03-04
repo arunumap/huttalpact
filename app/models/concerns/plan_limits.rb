@@ -17,19 +17,19 @@ module PlanLimits
   PLAN_HIERARCHY = { "free" => 0, "starter" => 1, "pro" => 2 }.freeze
 
   def plan_contract_limit
-    PLAN_LIMITS.dig(plan, :contracts) || 10
+    current_plan_limits[:contracts] || 10
   end
 
   def plan_extraction_limit
-    PLAN_LIMITS.dig(plan, :extractions) || 5
+    current_plan_limits[:extractions] || 5
   end
 
   def plan_user_limit
-    PLAN_LIMITS.dig(plan, :users) || 1
+    current_plan_limits[:users] || 1
   end
 
   def plan_audit_log_days
-    PLAN_LIMITS.dig(plan, :audit_log_days)
+    current_plan_limits[:audit_log_days]
   end
 
   def audit_log_cutoff_date
@@ -108,15 +108,15 @@ module PlanLimits
   end
 
   def plan_display_name
-    plan.titleize
+    PlanCatalogService.plan_display_name(plan)
   end
 
   def free_plan?
-    plan == "free"
+    plan == PlanCatalogService.default_plan_slug
   end
 
   def paid_plan?
-    plan.in?(%w[starter pro])
+    PlanCatalogService.paid_plan_slug?(plan)
   end
 
   def reset_monthly_extractions_if_needed!
@@ -126,20 +126,25 @@ module PlanLimits
   end
 
   def upgrade_from_current?(target_plan)
-    current_rank = PLAN_HIERARCHY[plan] || 0
-    target_rank = PLAN_HIERARCHY[target_plan] || 0
+    hierarchy = PlanCatalogService.plan_hierarchy
+    current_rank = hierarchy[plan] || 0
+    target_rank = hierarchy[target_plan] || 0
     target_rank > current_rank
   end
 
   def downgrade_from_current?(target_plan)
-    current_rank = PLAN_HIERARCHY[plan] || 0
-    target_rank = PLAN_HIERARCHY[target_plan] || 0
+    hierarchy = PlanCatalogService.plan_hierarchy
+    current_rank = hierarchy[plan] || 0
+    target_rank = hierarchy[target_plan] || 0
     target_rank < current_rank
   end
 
   def downgrade_eligibility(target_plan)
-    target_limits = PLAN_LIMITS[target_plan]
-    return { eligible: false, blockers: [ "Unknown plan: #{target_plan}" ] } unless target_limits
+    unless PlanCatalogService.valid_plan_slug?(target_plan)
+      return { eligible: false, blockers: [ "Unknown plan: #{target_plan}" ] }
+    end
+
+    target_limits = PlanCatalogService.plan_limits_for(target_plan)
 
     blockers = []
 
@@ -164,5 +169,12 @@ module PlanLimits
     return false unless respond_to?(:pay_customers)
 
     pay_customers&.first&.subscriptions&.active&.where&.not(ends_at: nil)&.exists? || false
+  end
+
+  private
+
+  def current_plan_limits
+    @current_plan_limits ||= {}
+    @current_plan_limits[plan] ||= PlanCatalogService.plan_limits_for(plan)
   end
 end

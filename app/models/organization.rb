@@ -14,8 +14,8 @@ class Organization < ApplicationRecord
   validates :name, presence: true, length: { maximum: 255 }
   validates :slug, presence: true, uniqueness: true, length: { maximum: 100 },
             format: { with: /\A[a-z0-9\-]+\z/, message: "only allows lowercase letters, numbers, and hyphens" }
-  validates :plan, inclusion: { in: %w[free starter pro] }
-  validates :pending_plan, inclusion: { in: %w[free starter], allow_nil: true }
+  validate :plan_must_be_known
+  validate :pending_plan_must_be_known
 
   before_validation :generate_slug, on: :create
 
@@ -83,10 +83,12 @@ class Organization < ApplicationRecord
         log_plan_change(old_plan, plan_name)
       end
     else
-      unless free_plan?
+      default_plan_slug = PlanCatalogService.default_plan_slug
+
+      unless plan == default_plan_slug
         old_plan = plan
-        update!(plan: "free")
-        log_plan_change(old_plan, "free")
+        update!(plan: default_plan_slug)
+        log_plan_change(old_plan, default_plan_slug)
       end
     end
 
@@ -104,6 +106,20 @@ class Organization < ApplicationRecord
     )
   rescue => e
     Rails.logger.error("Failed to log plan change audit for org #{id}: #{e.message}")
+  end
+
+  def plan_must_be_known
+    return if plan.blank?
+    return if PlanCatalogService.valid_plan_slug?(plan)
+
+    errors.add(:plan, "is not included in the list")
+  end
+
+  def pending_plan_must_be_known
+    return if pending_plan.blank?
+    return if PlanCatalogService.valid_plan_slug?(pending_plan)
+
+    errors.add(:pending_plan, "is not included in the list")
   end
 
   MAX_SLUG_RETRIES = 5

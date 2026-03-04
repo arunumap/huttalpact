@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_02_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_04_170000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -492,6 +492,39 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_150000) do
     t.string "event_type"
     t.string "processor"
     t.datetime "updated_at", null: false
+  end
+
+  create_table "plan_tiers", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.string "annual_lookup_key"
+    t.integer "annual_price_cents", default: 0, null: false
+    t.integer "audit_log_days"
+    t.integer "contract_limit"
+    t.datetime "created_at", null: false
+    t.boolean "default_tier", default: false, null: false
+    t.text "description"
+    t.integer "extraction_limit"
+    t.text "feature_list", default: [], null: false, array: true
+    t.boolean "featured", default: false, null: false
+    t.string "monthly_lookup_key"
+    t.integer "monthly_price_cents", default: 0, null: false
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.integer "rank", null: false
+    t.string "slug", null: false
+    t.string "stripe_annual_price_id"
+    t.string "stripe_monthly_price_id"
+    t.string "stripe_product_id"
+    t.boolean "system_tier", default: false, null: false
+    t.datetime "updated_at", null: false
+    t.integer "user_limit"
+    t.boolean "visible_on_pricing_page", default: true, null: false
+    t.index ["active"], name: "index_plan_tiers_on_active"
+    t.index ["default_tier"], name: "index_plan_tiers_on_default_tier"
+    t.index ["position"], name: "index_plan_tiers_on_position"
+    t.index ["rank"], name: "index_plan_tiers_on_rank", unique: true
+    t.index ["slug"], name: "index_plan_tiers_on_slug", unique: true
+    t.index ["visible_on_pricing_page"], name: "index_plan_tiers_on_visible_on_pricing_page"
   end
 
   create_table "rent_escalations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|

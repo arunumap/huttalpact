@@ -1,11 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = [
-    "monthlyBtn", "annualBtn",
-    "starterPrice", "starterPeriod", "starterAnnualTotal", "starterBtn",
-    "proPrice", "proPeriod", "proAnnualTotal", "proBtn"
-  ]
+  static targets = ["monthlyBtn", "annualBtn", "planCard"]
+
+  connect() {
+    this.#applyPeriod("monthly")
+  }
 
   selectMonthly() {
     this.monthlyBtnTarget.classList.add("bg-white", "text-gray-900", "shadow-sm")
@@ -13,15 +13,7 @@ export default class extends Controller {
     this.annualBtnTarget.classList.remove("bg-white", "text-gray-900", "shadow-sm")
     this.annualBtnTarget.classList.add("text-gray-500")
 
-    if (this.hasStarterPriceTarget) this.starterPriceTarget.textContent = "$49"
-    if (this.hasStarterPeriodTarget) this.starterPeriodTarget.textContent = "/month"
-    if (this.hasStarterAnnualTotalTarget) this.starterAnnualTotalTarget.classList.add("hidden")
-
-    if (this.hasProPriceTarget) this.proPriceTarget.textContent = "$149"
-    if (this.hasProPeriodTarget) this.proPeriodTarget.textContent = "/month"
-    if (this.hasProAnnualTotalTarget) this.proAnnualTotalTarget.classList.add("hidden")
-
-    this.#updateLookupKeys("monthly")
+    this.#applyPeriod("monthly")
   }
 
   selectAnnual() {
@@ -30,34 +22,42 @@ export default class extends Controller {
     this.monthlyBtnTarget.classList.remove("bg-white", "text-gray-900", "shadow-sm")
     this.monthlyBtnTarget.classList.add("text-gray-500")
 
-    if (this.hasStarterPriceTarget) this.starterPriceTarget.textContent = "$41"
-    if (this.hasStarterPeriodTarget) this.starterPeriodTarget.textContent = "/month, billed annually"
-    if (this.hasStarterAnnualTotalTarget) this.starterAnnualTotalTarget.classList.remove("hidden")
-
-    if (this.hasProPriceTarget) this.proPriceTarget.textContent = "$124"
-    if (this.hasProPeriodTarget) this.proPeriodTarget.textContent = "/month, billed annually"
-    if (this.hasProAnnualTotalTarget) this.proAnnualTotalTarget.classList.remove("hidden")
-
-    this.#updateLookupKeys("annual")
+    this.#applyPeriod("annual")
   }
 
-  #updateLookupKeys(period) {
-    if (this.hasStarterBtnTarget) {
-      this.starterBtnTargets.forEach((el) => {
-        const key = period === "annual"
-          ? el.dataset.planChangeAnnualKeyParam
-          : el.dataset.planChangeMonthlyKeyParam
-        if (key) el.value = key
-      })
-    }
+  #applyPeriod(period) {
+    this.planCardTargets.forEach((card) => {
+      const monthlyPrice = card.dataset.planChangeMonthlyPrice
+      const annualPrice = card.dataset.planChangeAnnualPrice || monthlyPrice
+      const monthlyPeriod = card.dataset.planChangeMonthlyPeriod || "/month"
+      const annualPeriod = card.dataset.planChangeAnnualPeriod || monthlyPeriod
+      const monthlyKey = card.dataset.planChangeMonthlyKey
+      const annualKey = card.dataset.planChangeAnnualKey || monthlyKey
 
-    if (this.hasProBtnTarget) {
-      this.proBtnTargets.forEach((el) => {
-        const key = period === "annual"
-          ? el.dataset.planChangeAnnualKeyParam
-          : el.dataset.planChangeMonthlyKeyParam
-        if (key) el.value = key
+      const priceEl = card.querySelector("[data-plan-change-role='price']")
+      const periodEl = card.querySelector("[data-plan-change-role='period']")
+      const annualTotalEl = card.querySelector("[data-plan-change-role='annual-total']")
+      const lookupInputs = card.querySelectorAll("input[data-plan-change-role='lookup-input']")
+
+      const showAnnual = period === "annual" && annualPrice !== monthlyPrice
+
+      if (priceEl) priceEl.textContent = showAnnual ? annualPrice : monthlyPrice
+      if (periodEl) periodEl.textContent = showAnnual ? annualPeriod : monthlyPeriod
+
+      if (annualTotalEl) {
+        if (showAnnual) {
+          annualTotalEl.classList.remove("hidden")
+        } else {
+          annualTotalEl.classList.add("hidden")
+        }
+      }
+
+      lookupInputs.forEach((input) => {
+        const key = period === "annual" ? annualKey : monthlyKey
+        if (key) {
+          input.value = key
+        }
       })
-    }
+    })
   }
 }

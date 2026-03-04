@@ -1,0 +1,69 @@
+<% content_for :title, "Plan Tiers" %>
+<% content_for :page_title, "Plan Tiers" %>
+
+<div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+  <div class="mb-4 flex items-center justify-between">
+    <div>
+      <h3 class="text-sm font-semibold text-slate-900">Pricing Tier Catalog</h3>
+      <p class="mt-1 text-xs text-slate-500">Manage limits, pricing, visibility, and Stripe lookup keys for all plans.</p>
+    </div>
+    <%= link_to "New Tier", new_admin_plan_tier_path, class: "rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500" %>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Tier</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Rank</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Monthly</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Annual</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Status</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Stripe</th>
+          <th class="px-3 py-2 text-right font-medium text-slate-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200 bg-white">
+        <% @plan_tiers.each do |tier| %>
+          <tr>
+            <td class="px-3 py-2">
+              <div class="font-medium text-slate-900"><%= tier.name %></div>
+              <div class="text-xs text-slate-500"><%= tier.slug %></div>
+            </td>
+            <td class="px-3 py-2 text-slate-700"><%= tier.rank %></td>
+            <td class="px-3 py-2 text-slate-700"><%= number_to_currency(tier.monthly_price_cents.to_f / 100.0) %></td>
+            <td class="px-3 py-2 text-slate-700"><%= number_to_currency(tier.annual_price_cents.to_f / 100.0) %></td>
+            <td class="px-3 py-2">
+              <div class="flex items-center gap-2">
+                <% if tier.active? %>
+                  <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">Active</span>
+                <% else %>
+                  <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">Inactive</span>
+                <% end %>
+
+                <% if tier.default_tier? %>
+                  <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">Default</span>
+                <% end %>
+              </div>
+            </td>
+            <td class="px-3 py-2">
+              <% if tier.free? %>
+                <span class="text-xs text-slate-500">Not required</span>
+              <% elsif tier.stripe_monthly_price_id.present? || tier.stripe_annual_price_id.present? %>
+                <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">Configured</span>
+              <% else %>
+                <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">Pending</span>
+              <% end %>
+            </td>
+            <td class="px-3 py-2 text-right">
+              <div class="inline-flex items-center gap-2">
+                <%= link_to "View", admin_plan_tier_path(tier), class: "text-xs text-indigo-600 hover:text-indigo-500" %>
+                <%= link_to "Edit", edit_admin_plan_tier_path(tier), class: "text-xs text-slate-700 hover:text-slate-900" %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

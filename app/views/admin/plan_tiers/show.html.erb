@@ -1,0 +1,117 @@
+<% content_for :title, @plan_tier.name %>
+<% content_for :page_title, "Plan Tier: #{@plan_tier.name}" %>
+
+<div class="space-y-4">
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <div class="flex items-start justify-between">
+      <div>
+        <h3 class="text-lg font-semibold text-slate-900"><%= @plan_tier.name %></h3>
+        <p class="mt-1 text-sm text-slate-500">Slug: <span class="font-mono"><%= @plan_tier.slug %></span></p>
+      </div>
+      <div class="flex items-center gap-2">
+        <% if @plan_tier.active? %>
+          <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">Active</span>
+        <% else %>
+          <span class="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">Inactive</span>
+        <% end %>
+
+        <% if @plan_tier.default_tier? %>
+          <span class="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">Default</span>
+        <% end %>
+      </div>
+    </div>
+
+    <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+      <div>
+        <dt class="text-slate-500">Rank</dt>
+        <dd class="font-medium text-slate-900"><%= @plan_tier.rank %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Position</dt>
+        <dd class="font-medium text-slate-900"><%= @plan_tier.position %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Monthly</dt>
+        <dd class="font-medium text-slate-900"><%= number_to_currency(@plan_tier.monthly_price_cents.to_f / 100.0) %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Annual</dt>
+        <dd class="font-medium text-slate-900"><%= number_to_currency(@plan_tier.annual_price_cents.to_f / 100.0) %></dd>
+      </div>
+    </dl>
+
+    <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+      <div>
+        <dt class="text-slate-500">Contract limit</dt>
+        <dd class="font-medium text-slate-900"><%= @plan_tier.contract_limit || "Unlimited" %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Extraction limit</dt>
+        <dd class="font-medium text-slate-900"><%= @plan_tier.extraction_limit || "Unlimited" %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">User limit</dt>
+        <dd class="font-medium text-slate-900"><%= @plan_tier.user_limit || "Unlimited" %></dd>
+      </div>
+    </dl>
+
+    <div class="mt-4">
+      <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Feature bullets</p>
+      <% if @plan_tier.feature_list.any? %>
+        <ul class="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+          <% @plan_tier.feature_list.each do |feature| %>
+            <li><%= feature %></li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="mt-2 text-sm text-slate-500">No feature bullets configured.</p>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <h4 class="text-sm font-semibold text-slate-900">Stripe</h4>
+    <dl class="mt-3 space-y-2 text-sm">
+      <div class="flex justify-between gap-4">
+        <dt class="text-slate-500">Product ID</dt>
+        <dd class="font-mono text-xs text-slate-900"><%= @plan_tier.stripe_product_id.presence || "—" %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-slate-500">Monthly Price ID</dt>
+        <dd class="font-mono text-xs text-slate-900"><%= @plan_tier.stripe_monthly_price_id.presence || "—" %></dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-slate-500">Annual Price ID</dt>
+        <dd class="font-mono text-xs text-slate-900"><%= @plan_tier.stripe_annual_price_id.presence || "—" %></dd>
+      </div>
+    </dl>
+
+    <% unless @plan_tier.free? %>
+      <div class="mt-4">
+        <%= button_to "Sync to Stripe", sync_to_stripe_admin_plan_tier_path(@plan_tier), method: :post,
+              class: "rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500",
+              data: { turbo_confirm: "Sync this tier's Stripe product and prices now?" } %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <div class="flex flex-wrap items-center gap-2">
+      <%= link_to "Edit", edit_admin_plan_tier_path(@plan_tier), class: "rounded-md bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700" %>
+      <%= link_to "Back", admin_plan_tiers_path, class: "rounded-md bg-white px-3 py-2 text-sm font-medium text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50" %>
+
+      <% if @plan_tier.active? %>
+        <%= button_to "Deactivate", deactivate_admin_plan_tier_path(@plan_tier), method: :post,
+              class: "rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-500",
+              data: { turbo_confirm: "Deactivate this tier?" } %>
+      <% else %>
+        <%= button_to "Activate", activate_admin_plan_tier_path(@plan_tier), method: :post,
+              class: "rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500" %>
+      <% end %>
+
+      <%= button_to "Delete", admin_plan_tier_path(@plan_tier), method: :delete,
+            class: "rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-500",
+            data: { turbo_confirm: "Delete this tier? This cannot be undone." } %>
+    </div>
+  </div>
+</div>

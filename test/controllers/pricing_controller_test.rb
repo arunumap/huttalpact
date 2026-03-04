@@ -3,6 +3,7 @@ require "test_helper"
 class PricingControllerTest < ActionDispatch::IntegrationTest
   setup do
     sign_in_as users(:one)
+    @org = organizations(:one)
   end
 
   test "show renders pricing page when logged in" do
@@ -18,11 +19,12 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2", text: /Simple, transparent pricing/
   end
 
-  test "show displays three plan cards" do
+  test "show displays a card for each visible pricing tier" do
     get pricing_path
-    assert_select "h3", text: "Free"
-    assert_select "h3", text: "Starter"
-    assert_select "h3", text: "Pro"
+
+    PlanCatalogService.active_tiers_for_pricing.each do |tier|
+      assert_select "h3", text: tier.name
+    end
   end
 
   test "shows current plan badge for logged in user" do
@@ -42,16 +44,27 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     get pricing_path
     assert_response :success
     assert_match "Contact your organization owner to upgrade", response.body
-    assert_no_match(/Upgrade to Starter/, response.body)
-    assert_no_match(/Upgrade to Pro/, response.body)
+
+    upgradeable_tiers = PlanCatalogService.active_tiers_for_pricing.select do |tier|
+      tier.monthly_lookup_key.present? && !tier.free?
+    end
+
+    upgradeable_tiers.each do |tier|
+      assert_no_match(/Upgrade to #{Regexp.escape(tier.name)}/, response.body)
+    end
   end
 
   test "owner sees upgrade buttons" do
     get pricing_path
     assert_response :success
-    # Owner should see upgrade buttons for non-current plans
-    assert_match "Upgrade to Starter", response.body
-    assert_match "Upgrade to Pro", response.body
+
+    upgradeable_tiers = PlanCatalogService.active_tiers_for_pricing.select do |tier|
+      tier.monthly_lookup_key.present? && !tier.free? && tier.slug != @org.plan
+    end
+
+    upgradeable_tiers.each do |tier|
+      assert_match "Upgrade to #{tier.name}", response.body
+    end
   end
 
   test "pricing page uses pricing layout not auth layout" do

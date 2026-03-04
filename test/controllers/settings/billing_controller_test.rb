@@ -4,6 +4,22 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   setup do
     @user = users(:one)
     @org = organizations(:one)
+
+    @default_plan_slug = PlanCatalogService.default_plan_slug
+    @default_tier = PlanCatalogService.tier_for(@default_plan_slug)
+    @paid_tiers = PlanCatalogService.active_tiers_for_billing.select(&:paid?).sort_by(&:rank)
+    @base_paid_tier = @paid_tiers.first
+    @top_paid_tier = @paid_tiers.last
+
+    raise "Expected at least one paid tier for billing tests" unless @base_paid_tier
+
+    @checkout_lookup_key = @base_paid_tier.monthly_lookup_key.presence || @base_paid_tier.annual_lookup_key
+    @upgrade_lookup_key = @top_paid_tier.monthly_lookup_key.presence || @top_paid_tier.annual_lookup_key
+    @downgrade_lookup_key = @base_paid_tier.monthly_lookup_key.presence || @base_paid_tier.annual_lookup_key
+
+    raise "Expected checkout lookup key for billing tests" if @checkout_lookup_key.blank?
+    raise "Expected upgrade lookup key for billing tests" if @upgrade_lookup_key.blank?
+
     sign_in_as @user
   end
 
@@ -52,18 +68,18 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   test "success redirects to billing with notice" do
     get success_settings_billing_path
     assert_redirected_to settings_billing_path
-    assert_equal "Welcome to the Free plan! Your subscription is now active.", flash[:notice]
+    assert_equal "Welcome to the #{@default_tier.name} plan! Your subscription is now active.", flash[:notice]
   end
 
   test "shows upgrade CTA for free plan" do
-    @org.update!(plan: "free")
+    @org.update!(plan: @default_plan_slug)
     get settings_billing_path
     assert_response :success
     assert_match "Get Started", response.body
   end
 
   test "hides upgrade CTA for pro plan" do
-    @org.update!(plan: "pro")
+    @org.update!(plan: @top_paid_tier.slug)
     get settings_billing_path
     assert_response :success
     assert_match "Current Plan", response.body
@@ -75,7 +91,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     sign_out
     sign_in_as member_user
 
-    post checkout_settings_billing_path, params: { lookup_key: "starter_monthly" }
+    post checkout_settings_billing_path, params: { lookup_key: @checkout_lookup_key }
     assert_redirected_to root_path
     assert_match "Only the organization owner", flash[:alert]
   end
@@ -107,7 +123,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     pay_customer.update!(processor_id: "cus_test_fake_error")
 
     StripePriceResolver.stub(:resolve_checkout_price, ->(_) { raise Stripe::StripeError.new("Connection refused") }) do
-      post checkout_settings_billing_path, params: { lookup_key: "starter_monthly" }
+      post checkout_settings_billing_path, params: { lookup_key: @checkout_lookup_key }
     end
     assert_redirected_to settings_billing_path
     assert_match "Unable to start checkout", flash[:alert]
@@ -131,7 +147,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     fake_session = Struct.new(:url).new("https://checkout.stripe.com/pay/cs_test_123")
     StripePriceResolver.stub(:resolve_checkout_price, "price_resolved_123") do
       Stripe::Checkout::Session.stub(:create, fake_session) do
-        post checkout_settings_billing_path, params: { lookup_key: "starter_monthly" }
+        post checkout_settings_billing_path, params: { lookup_key: @checkout_lookup_key }
       end
     end
     assert_response :see_other
@@ -156,7 +172,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   test "success message includes plan name" do
     get success_settings_billing_path
     assert_redirected_to settings_billing_path
-    assert_match "Free plan", flash[:notice]
+    assert_match "#{@default_tier.name} plan", flash[:notice]
   end
 
   test "non-owner redirect includes owner name" do
@@ -175,7 +191,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     pay_customer.update!(processor_id: "cus_test_existing_sub")
 
     # Create an active subscription using STI subclass so .active scope finds it
-    StripePriceResolver.stub(:plan_for_price_id, "starter") do
+    StripePriceResolver.stub(:plan_for_price_id, @base_paid_tier.slug) do
       Pay::Stripe::Subscription.create!(
         customer: pay_customer,
         processor_id: "sub_existing_starter",
@@ -186,7 +202,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     end
 
     # Checkout should detect existing subscription and redirect back with error
-    post checkout_settings_billing_path, params: { lookup_key: "pro_monthly" }
+    post checkout_settings_billing_path, params: { lookup_key: @upgrade_lookup_key }
 
     assert_redirected_to settings_billing_path
     assert_match "already have an active subscription", flash[:alert]
@@ -199,7 +215,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     fake_session = Struct.new(:url).new("https://checkout.stripe.com/pay/cs_test_new")
     StripePriceResolver.stub(:resolve_checkout_price, "price_resolved_new") do
       Stripe::Checkout::Session.stub(:create, fake_session) do
-        post checkout_settings_billing_path, params: { lookup_key: "starter_monthly" }
+        post checkout_settings_billing_path, params: { lookup_key: @checkout_lookup_key }
       end
     end
     assert_response :see_other
@@ -207,13 +223,13 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "success calls sync_plan_from_subscription before redirect" do
-    @org.update!(plan: "free")
+    @org.update!(plan: @default_plan_slug)
 
     # Set up a Pay customer + active subscription using STI subclass
     pay_customer = @org.set_payment_processor(:stripe)
     pay_customer.update!(processor_id: "cus_test_success_sync")
 
-    StripePriceResolver.stub(:plan_for_price_id, "pro") do
+    StripePriceResolver.stub(:plan_for_price_id, @top_paid_tier.slug) do
       Pay::Stripe::Subscription.create!(
         customer: pay_customer,
         processor_id: "sub_success_pro",
@@ -226,8 +242,8 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to settings_billing_path
-    assert_equal "pro", @org.reload.plan
-    assert_match "Pro plan", flash[:notice]
+    assert_equal @top_paid_tier.slug, @org.reload.plan
+    assert_match "#{@top_paid_tier.name} plan", flash[:notice]
   end
 
   test "legacy /billing redirects to settings billing" do
@@ -245,7 +261,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "upgrade succeeds for valid upgrade" do
-    @org.update!(plan: "starter")
+    @org.update!(plan: @base_paid_tier.slug)
     customer = @org.set_payment_processor(:stripe)
     customer.update!(processor_id: "cus_ctrl_upgrade")
 
@@ -260,17 +276,17 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     fake_service = build_fake_service(upgrade!: SubscriptionManagerService::Result.new(success: true))
 
     SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
-      post upgrade_settings_billing_path, params: { lookup_key: "pro_monthly" }
+      post upgrade_settings_billing_path, params: { lookup_key: @upgrade_lookup_key }
     end
     assert_redirected_to settings_billing_path
-    assert_match "upgraded to the Pro plan", flash[:notice]
+    assert_match "upgraded to the #{@top_paid_tier.name} plan", flash[:notice]
   end
 
   test "upgrade shows error on failure" do
     fake_service = build_fake_service(upgrade!: SubscriptionManagerService::Result.new(success: false, error: "Not an upgrade"))
 
     SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
-      post upgrade_settings_billing_path, params: { lookup_key: "pro_monthly" }
+      post upgrade_settings_billing_path, params: { lookup_key: @upgrade_lookup_key }
     end
     assert_redirected_to settings_billing_path
     assert_match "Not an upgrade", flash[:alert]
@@ -282,7 +298,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     sign_out
     sign_in_as member_user
 
-    post upgrade_settings_billing_path, params: { lookup_key: "pro_monthly" }
+    post upgrade_settings_billing_path, params: { lookup_key: @upgrade_lookup_key }
     assert_redirected_to root_path
     assert_match "Only the organization owner", flash[:alert]
   end
@@ -296,24 +312,24 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "downgrade succeeds and shows effective date" do
-    @org.update!(plan: "pro")
+    @org.update!(plan: @top_paid_tier.slug)
     effective_date = 30.days.from_now
 
     fake_service = build_fake_service(schedule_downgrade!: SubscriptionManagerService::Result.new(success: true))
 
     SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
-      @org.update!(pending_plan: "starter", pending_plan_effective_at: effective_date)
-      post downgrade_settings_billing_path, params: { lookup_key: "starter_monthly" }
+      @org.update!(pending_plan: @base_paid_tier.slug, pending_plan_effective_at: effective_date)
+      post downgrade_settings_billing_path, params: { lookup_key: @downgrade_lookup_key }
     end
     assert_redirected_to settings_billing_path
-    assert_match "Starter", flash[:notice]
+    assert_match @base_paid_tier.name, flash[:notice]
   end
 
   test "downgrade shows error on failure" do
     fake_service = build_fake_service(schedule_downgrade!: SubscriptionManagerService::Result.new(success: false, error: "Too many contracts"))
 
     SubscriptionManagerService.stub(:new, ->(_org) { fake_service }) do
-      post downgrade_settings_billing_path, params: { lookup_key: "starter_monthly" }
+      post downgrade_settings_billing_path, params: { lookup_key: @downgrade_lookup_key }
     end
     assert_redirected_to settings_billing_path
     assert_match "Too many contracts", flash[:alert]
@@ -322,7 +338,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   # --- cancel_downgrade action ---
 
   test "cancel_downgrade succeeds" do
-    @org.update!(plan: "pro", pending_plan: "starter", pending_downgrade_schedule_id: "sub_sched_x")
+    @org.update!(plan: @top_paid_tier.slug, pending_plan: @base_paid_tier.slug, pending_downgrade_schedule_id: "sub_sched_x")
 
     fake_service = build_fake_service(cancel_scheduled_downgrade!: SubscriptionManagerService::Result.new(success: true))
 
@@ -346,7 +362,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   # --- cancel_subscription action ---
 
   test "cancel_subscription succeeds" do
-    @org.update!(plan: "starter")
+    @org.update!(plan: @base_paid_tier.slug)
     customer = @org.set_payment_processor(:stripe)
     customer.update!(processor_id: "cus_ctrl_cancel")
 
@@ -381,7 +397,7 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   # --- resume_subscription action ---
 
   test "resume_subscription succeeds" do
-    @org.update!(plan: "starter")
+    @org.update!(plan: @base_paid_tier.slug)
 
     fake_service = build_fake_service(resume_subscription!: SubscriptionManagerService::Result.new(success: true))
 
@@ -438,14 +454,14 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   # --- show action with pending states ---
 
   test "show displays pending downgrade banner" do
-    @org.update!(plan: "pro", pending_plan: "starter", pending_plan_effective_at: 30.days.from_now, pending_downgrade_schedule_id: "sub_sched_show")
+    @org.update!(plan: @top_paid_tier.slug, pending_plan: @base_paid_tier.slug, pending_plan_effective_at: 30.days.from_now, pending_downgrade_schedule_id: "sub_sched_show")
     get settings_billing_path
     assert_response :success
     assert_match "pending downgrade", response.body.downcase
   end
 
   test "show displays pending cancellation banner" do
-    @org.update!(plan: "starter")
+    @org.update!(plan: @base_paid_tier.slug)
     customer = @org.set_payment_processor(:stripe)
     customer.update!(processor_id: "cus_show_cancel")
 

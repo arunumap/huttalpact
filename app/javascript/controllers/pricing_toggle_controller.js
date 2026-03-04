@@ -1,11 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = [
-    "monthlyBtn", "annualBtn",
-    "starterPrice", "starterPeriod", "starterBtn", "starterAnnualTotal",
-    "proPrice", "proPeriod", "proBtn", "proAnnualTotal"
-  ]
+  static targets = ["monthlyBtn", "annualBtn", "planCard"]
+
+  connect() {
+    this.#applyPeriod("monthly")
+  }
 
   selectMonthly() {
     this.monthlyBtnTarget.classList.add("bg-white", "text-gray-900", "shadow-sm")
@@ -13,17 +13,7 @@ export default class extends Controller {
     this.annualBtnTarget.classList.remove("bg-white", "text-gray-900", "shadow-sm")
     this.annualBtnTarget.classList.add("text-gray-500")
 
-    this.#animatePrice(() => {
-      this.starterPriceTarget.textContent = "$49"
-      this.starterPeriodTarget.textContent = "/month"
-      this.proPriceTarget.textContent = "$149"
-      this.proPeriodTarget.textContent = "/month"
-
-      if (this.hasStarterAnnualTotalTarget) this.starterAnnualTotalTarget.classList.add("hidden")
-      if (this.hasProAnnualTotalTarget) this.proAnnualTotalTarget.classList.add("hidden")
-    })
-
-    this.updateButtons("monthly")
+    this.#applyPeriod("monthly")
   }
 
   selectAnnual() {
@@ -32,46 +22,40 @@ export default class extends Controller {
     this.monthlyBtnTarget.classList.remove("bg-white", "text-gray-900", "shadow-sm")
     this.monthlyBtnTarget.classList.add("text-gray-500")
 
-    this.#animatePrice(() => {
-      this.starterPriceTarget.textContent = "$41"
-      this.starterPeriodTarget.textContent = "/month, billed annually"
-      this.proPriceTarget.textContent = "$124"
-      this.proPeriodTarget.textContent = "/month, billed annually"
-
-      if (this.hasStarterAnnualTotalTarget) this.starterAnnualTotalTarget.classList.remove("hidden")
-      if (this.hasProAnnualTotalTarget) this.proAnnualTotalTarget.classList.remove("hidden")
-    })
-
-    this.updateButtons("annual")
+    this.#applyPeriod("annual")
   }
 
-  updateButtons(period) {
-    if (this.hasStarterBtnTarget) {
-      const btn = this.starterBtnTarget
-      const priceParam = period === "annual"
-        ? btn.dataset.pricingToggleAnnualPriceParam
-        : btn.dataset.pricingToggleMonthlyPriceParam
-      const input = btn.closest("form")?.querySelector("input[name='lookup_key']")
-      if (input) input.value = priceParam
+  #applyPeriod(period) {
+    this.planCardTargets.forEach((card) => {
+      const monthlyPrice = card.dataset.pricingToggleMonthlyPrice
+      const annualPrice = card.dataset.pricingToggleAnnualPrice || monthlyPrice
+      const monthlyPeriod = card.dataset.pricingToggleMonthlyPeriod || "/month"
+      const annualPeriod = card.dataset.pricingToggleAnnualPeriod || monthlyPeriod
+      const monthlyKey = card.dataset.pricingToggleMonthlyKey
+      const annualKey = card.dataset.pricingToggleAnnualKey || monthlyKey
+
+      const priceEl = card.querySelector("[data-pricing-toggle-role='price']")
+      const periodEl = card.querySelector("[data-pricing-toggle-role='period']")
+      const annualTotalEl = card.querySelector("[data-pricing-toggle-role='annual-total']")
+      const lookupInput = card.querySelector("input[data-pricing-toggle-role='lookup-input']")
+
+      const showAnnual = period === "annual" && annualPrice !== monthlyPrice
+
+      if (priceEl) priceEl.textContent = showAnnual ? annualPrice : monthlyPrice
+      if (periodEl) periodEl.textContent = showAnnual ? annualPeriod : monthlyPeriod
+
+      if (annualTotalEl) {
+        if (showAnnual) {
+          annualTotalEl.classList.remove("hidden")
+        } else {
+          annualTotalEl.classList.add("hidden")
+        }
+      }
+
+      if (lookupInput) {
+        const key = period === "annual" ? annualKey : monthlyKey
+        if (key) lookupInput.value = key
+      }
     }
-
-    if (this.hasProBtnTarget) {
-      const btn = this.proBtnTarget
-      const priceParam = period === "annual"
-        ? btn.dataset.pricingToggleAnnualPriceParam
-        : btn.dataset.pricingToggleMonthlyPriceParam
-      const input = btn.closest("form")?.querySelector("input[name='lookup_key']")
-      if (input) input.value = priceParam
-    }
-  }
-
-  #animatePrice(updateFn) {
-    const targets = [this.starterPriceTarget, this.proPriceTarget]
-    targets.forEach(t => t.classList.add("opacity-0"))
-
-    setTimeout(() => {
-      updateFn()
-      targets.forEach(t => t.classList.remove("opacity-0"))
-    }, 150)
   }
 }

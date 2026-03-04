@@ -23,7 +23,7 @@ class StripePriceResolver
   # Results are cached to avoid repeated API calls for the same price.
   #
   # @param price_id [String] Stripe price ID (e.g. "price_1Abc...")
-  # @return [String, nil] plan name ("starter", "pro") or nil if unrecognized
+  # @return [String, nil] plan slug (e.g. "starter", "pro") or nil if unrecognized
   def self.plan_for_price_id(price_id)
     return nil if price_id.blank?
 
@@ -32,7 +32,7 @@ class StripePriceResolver
     return cached if cached.present?
 
     price = Stripe::Price.retrieve(price_id)
-    plan_name = PlanLimits::LOOKUP_KEYS[price.lookup_key]
+    plan_name = PlanCatalogService.plan_for_lookup_key(price.lookup_key)
 
     # Only cache non-nil results so unrecognized prices can be retried
     # after lookup_key is configured in Stripe.

@@ -19,7 +19,10 @@ class StripeAdminService
 
   # Read-only check of current Stripe products/prices status
   def self.verify_products_and_prices
-    lookup_keys = PlanLimits::LOOKUP_KEYS.keys
+    configs = lookup_key_configs
+    lookup_keys = configs.map { |config| config[:lookup_key] }.uniq
+    return { complete: true, prices: [], missing_keys: [], lookup_keys: [] } if lookup_keys.empty?
+
     existing = Stripe::Price.list(lookup_keys: lookup_keys, active: true)
     existing_keys = existing.data.map(&:lookup_key).compact
 
@@ -38,31 +41,40 @@ class StripeAdminService
     {
       complete: missing_keys.empty?,
       prices: prices,
-      missing_keys: missing_keys
+      missing_keys: missing_keys,
+      lookup_keys: lookup_keys
     }
   rescue Stripe::StripeError => e
-    { complete: false, prices: [], missing_keys: [], error: true, message: e.message }
+    { complete: false, prices: [], missing_keys: [], lookup_keys: [], error: true, message: e.message }
   end
 
   # Creates missing Stripe products and prices (idempotent)
   def self.setup_products_and_prices!
-    lookup_keys = PlanLimits::LOOKUP_KEYS.keys
+    configs = lookup_key_configs
+    lookup_keys = configs.map { |config| config[:lookup_key] }.uniq
+    return { success: true, message: "No active paid tier prices configured.", created: [], skipped: [] } if lookup_keys.empty?
+
     existing = Stripe::Price.list(lookup_keys: lookup_keys, active: true)
     existing_keys = existing.data.map(&:lookup_key).compact
+    existing_by_lookup = existing.data.index_by(&:lookup_key)
 
     created = []
     skipped = []
     products_cache = {}
 
-    PRICE_CONFIGS.each do |config|
+    configs.each do |config|
       if existing_keys.include?(config[:lookup_key])
         skipped << config[:lookup_key]
+        if config[:tier]
+          existing_price = existing_by_lookup[config[:lookup_key]]
+          update_tier_stripe_ids(config[:tier], existing_price, config[:interval]) if existing_price
+        end
         next
       end
 
-      product = products_cache[config[:plan]] ||= find_or_create_product(config[:plan])
+      product = products_cache[config[:plan]] ||= find_or_create_product(config[:plan], tier: config[:tier])
 
-      Stripe::Price.create(
+      price = Stripe::Price.create(
         product: product.id,
         unit_amount: config[:amount],
         currency: "usd",
@@ -71,6 +83,7 @@ class StripeAdminService
         transfer_lookup_key: true
       )
 
+      update_tier_stripe_ids(config[:tier], price, config[:interval], product.id)
       created << config[:lookup_key]
     end
 
@@ -144,16 +157,138 @@ class StripeAdminService
     { success: false, organization_id: organization.id, message: e.message }
   end
 
-  # Finds or creates a Stripe product
-  def self.find_or_create_product(plan_key)
-    config = PRODUCT_CONFIGS[plan_key]
-    products = Stripe::Product.list(limit: 100, active: true)
-    existing = products.data.find { |p| p.name == config[:name] }
+  # Syncs Stripe product + prices for a single tier
+  def self.sync_plan_tier!(plan_tier)
+    return { success: false, message: "Free tier does not require Stripe prices." } if plan_tier.free?
 
-    return existing if existing
+    configs = tier_lookup_key_configs(plan_tier)
+    return { success: false, message: "Tier is missing Stripe lookup keys or prices." } if configs.empty?
 
-    Stripe::Product.create(name: config[:name], description: config[:description])
+    lookup_keys = configs.map { |config| config[:lookup_key] }
+    existing = Stripe::Price.list(lookup_keys: lookup_keys, active: true)
+    existing_by_lookup = existing.data.index_by(&:lookup_key)
+
+    product = find_or_create_product(plan_tier.slug, tier: plan_tier)
+    created = []
+    skipped = []
+
+    configs.each do |config|
+      existing_price = existing_by_lookup[config[:lookup_key]]
+      if existing_price
+        skipped << config[:lookup_key]
+        update_tier_stripe_ids(plan_tier, existing_price, config[:interval], product.id)
+        next
+      end
+
+      price = Stripe::Price.create(
+        product: product.id,
+        unit_amount: config[:amount],
+        currency: "usd",
+        recurring: { interval: config[:interval] },
+        lookup_key: config[:lookup_key],
+        transfer_lookup_key: true
+      )
+
+      update_tier_stripe_ids(plan_tier, price, config[:interval], product.id)
+      created << config[:lookup_key]
+    end
+
+    { success: true, message: "Tier sync complete", created: created, skipped: skipped }
+  rescue Stripe::StripeError => e
+    { success: false, message: e.message, created: created || [], skipped: skipped || [] }
   end
 
-  private_class_method :find_or_create_product
+  # Finds or creates a Stripe product
+  def self.find_or_create_product(plan_key, tier: nil)
+    if tier
+      if tier.stripe_product_id.present?
+        begin
+          return Stripe::Product.retrieve(tier.stripe_product_id)
+        rescue Stripe::InvalidRequestError
+        end
+      end
+
+      product_name = "PactBadger #{tier.name}"
+      description = tier.description.presence || "Plan tier #{tier.name}"
+    else
+      config = PRODUCT_CONFIGS[plan_key]
+      product_name = config[:name]
+      description = config[:description]
+    end
+
+    products = Stripe::Product.list(limit: 100, active: true)
+    existing = products.data.find { |p| p.name == product_name }
+
+    product = existing || Stripe::Product.create(name: product_name, description: description)
+
+    if tier && tier.stripe_product_id != product.id
+      tier.update_column(:stripe_product_id, product.id)
+    end
+
+    product
+  end
+
+  def self.lookup_key_configs
+    if PlanCatalogService.plan_tiers_available?
+      configs = PlanTier.active.ordered.flat_map { |tier| tier_lookup_key_configs(tier) }
+      return configs if configs.any?
+    end
+
+    PRICE_CONFIGS.map { |config| config.merge(tier: nil) }
+  end
+
+  def self.tier_lookup_key_configs(tier)
+    return [] unless tier.active?
+
+    configs = []
+
+    if tier.monthly_lookup_key.present? && tier.monthly_price_cents.to_i.positive?
+      configs << {
+        lookup_key: tier.monthly_lookup_key,
+        plan: tier.slug,
+        amount: tier.monthly_price_cents,
+        interval: "month",
+        tier: tier
+      }
+    end
+
+    if tier.annual_lookup_key.present? && tier.annual_price_cents.to_i.positive?
+      configs << {
+        lookup_key: tier.annual_lookup_key,
+        plan: tier.slug,
+        amount: tier.annual_price_cents,
+        interval: "year",
+        tier: tier
+      }
+    end
+
+    configs
+  end
+
+  def self.update_tier_stripe_ids(tier, price, interval, product_id = nil)
+    return unless tier&.persisted?
+
+    attrs = {
+      stripe_product_id: product_id || stripe_product_id_for(price)
+    }
+
+    if interval == "month"
+      attrs[:stripe_monthly_price_id] = price.id
+    elsif interval == "year"
+      attrs[:stripe_annual_price_id] = price.id
+    end
+
+    tier.update_columns(attrs.compact)
+  end
+
+  def self.stripe_product_id_for(price)
+    product = price.product
+    product.is_a?(String) ? product : product&.id
+  end
+
+  private_class_method :find_or_create_product,
+                       :lookup_key_configs,
+                       :tier_lookup_key_configs,
+                       :update_tier_stripe_ids,
+                       :stripe_product_id_for
 end

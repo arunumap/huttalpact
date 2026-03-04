@@ -8,10 +8,11 @@ class Settings::BillingController < ApplicationController
     @subscription = @organization.active_subscription
     @pending_downgrade = @organization.pending_downgrade?
     @pending_cancellation = @organization.pending_cancellation?
+    @plan_tiers = PlanCatalogService.active_tiers_for_billing
 
     # Precompute downgrade eligibility for lower plans
     @downgrade_eligibility = {}
-    PlanLimits::PLAN_HIERARCHY.each_key do |plan_name|
+    PlanCatalogService.plan_hierarchy.each_key do |plan_name|
       if @organization.downgrade_from_current?(plan_name)
         @downgrade_eligibility[plan_name] = @organization.downgrade_eligibility(plan_name)
       end
@@ -21,7 +22,7 @@ class Settings::BillingController < ApplicationController
   def checkout
     lookup_key = params[:lookup_key]
 
-    unless PlanLimits::LOOKUP_KEYS.key?(lookup_key)
+    unless PlanCatalogService.valid_lookup_key?(lookup_key)
       redirect_to settings_billing_path, alert: "Invalid plan selected."
       return
     end
@@ -41,7 +42,7 @@ class Settings::BillingController < ApplicationController
       cancel_url: settings_billing_url
     )
 
-    track_analytics_event("begin_checkout", plan: PlanLimits::LOOKUP_KEYS[lookup_key])
+    track_analytics_event("begin_checkout", plan: PlanCatalogService.plan_for_lookup_key(lookup_key))
     redirect_to session.url, allow_other_host: true, status: :see_other
   rescue StripePriceResolver::PriceNotFound => e
     Rails.logger.error("Stripe price not found for org #{current_organization.id}: #{e.message}")
@@ -54,7 +55,7 @@ class Settings::BillingController < ApplicationController
   def upgrade
     lookup_key = params[:lookup_key]
 
-    unless PlanLimits::LOOKUP_KEYS.key?(lookup_key)
+    unless PlanCatalogService.valid_lookup_key?(lookup_key)
       redirect_to settings_billing_path, alert: "Invalid plan selected."
       return
     end
@@ -63,7 +64,7 @@ class Settings::BillingController < ApplicationController
     result = service.upgrade!(lookup_key)
 
     if result.success?
-      target_plan = PlanLimits::LOOKUP_KEYS[lookup_key]
+      target_plan = PlanCatalogService.plan_for_lookup_key(lookup_key)
       track_analytics_event("plan_upgraded", plan: target_plan)
       redirect_to settings_billing_path, notice: "You've been upgraded to the #{target_plan.titleize} plan! Changes are effective immediately."
     else
@@ -74,7 +75,7 @@ class Settings::BillingController < ApplicationController
   def downgrade
     lookup_key = params[:lookup_key]
 
-    unless PlanLimits::LOOKUP_KEYS.key?(lookup_key)
+    unless PlanCatalogService.valid_lookup_key?(lookup_key)
       redirect_to settings_billing_path, alert: "Invalid plan selected."
       return
     end
@@ -83,7 +84,7 @@ class Settings::BillingController < ApplicationController
     result = service.schedule_downgrade!(lookup_key)
 
     if result.success?
-      target_plan = PlanLimits::LOOKUP_KEYS[lookup_key]
+      target_plan = PlanCatalogService.plan_for_lookup_key(lookup_key)
       effective_date = current_organization.pending_plan_effective_at&.strftime("%B %-d, %Y")
       redirect_to settings_billing_path, notice: "Your plan will change to #{target_plan.titleize} on #{effective_date}."
     else
@@ -164,7 +165,11 @@ class Settings::BillingController < ApplicationController
   def success
     current_organization.sync_plan_from_subscription!
     current_organization.reload
-    track_analytics_event("purchase", plan: current_organization.plan, value: current_organization.plan == "pro" ? 149 : 49, currency: "USD")
+
+    current_tier = PlanCatalogService.tier_for(current_organization.plan)
+    monthly_value = current_tier ? (current_tier.monthly_price_cents.to_i / 100) : 0
+    track_analytics_event("purchase", plan: current_organization.plan, value: monthly_value, currency: "USD")
+
     redirect_to settings_billing_path, notice: "Welcome to the #{current_organization.plan_display_name} plan! Your subscription is now active."
   end
 

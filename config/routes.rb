@@ -25,6 +25,13 @@ Rails.application.routes.draw do
       post :sync_all_organizations
       post :sync_organization
     end
+    resources :plan_tiers do
+      member do
+        post :activate
+        post :deactivate
+        post :sync_to_stripe
+      end
+    end
     resources :audit_logs, only: %i[index]
     resources :blog_posts do
       member do

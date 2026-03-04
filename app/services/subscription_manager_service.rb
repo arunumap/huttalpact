@@ -5,20 +5,13 @@ class SubscriptionManagerService
     end
   end
 
-  LOOKUP_KEY_INTERVALS = {
-    "starter_monthly" => "monthly",
-    "starter_annual"  => "annual",
-    "pro_monthly"     => "monthly",
-    "pro_annual"      => "annual"
-  }.freeze
-
   def initialize(organization)
     @organization = organization
   end
 
   # In-place plan upgrade for existing subscribers (Starter → Pro, or interval change)
   def upgrade!(lookup_key)
-    target_plan = PlanLimits::LOOKUP_KEYS[lookup_key]
+    target_plan = PlanCatalogService.plan_for_lookup_key(lookup_key)
     return error_result("Invalid plan selected.") unless target_plan
 
     unless @organization.upgrade_from_current?(target_plan)
@@ -51,8 +44,8 @@ class SubscriptionManagerService
 
   # Schedule a downgrade at the end of the current billing period
   def schedule_downgrade!(lookup_key)
-    target_plan = PlanLimits::LOOKUP_KEYS[lookup_key]
-    target_interval = LOOKUP_KEY_INTERVALS[lookup_key]
+    target_plan = PlanCatalogService.plan_for_lookup_key(lookup_key)
+    target_interval = PlanCatalogService.interval_for_lookup_key(lookup_key)
     return error_result("Invalid plan selected.") unless target_plan
 
     unless @organization.downgrade_from_current?(target_plan)

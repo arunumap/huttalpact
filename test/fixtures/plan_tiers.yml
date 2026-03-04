@@ -1,0 +1,74 @@
+free:
+  slug: free
+  name: Free
+  description: Get started with the basics.
+  rank: 0
+  position: 0
+  contract_limit: 10
+  extraction_limit: 5
+  user_limit: 1
+  audit_log_days: 7
+  monthly_price_cents: 0
+  annual_price_cents: 0
+  monthly_lookup_key:
+  annual_lookup_key:
+  active: true
+  visible_on_pricing_page: true
+  featured: false
+  system_tier: true
+  default_tier: true
+  feature_list:
+    - Up to 10 contracts
+    - 5 AI extractions/month
+    - 1 user
+    - 7-day activity log
+
+starter:
+  slug: starter
+  name: Starter
+  description: Smart contract tracking for growing businesses.
+  rank: 1
+  position: 1
+  contract_limit: 100
+  extraction_limit: 50
+  user_limit: 5
+  audit_log_days: 30
+  monthly_price_cents: 4900
+  annual_price_cents: 49200
+  monthly_lookup_key: starter_monthly
+  annual_lookup_key: starter_annual
+  active: true
+  visible_on_pricing_page: true
+  featured: true
+  system_tier: false
+  default_tier: false
+  feature_list:
+    - Up to 100 contracts
+    - 50 AI extractions/month
+    - Up to 5 team members
+    - 30-day activity log
+
+pro:
+  slug: pro
+  name: Pro
+  description: Unlimited contract tracking for teams of any size.
+  rank: 2
+  position: 2
+  contract_limit:
+  extraction_limit:
+  user_limit:
+  audit_log_days:
+  monthly_price_cents: 14900
+  annual_price_cents: 149000
+  monthly_lookup_key: pro_monthly
+  annual_lookup_key: pro_annual
+  active: true
+  visible_on_pricing_page: true
+  featured: false
+  system_tier: false
+  default_tier: false
+  feature_list:
+    - Unlimited contracts
+    - Unlimited AI extractions
+    - Unlimited users
+    - Full activity history
