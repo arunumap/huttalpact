@@ -32,7 +32,7 @@ product_updates = BlogCategory.find_by!(slug: "product-updates")
 
 # ── Post 1: Pain-Point (Top of Funnel) ─────────────────────
 post1_body = <<~MARKDOWN
-  If you manage commercial properties, you already know the drill: lease end dates scattered across filing cabinets, renewal deadlines buried in spreadsheet tabs, and the constant anxiety that something important is slipping through the cracks.
+  If you manage commercial properties — especially if your portfolio runs somewhere between 5 and 50 properties — you already know the drill: lease end dates scattered across filing cabinets, renewal deadlines buried in spreadsheet tabs, and the constant anxiety that something important is slipping through the cracks.
 
   You're not alone. Most property management companies with 5–50 properties still track lease expirations in Excel. It works — until it doesn't.
 
@@ -63,7 +63,7 @@ post1_body = <<~MARKDOWN
 
   ## What You Actually Need
 
-  You don't need a six-figure enterprise contract management system. You need something that does four things well:
+  The good news: you don't need to overhaul your entire operation. You don't need a six-figure enterprise contract management system. You need something focused that does four things well:
 
   1. **Stores lease documents in one place** — PDF, Word, or scanned files, accessible to your team.
   2. **Extracts the key dates automatically** — start dates, end dates, renewal deadlines, notice periods.
@@ -78,21 +78,21 @@ post1_body = <<~MARKDOWN
 
   The information stays current because it's pulled directly from the document. And your entire team sees the same data.
 
-  ## Getting Started
+  ## Getting Started with PactBadger
 
-  If you're ready to move beyond spreadsheets, here's a simple transition plan:
+  If you're ready to move beyond spreadsheets, here's what the transition looks like in practice:
 
   1. **Start with your most critical leases.** Don't try to migrate everything at once. Pick the 10 leases with the nearest expiration dates.
-  2. **Upload the actual documents.** Not a summary — the real lease PDF. AI extraction works best with the full document.
-  3. **Verify the extracted data.** AI is accurate but not perfect. Spend 2 minutes confirming the key dates and terms.
-  4. **Set your alert preferences.** Decide how much lead time you need for each type of deadline.
+  2. **Upload the actual documents to PactBadger.** Not a summary — the real lease PDF. The AI reads the full document and extracts dates, terms, and key clauses automatically.
+  3. **Verify the extracted data.** AI is accurate but not perfect. Spend 2 minutes on the results page confirming key dates and terms — you can edit anything with a single click.
+  4. **Set your alert preferences.** Decide how much lead time you need for renewals, notice deadlines, and expirations.
   5. **Expand gradually.** Once you trust the system, upload the rest of your portfolio.
 
   The goal isn't to replace your judgment — it's to make sure nothing falls through the cracks while you're focused on running properties.
 
   ---
 
-  *PactBadger is built specifically for property managers who've outgrown spreadsheets. Upload your leases, and AI extracts dates, values, and key clauses automatically. [Try it free](/) — no credit card required.*
+  *Worried about a silent auto-renewal or a missed notice period hiding in your portfolio? [Upload one lease to PactBadger](/) and see what it catches — no credit card required.*
 MARKDOWN
 
 if BlogPost.find_by(slug: "track-lease-expirations-without-spreadsheet").nil?
@@ -121,7 +121,7 @@ post2_body = <<~MARKDOWN
   When you upload a document to PactBadger, three things happen in sequence:
 
   ### Step 1: Text Extraction
-  First, we extract the raw text from your document. PactBadger accepts PDF, DOCX, and TXT files. For PDFs, we extract embedded text (and for scanned documents, we use OCR to convert the image to text). The goal is clean, readable text that preserves the structure of the original document.
+  First, we extract the raw text from your document. PactBadger accepts PDF, DOCX, and TXT files. For PDFs, we extract embedded text. For scanned documents, we use OCR to convert the image to text — this works well for clean, high-resolution scans, though very low-quality or handwritten documents may need a manual review. The goal is clean, readable text that preserves the structure of the original document.
 
   ### Step 2: AI Analysis
   The extracted text is sent to an AI model that has been specifically instructed to identify contract and lease information. The AI reads the full document and extracts structured data:
@@ -131,7 +131,7 @@ post2_body = <<~MARKDOWN
   - **Financial terms** — rent amount, security deposit, escalation schedules
   - **Key clauses** — auto-renewal, early termination, penalties, assignment rights, insurance requirements, and more
 
-  The AI doesn't guess. It identifies specific passages in the document and extracts values from them. Each extraction includes the source context — the actual text from the lease that the value was pulled from.
+  The AI doesn't fill in blanks — it extracts values from specific passages in your document. Each extraction includes the source context — the actual text from the lease that the value was pulled from — so you can verify every result against the original.
 
   ### Step 3: Alert Generation
   Once the key dates are extracted, PactBadger automatically creates alerts. If your lease ends on December 31, 2027, and has a 90-day notice requirement, you'll get an alert on October 2, 2027 — with enough time to make a decision and act on it.
@@ -178,30 +178,30 @@ post2_body = <<~MARKDOWN
 
   **Key clauses** — Good accuracy for standard commercial lease clauses. The AI identifies the right provisions in the vast majority of cases. Unusual or heavily negotiated clauses may need review.
 
-  **Our recommendation:** Always do a quick scan of the extracted data before relying on it for decisions. PactBadger makes this easy — the extraction results page shows every field with its source context, and you can edit any value with a single click.
+  **Our recommendation:** Always do a quick scan of the extracted data before relying on it for decisions. PactBadger makes this easy — the extraction results page shows every field with its source context, and you can edit any value with a single click. If the AI misses a clause entirely, you can add fields manually — and that feedback helps improve future extractions.
 
   We also give you the option to rate each extraction and provide feedback, which helps us continuously improve accuracy.
 
   ## What About Amendments and Addenda?
 
-  Many leases have amendments that modify the original terms. PactBadger handles this by allowing you to upload multiple documents per contract. When you upload an amendment, the AI re-analyzes the full document set and updates the extracted data accordingly.
+  In practice, most leases don't stay static. Rent gets renegotiated. Options get exercised. Addenda add new terms. This is one of the biggest failure points for spreadsheet-based tracking — the sheet reflects the original lease, not the current reality.
+
+  PactBadger handles this by allowing you to upload multiple documents per contract. When you upload an amendment, the AI re-analyzes the full document set and updates the extracted data accordingly. The most recent terms take precedence, but the original document is still accessible.
 
   For example, if you upload a lease followed by a rent amendment, the system will update the financial terms to reflect the amendment while preserving the original lease dates.
 
   ## Try It Yourself
 
-  The best way to understand the extraction is to see it work on your own documents:
+  The best way to understand the extraction is to see it work on your own documents. The free plan includes 10 contracts and 5 AI extractions per month — enough to test with your most important leases before committing to anything:
 
   1. **Sign up for free** — no credit card required
   2. **Upload a lease** — drag and drop a PDF, DOCX, or TXT file
   3. **Watch the extraction** — results appear within a minute
   4. **Review and refine** — check the extracted data and make any corrections
 
-  The free plan includes 10 contracts and 5 AI extractions per month — enough to test with your most important leases.
-
   ---
 
-  *Ready to see what AI can find in your leases? [Upload your first contract](/) and see results in under a minute.*
+  *Curious what AI will find in **your** leases? [Upload your first contract](/) and see results in under a minute — the free plan includes 10 contracts with no credit card required.*
 MARKDOWN
 
 if BlogPost.find_by(slug: "how-pactbadger-extracts-key-dates-from-leases").nil?
@@ -227,7 +227,7 @@ post3_body = <<~MARKDOWN
 
   ## What Property Managers Actually Need
 
-  Before comparing tools, let's define what matters:
+  Before comparing tools, let's define what matters. And one thing this post is *not*: a review of e-signature platforms (DocuSign, HelloSign) or full CLM systems built for legal departments. Those solve different problems. This comparison is specifically about contract *tracking* for property management companies.
 
   1. **Lease document storage** — Upload and access the actual PDF/Word lease from anywhere
   2. **Key date tracking** — Start dates, end dates, renewal deadlines, notice periods
@@ -338,11 +338,14 @@ post3_body = <<~MARKDOWN
   **Cons:**
   - No e-signature or contract authoring (we focus on tracking existing contracts)
   - No accounting or maintenance features (we're not a property management platform)
+  - No native integration with accounting software like QuickBooks — data lives in PactBadger and can be exported, but won’t sync automatically
   - Newer product — fewer integrations than established tools
 
   **Verdict:** Purpose-built for the specific problem of tracking lease deadlines and key clauses without the cost or complexity of enterprise tools.
 
   ## Comparison Summary
+
+  *Pricing verified as of early 2026 — check vendor sites for current rates as these change frequently.*
 
   | Feature | Spreadsheet | PM Software | Enterprise CLM | Mid-Market Tracker | PactBadger |
   |---------|:-----------:|:-----------:|:--------------:|:------------------:|:----------:|
@@ -365,7 +368,7 @@ post3_body = <<~MARKDOWN
 
   ---
 
-  *PactBadger offers a free plan with 10 contracts and 5 AI extractions per month. [Sign up and upload your first lease](/) — no credit card required.*
+  *If you’re in the 5–50 property range and want to test with real leases before committing, [PactBadger’s free plan](/) includes 10 contracts and 5 AI extractions — start today and decide for yourself.*
 MARKDOWN
 
 if BlogPost.find_by(slug: "best-contract-tracking-software-property-managers").nil?
