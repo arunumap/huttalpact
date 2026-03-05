@@ -107,19 +107,23 @@ class StripeAdminServiceTest < ActiveSupport::TestCase
       OpenStruct.new(lookup_key: config[:lookup_key], id: "price_old", unit_amount: config[:amount] + 100)
     end
     mock_list = OpenStruct.new(data: mock_prices)
-    mock_product = OpenStruct.new(id: "prod_existing", name: "PactBadger Starter")
-    mock_products_list = OpenStruct.new(data: [ mock_product ])
+    mock_products_list = OpenStruct.new(data: [
+      OpenStruct.new(id: "prod_starter", name: "PactBadger Starter"),
+      OpenStruct.new(id: "prod_pro", name: "PactBadger Pro")
+    ])
     mock_new_price = OpenStruct.new(id: "price_new")
 
     Stripe::Price.stub :list, mock_list do
       Stripe::Product.stub :list, mock_products_list do
-        Stripe::Price.stub :create, mock_new_price do
-          result = StripeAdminService.setup_products_and_prices!
+        Stripe::Product.stub :create, OpenStruct.new(id: "prod_fallback", name: "PactBadger Fallback") do
+          Stripe::Price.stub :create, mock_new_price do
+            result = StripeAdminService.setup_products_and_prices!
 
-          assert result[:success]
-          assert_empty result[:created]
-          assert_empty result[:skipped]
-          assert_equal 4, result[:updated].size
+            assert result[:success]
+            assert_empty result[:created]
+            assert_empty result[:skipped]
+            assert_equal 4, result[:updated].size
+          end
         end
       end
     end
