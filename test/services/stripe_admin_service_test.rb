@@ -246,6 +246,35 @@ class StripeAdminServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "sync_plan_tier does not create a new product when matching prices already exist" do
+    tier = plan_tiers(:pro)
+    tier.update_columns(stripe_product_id: nil, stripe_monthly_price_id: nil, stripe_annual_price_id: nil)
+
+    mock_prices = [
+      OpenStruct.new(lookup_key: "pro_monthly", id: "price_m", unit_amount: 14900, product: "prod_existing"),
+      OpenStruct.new(lookup_key: "pro_annual", id: "price_a", unit_amount: 149000, product: "prod_existing")
+    ]
+    mock_list = OpenStruct.new(data: mock_prices)
+    mock_products_list = OpenStruct.new(data: [])
+
+    Stripe::Price.stub :list, mock_list do
+      Stripe::Product.stub :list, mock_products_list do
+        Stripe::Product.stub :create, ->(*) { flunk "expected sync to reuse existing prices without creating a product" } do
+          result = StripeAdminService.sync_plan_tier!(tier)
+
+          assert result[:success]
+          assert_empty result[:created]
+          assert_empty result[:updated]
+          assert_equal 2, result[:skipped].size
+          tier.reload
+          assert_equal "prod_existing", tier.stripe_product_id
+          assert_equal "price_m", tier.stripe_monthly_price_id
+          assert_equal "price_a", tier.stripe_annual_price_id
+        end
+      end
+    end
+  end
+
   test "sync_plan_tier creates new prices when amounts change" do
     tier = plan_tiers(:pro)
     # Update tier price locally to simulate admin editing the price

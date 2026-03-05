@@ -186,7 +186,7 @@ class StripeAdminService
     existing = Stripe::Price.list(lookup_keys: lookup_keys, active: true)
     existing_by_lookup = existing.data.index_by(&:lookup_key)
 
-    product = find_or_create_product(plan_tier.slug, tier: plan_tier)
+    product = nil
     created = []
     skipped = []
 
@@ -197,11 +197,12 @@ class StripeAdminService
       if existing_price
         if existing_price.unit_amount == config[:amount]
           skipped << config[:lookup_key]
-          update_tier_stripe_ids(plan_tier, existing_price, config[:interval], product.id)
+          update_tier_stripe_ids(plan_tier, existing_price, config[:interval])
           next
         else
           # Amount changed — create a new price and transfer the lookup key
           # (Stripe prices are immutable; transfer_lookup_key reassigns the key)
+          product ||= find_or_create_product(plan_tier.slug, tier: plan_tier)
           price = Stripe::Price.create(
             product: product.id,
             unit_amount: config[:amount],
@@ -217,6 +218,7 @@ class StripeAdminService
         end
       end
 
+      product ||= find_or_create_product(plan_tier.slug, tier: plan_tier)
       price = Stripe::Price.create(
         product: product.id,
         unit_amount: config[:amount],
