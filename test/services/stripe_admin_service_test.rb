@@ -104,7 +104,12 @@ class StripeAdminServiceTest < ActiveSupport::TestCase
     price_configs = StripeAdminService::PRICE_CONFIGS
     # Existing prices with stale amounts (each off by 100 cents)
     mock_prices = price_configs.map do |config|
-      OpenStruct.new(lookup_key: config[:lookup_key], id: "price_old", unit_amount: config[:amount] + 100)
+      OpenStruct.new(
+        lookup_key: config[:lookup_key],
+        id: "price_old",
+        unit_amount: config[:amount] + 100,
+        product: (config[:plan] == "starter" ? "prod_starter" : "prod_pro")
+      )
     end
     mock_list = OpenStruct.new(data: mock_prices)
     mock_products_list = OpenStruct.new(data: [
@@ -115,7 +120,7 @@ class StripeAdminServiceTest < ActiveSupport::TestCase
 
     Stripe::Price.stub :list, mock_list do
       Stripe::Product.stub :list, mock_products_list do
-        Stripe::Product.stub :create, OpenStruct.new(id: "prod_fallback", name: "PactBadger Fallback") do
+        Stripe::Product.stub :create, ->(*) { flunk "expected amount-change path to reuse existing product IDs" } do
           Stripe::Price.stub :create, mock_new_price do
             result = StripeAdminService.setup_products_and_prices!
 
@@ -295,15 +300,17 @@ class StripeAdminServiceTest < ActiveSupport::TestCase
 
     Stripe::Price.stub :list, mock_list do
       Stripe::Product.stub :list, mock_products_list do
-        Stripe::Price.stub :create, mock_new_price do
-          result = StripeAdminService.sync_plan_tier!(tier)
+        Stripe::Product.stub :create, ->(*) { flunk "expected amount-change path to reuse existing product IDs" } do
+          Stripe::Price.stub :create, mock_new_price do
+            result = StripeAdminService.sync_plan_tier!(tier)
 
-          assert result[:success]
-          assert_empty result[:created]
-          assert_empty result[:skipped]
-          assert_equal 2, result[:updated].size
-          assert_includes result[:updated], "pro_monthly"
-          assert_includes result[:updated], "pro_annual"
+            assert result[:success]
+            assert_empty result[:created]
+            assert_empty result[:skipped]
+            assert_equal 2, result[:updated].size
+            assert_includes result[:updated], "pro_monthly"
+            assert_includes result[:updated], "pro_annual"
+          end
         end
       end
     end

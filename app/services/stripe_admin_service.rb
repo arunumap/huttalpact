@@ -70,10 +70,14 @@ class StripeAdminService
 
         if existing_price && existing_price.unit_amount != config[:amount]
           # Amount changed — create a new price and transfer the lookup key
-          product = products_cache[config[:plan]] ||= find_or_create_product(config[:plan], tier: config[:tier])
+          product_id = stripe_product_id_for(existing_price)
+          if product_id.blank?
+            product = products_cache[config[:plan]] ||= find_or_create_product(config[:plan], tier: config[:tier])
+            product_id = product.id
+          end
 
           price = Stripe::Price.create(
-            product: product.id,
+            product: product_id,
             unit_amount: config[:amount],
             currency: "usd",
             recurring: { interval: config[:interval] },
@@ -81,7 +85,7 @@ class StripeAdminService
             transfer_lookup_key: true
           )
 
-          update_tier_stripe_ids(config[:tier], price, config[:interval], product.id) if config[:tier]
+          update_tier_stripe_ids(config[:tier], price, config[:interval], product_id) if config[:tier]
           updated << config[:lookup_key]
         else
           skipped << config[:lookup_key]
@@ -202,9 +206,13 @@ class StripeAdminService
         else
           # Amount changed — create a new price and transfer the lookup key
           # (Stripe prices are immutable; transfer_lookup_key reassigns the key)
-          product ||= find_or_create_product(plan_tier.slug, tier: plan_tier)
+          product_id = stripe_product_id_for(existing_price)
+          if product_id.blank?
+            product ||= find_or_create_product(plan_tier.slug, tier: plan_tier)
+            product_id = product.id
+          end
           price = Stripe::Price.create(
-            product: product.id,
+            product: product_id,
             unit_amount: config[:amount],
             currency: "usd",
             recurring: { interval: config[:interval] },
@@ -212,7 +220,7 @@ class StripeAdminService
             transfer_lookup_key: true
           )
 
-          update_tier_stripe_ids(plan_tier, price, config[:interval], product.id)
+          update_tier_stripe_ids(plan_tier, price, config[:interval], product_id)
           updated << config[:lookup_key]
           next
         end
@@ -256,7 +264,12 @@ class StripeAdminService
     end
 
     products = Stripe::Product.list(limit: 100, active: true)
-    existing = products.data.find { |p| p.name == product_name }
+    product_enumerator = if products.respond_to?(:auto_paging_each)
+      products.auto_paging_each
+    else
+      products.data
+    end
+    existing = product_enumerator.find { |p| p.name.to_s.strip.casecmp?(product_name.to_s.strip) }
 
     product = existing || Stripe::Product.create(name: product_name, description: description)
 

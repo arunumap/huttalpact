@@ -124,6 +124,7 @@ Rails.application.routes.draw do
   get "dashboard", to: "dashboard#show", as: :dashboard
 
   # Static pages
+  get "lp/contracts", to: "pages#ads_contracts", as: :ads_contracts_landing
   get "privacy", to: "pages#privacy", as: :privacy
   get "leases", to: "pages#leases", as: :leases
 
