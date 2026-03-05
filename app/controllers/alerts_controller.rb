@@ -13,9 +13,11 @@ class AlertsController < ApplicationController
 
     alerts = alerts.where(status: params[:status]) if params[:status].present?
 
+    @alert_preference = AlertPreference.for(Current.user, Current.organization)
     @selected_bucket = params[:bucket].presence_in(BUCKETS) || "active"
-    @bucket_counts = bucket_counts(alerts)
-    @filtered_alerts = alerts_for_bucket(alerts, @selected_bucket).to_a
+    alerts_by_bucket = partition_alerts_by_bucket(alerts.to_a, @alert_preference)
+    @bucket_counts = alerts_by_bucket.transform_values(&:size)
+    @filtered_alerts = alerts_by_bucket.fetch(@selected_bucket, [])
     @acknowledged_alerts_count = AlertRecipient.where(user_id: Current.user.id)
                                               .where.not(read_at: nil)
                                               .count
@@ -48,29 +50,14 @@ class AlertsController < ApplicationController
 
   private
 
-  def bucket_counts(alerts)
+  def partition_alerts_by_bucket(alerts, alert_preference)
     {
-      "active" => alerts.where(trigger_date: ..Date.current).count,
-      "overdue" => alerts.where(status: "pending", trigger_date: ..Date.yesterday).count,
-      "today" => alerts.where(trigger_date: Date.current).count,
-      "upcoming" => alerts.upcoming.count,
-      "scheduled" => alerts.scheduled.count
+      "active" => alerts.select { |alert| alert.active_for_preference?(alert_preference) },
+      "overdue" => alerts.select { |alert| alert.overdue_for_preference?(alert_preference) },
+      "today" => alerts.select { |alert| alert.due_today_for_preference?(alert_preference) },
+      "upcoming" => alerts.select { |alert| alert.trigger_date > Date.current && alert.trigger_date <= Date.current + Alert::UPCOMING_HORIZON_DAYS },
+      "scheduled" => alerts.select { |alert| alert.trigger_date > Date.current + Alert::UPCOMING_HORIZON_DAYS }
     }
-  end
-
-  def alerts_for_bucket(alerts, bucket)
-    case bucket
-    when "overdue"
-      alerts.where(status: "pending", trigger_date: ..Date.yesterday)
-    when "today"
-      alerts.where(trigger_date: Date.current)
-    when "upcoming"
-      alerts.upcoming
-    when "scheduled"
-      alerts.scheduled
-    else
-      alerts.where(trigger_date: ..Date.current)
-    end
   end
 
   def set_alert

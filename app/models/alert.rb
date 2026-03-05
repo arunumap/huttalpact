@@ -22,6 +22,16 @@ class Alert < ApplicationRecord
   validates :trigger_date, presence: true
 
   UPCOMING_HORIZON_DAYS = 90
+  LEAD_DAY_DEFAULTS = {
+    renewal_upcoming: 30,
+    expiry_warning: 14,
+    notice_period_start: 30,
+    option_exercise_deadline: 90,
+    rent_escalation_date: 30,
+    cam_reconciliation: 30,
+    ti_deadline: 14,
+    milestone_reminder: 14
+  }.freeze
 
   scope :pending, -> { where(status: "pending") }
   scope :sent, -> { where(status: "sent") }
@@ -58,17 +68,69 @@ class Alert < ApplicationRecord
     trigger_date > Date.current + UPCOMING_HORIZON_DAYS && status.in?(%w[pending sent])
   end
 
-  def display_message
-    days_until = (trigger_date - Date.current).to_i
-    event_date = contract_event_date
+  def window_end_for(alert_preference = nil)
+    trigger_date + lead_days_for(alert_preference)
+  end
+
+  def active_for_preference?(alert_preference, today: Date.current)
+    return false unless status.in?(%w[pending sent])
+
+    trigger_date <= today && today <= window_end_for(alert_preference)
+  end
+
+  def overdue_for_preference?(alert_preference, today: Date.current)
+    return false unless status.in?(%w[pending sent])
+
+    today > window_end_for(alert_preference)
+  end
+
+  def due_today_for_preference?(alert_preference, today: Date.current)
+    return false unless status.in?(%w[pending sent])
+
+    today == window_end_for(alert_preference)
+  end
+
+  def lead_days_for(alert_preference = nil)
+    case alert_type
+    when "renewal_upcoming"
+      preference_days(alert_preference&.days_before_renewal, :renewal_upcoming)
+    when "expiry_warning"
+      preference_days(alert_preference&.days_before_expiry, :expiry_warning)
+    when "notice_period_start"
+      preference_days(contract.notice_period_days, :notice_period_start)
+    when "option_exercise_deadline"
+      preference_days(alert_preference&.days_before_option_exercise, :option_exercise_deadline)
+    when "rent_escalation_date"
+      preference_days(alert_preference&.days_before_rent_escalation, :rent_escalation_date)
+    when "cam_reconciliation"
+      preference_days(alert_preference&.days_before_cam_reconciliation, :cam_reconciliation)
+    when "ti_deadline"
+      preference_days(alert_preference&.days_before_milestone, :ti_deadline)
+    when "milestone_reminder"
+      preference_days(alert_preference&.days_before_milestone, :milestone_reminder)
+    else
+      0
+    end
+  end
+
+  def display_message(alert_preference: nil)
+    using_window_semantics = alert_preference.present?
+    days_until = if using_window_semantics
+      (window_end_for(alert_preference) - Date.current).to_i
+    else
+      (trigger_date - Date.current).to_i
+    end
+    overdue = using_window_semantics ? overdue_for_preference?(alert_preference) : overdue?
+    due_today = using_window_semantics ? due_today_for_preference?(alert_preference) : due_today?
+    event_date = contract_event_date(alert_preference: alert_preference)
     event_date_str = event_date&.strftime("%b %-d, %Y")
 
     case alert_type
     when "notice_period_start"
       notice_days = contract.notice_period_days
-      if overdue?
+      if overdue
         "Notice period for #{contract.title} started #{pluralize_days(days_until.abs)} ago — #{notice_days} days before #{event_date_str}"
-      elsif due_today?
+      elsif due_today
         "Notice period for #{contract.title} starts today — #{notice_days} days before #{event_date_str}"
       elsif scheduled?
         "Notice period for #{contract.title} starts on #{trigger_date.strftime('%b %-d, %Y')} — #{notice_days} days before #{event_date_str}"
@@ -76,9 +138,9 @@ class Alert < ApplicationRecord
         "Notice period for #{contract.title} starts in #{pluralize_days(days_until)} — #{notice_days} days before #{event_date_str}"
       end
     when "expiry_warning"
-      if overdue?
+      if overdue
         "#{contract.title} expired #{pluralize_days(days_until.abs)} ago on #{event_date_str}"
-      elsif due_today?
+      elsif due_today
         "#{contract.title} expires today — #{event_date_str}"
       elsif scheduled?
         "#{contract.title} expires on #{event_date_str} (in #{humanize_duration(days_until)})"
@@ -86,9 +148,9 @@ class Alert < ApplicationRecord
         "#{contract.title} expires in #{pluralize_days(days_until)} — #{event_date_str}"
       end
     when "renewal_upcoming"
-      if overdue?
+      if overdue
         "#{contract.title} renewal was due #{pluralize_days(days_until.abs)} ago on #{event_date_str}"
-      elsif due_today?
+      elsif due_today
         "#{contract.title} renewal is due today — #{event_date_str}"
       elsif scheduled?
         "#{contract.title} renews on #{event_date_str} (in #{humanize_duration(days_until)})"
@@ -96,41 +158,41 @@ class Alert < ApplicationRecord
         "#{contract.title} renews in #{pluralize_days(days_until)} — #{event_date_str}"
       end
     when "option_exercise_deadline"
-      if overdue?
+      if overdue
         "Option exercise deadline for #{contract.title} passed #{pluralize_days(days_until.abs)} ago"
-      elsif due_today?
+      elsif due_today
         "Option exercise deadline for #{contract.title} is today!"
       else
-        "Option exercise deadline for #{contract.title} in #{pluralize_days(days_until)} — #{trigger_date.strftime('%b %-d, %Y')}"
+        "Option exercise deadline for #{contract.title} in #{pluralize_days(days_until)} — #{event_date_str}"
       end
     when "rent_escalation_date"
-      if overdue?
+      if overdue
         "Rent escalation for #{contract.title} took effect #{pluralize_days(days_until.abs)} ago"
-      elsif due_today?
+      elsif due_today
         "Rent escalation for #{contract.title} takes effect today"
       else
-        "Rent escalation for #{contract.title} in #{pluralize_days(days_until)} — #{trigger_date.strftime('%b %-d, %Y')}"
+        "Rent escalation for #{contract.title} in #{pluralize_days(days_until)} — #{event_date_str}"
       end
     when "cam_reconciliation"
-      if overdue?
+      if overdue
         "CAM reconciliation for #{contract.title} was due #{pluralize_days(days_until.abs)} ago"
-      elsif due_today?
+      elsif due_today
         "CAM reconciliation for #{contract.title} is due today"
       else
-        "CAM reconciliation for #{contract.title} in #{pluralize_days(days_until)} — #{trigger_date.strftime('%b %-d, %Y')}"
+        "CAM reconciliation for #{contract.title} in #{pluralize_days(days_until)} — #{event_date_str}"
       end
     when "ti_deadline"
-      if overdue?
+      if overdue
         "TI allowance deadline for #{contract.title} passed #{pluralize_days(days_until.abs)} ago"
-      elsif due_today?
+      elsif due_today
         "TI allowance deadline for #{contract.title} is today — use it or lose it!"
       else
-        "TI allowance deadline for #{contract.title} in #{pluralize_days(days_until)} — #{trigger_date.strftime('%b %-d, %Y')}"
+        "TI allowance deadline for #{contract.title} in #{pluralize_days(days_until)} — #{event_date_str}"
       end
     when "milestone_reminder"
-      if overdue?
+      if overdue
         "#{message || 'Lease milestone'} for #{contract.title} was due #{pluralize_days(days_until.abs)} ago"
-      elsif due_today?
+      elsif due_today
         "#{message || 'Lease milestone'} for #{contract.title} is due today"
       else
         "#{message || 'Lease milestone'} for #{contract.title} in #{pluralize_days(days_until)}"
@@ -157,17 +219,24 @@ class Alert < ApplicationRecord
 
   private
 
-  def contract_event_date
+  def contract_event_date(alert_preference: nil)
     case alert_type
     when "expiry_warning" then contract.end_date
     when "renewal_upcoming" then contract.next_renewal_date
     when "notice_period_start" then contract.next_renewal_date || contract.end_date
-    when "option_exercise_deadline" then trigger_date
-    when "rent_escalation_date" then trigger_date
-    when "cam_reconciliation" then trigger_date
-    when "ti_deadline" then contract.lease_detail&.ti_deadline
-    when "milestone_reminder" then trigger_date
+    when "option_exercise_deadline" then alert_preference.present? ? window_end_for(alert_preference) : trigger_date
+    when "rent_escalation_date" then alert_preference.present? ? window_end_for(alert_preference) : trigger_date
+    when "cam_reconciliation" then alert_preference.present? ? window_end_for(alert_preference) : trigger_date
+    when "ti_deadline" then alert_preference.present? ? window_end_for(alert_preference) : contract.lease_detail&.ti_deadline
+    when "milestone_reminder" then alert_preference.present? ? window_end_for(alert_preference) : trigger_date
     end
+  end
+
+  def preference_days(value, default_key)
+    days = value.to_i
+    return days if days.positive?
+
+    LEAD_DAY_DEFAULTS.fetch(default_key)
   end
 
   def pluralize_days(count)

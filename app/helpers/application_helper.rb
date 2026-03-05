@@ -191,10 +191,13 @@ module ApplicationHelper
     tag.span(label, class: "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset #{color_class}")
   end
 
-  def alert_urgency_label(alert)
-    if alert.overdue?
+  def alert_urgency_label(alert, alert_preference: nil)
+    overdue = alert_preference.present? ? alert.overdue_for_preference?(alert_preference) : alert.overdue?
+    due_today = alert_preference.present? ? alert.due_today_for_preference?(alert_preference) : alert.due_today?
+
+    if overdue
       tag.span("Overdue", class: "inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700")
-    elsif alert.due_today?
+    elsif due_today
       tag.span("Due Today", class: "inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700")
     elsif alert.scheduled?
       tag.span("Scheduled", class: "inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600")

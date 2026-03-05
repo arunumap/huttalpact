@@ -2,11 +2,11 @@
 
 <div class="space-y-6">
   <% bucket_options = [
-    { key: "active", label: "Active", description: "Alert window has started (trigger date is today or earlier)." },
-    { key: "overdue", label: "Overdue", description: "Pending alerts with trigger dates before today." },
-    { key: "today", label: "Due Today", description: "Alerts with trigger date set to today." },
-    { key: "upcoming", label: "Upcoming", description: "Alerts due in the next #{Alert::UPCOMING_HORIZON_DAYS} days." },
-    { key: "scheduled", label: "Scheduled", description: "Alerts due more than #{Alert::UPCOMING_HORIZON_DAYS} days out." }
+    { key: "active", label: "Active", description: "Alert window is open (trigger date reached, deadline not passed)." },
+    { key: "overdue", label: "Overdue", description: "Alert deadline has passed." },
+    { key: "today", label: "Due Today", description: "Alert deadline is today." },
+    { key: "upcoming", label: "Upcoming", description: "Notification start date is in the next #{Alert::UPCOMING_HORIZON_DAYS} days." },
+    { key: "scheduled", label: "Scheduled", description: "Notification start date is more than #{Alert::UPCOMING_HORIZON_DAYS} days out." }
   ] %>
   <% selected_option = bucket_options.find { |option| option[:key] == @selected_bucket } || bucket_options.first %>
 
@@ -49,16 +49,16 @@
         <% @filtered_alerts.each do |alert| %>
           <% urgency = if @selected_bucket == "scheduled"
             :scheduled
-          elsif alert.overdue?
+          elsif alert.overdue_for_preference?(@alert_preference)
             :overdue
-          elsif alert.due_today?
+          elsif alert.due_today_for_preference?(@alert_preference)
             :today
           elsif alert.scheduled?
             :scheduled
           else
             :upcoming
           end %>
-          <%= render partial: "alerts/alert_card", locals: { alert: alert, urgency: urgency } %>
+          <%= render partial: "alerts/alert_card", locals: { alert: alert, urgency: urgency, alert_preference: @alert_preference } %>
         <% end %>
       </div>
     </div>

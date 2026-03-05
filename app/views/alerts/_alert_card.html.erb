@@ -1,4 +1,6 @@
 <%= turbo_frame_tag dom_id(alert) do %>
+  <% alert_preference = local_assigns[:alert_preference] %>
+  <% window_end_date = alert.window_end_for(alert_preference) %>
   <div class="rounded-lg bg-white shadow-sm ring-1 ring-gray-200 overflow-hidden">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4 p-4">
       <%# Icon %>
@@ -35,9 +37,9 @@
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 mb-1">
           <%= alert_type_badge(alert.alert_type) %>
-          <%= alert_urgency_label(alert) %>
+          <%= alert_urgency_label(alert, alert_preference: alert_preference) %>
         </div>
-        <p class="text-sm font-medium text-gray-900"><%= alert.display_message %></p>
+        <p class="text-sm font-medium text-gray-900"><%= alert.display_message(alert_preference: alert_preference) %></p>
         <div class="mt-1 flex items-center gap-3 text-xs text-gray-500">
           <%= link_to alert.contract.title, contract_path(alert.contract), class: "font-medium text-amber-600 hover:text-amber-700" %>
           <% if alert.contract.vendor_name.present? %>
@@ -46,12 +48,12 @@
           <% end %>
           <span>·</span>
           <span>
-            <% if alert.overdue? %>
-              <%= pluralize((Date.current - alert.trigger_date).to_i, "day") %> overdue
-            <% elsif alert.due_today? %>
+            <% if alert.overdue_for_preference?(alert_preference) %>
+              <%= pluralize((Date.current - window_end_date).to_i, "day") %> overdue
+            <% elsif alert.due_today_for_preference?(alert_preference) %>
               Due today
             <% else %>
-              Due <%= alert.trigger_date.strftime("%b %d, %Y") %>
+              Due <%= window_end_date.strftime("%b %d, %Y") %>
             <% end %>
           </span>
         </div>

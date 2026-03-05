@@ -242,6 +242,59 @@ class AlertTest < ActiveSupport::TestCase
     assert_not @alert.scheduled?
   end
 
+  test "window_end_for uses alert preference lead days" do
+    pref = AlertPreference.for(users(:one), organizations(:one))
+    pref.update!(days_before_milestone: 14)
+
+    alert = Alert.new(
+      alert_type: "milestone_reminder",
+      trigger_date: 2.days.ago.to_date,
+      status: "pending",
+      contract: contracts(:hvac_maintenance),
+      organization: organizations(:one)
+    )
+
+    assert_equal 12.days.from_now.to_date, alert.window_end_for(pref)
+    assert alert.active_for_preference?(pref)
+  end
+
+  test "overdue_for_preference? only becomes true after alert window end" do
+    pref = AlertPreference.for(users(:one), organizations(:one))
+    alert = alerts(:overdue_alert)
+
+    assert_not alert.overdue_for_preference?(pref)
+
+    alert.trigger_date = 20.days.ago.to_date
+    assert alert.overdue_for_preference?(pref)
+  end
+
+  test "due_today_for_preference? is true when window end is today" do
+    pref = AlertPreference.for(users(:one), organizations(:one))
+    alert = alerts(:expiry_warning)
+    alert.trigger_date = 14.days.ago.to_date
+    alert.status = "pending"
+
+    assert alert.due_today_for_preference?(pref)
+  end
+
+  test "display_message with preference uses window-end deadline for milestones" do
+    pref = AlertPreference.for(users(:one), organizations(:one))
+    pref.update!(days_before_milestone: 14)
+
+    alert = Alert.new(
+      alert_type: "milestone_reminder",
+      trigger_date: 2.days.ago.to_date,
+      status: "pending",
+      contract: contracts(:hvac_maintenance),
+      organization: organizations(:one),
+      message: "Custom milestone reminder"
+    )
+
+    msg = alert.display_message(alert_preference: pref)
+    assert_match "in 12 days", msg
+    assert_no_match(/overdue/i, msg)
+  end
+
   # visible_to scope
   test "visible_to excludes read alerts" do
     user = users(:one)

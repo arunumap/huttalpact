@@ -51,12 +51,41 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "index filters overdue alerts" do
+    stale_alert = create_alert_for_current_user(trigger_date: 20.days.ago.to_date, alert_type: "expiry_warning")
+
     get alerts_path, params: { bucket: "overdue" }
     assert_response :success
     assert_select '[data-alerts-filter="overdue"][data-alerts-selected="true"]', count: 1
-    assert_select alert_frame_selector(:overdue_alert), count: 1
+    assert_select alert_frame_selector(stale_alert), count: 1
+    assert_select alert_frame_selector(:overdue_alert), count: 0
     assert_select alert_frame_selector(:sent_alert), count: 0
     assert_select alert_frame_selector(:expiry_warning), count: 0
+  end
+
+  test "index filters due today alerts by alert window end date" do
+    due_today_alert = create_alert_for_current_user(trigger_date: 14.days.ago.to_date, alert_type: "expiry_warning")
+
+    get alerts_path, params: { bucket: "today" }
+    assert_response :success
+    assert_select '[data-alerts-filter="today"][data-alerts-selected="true"]', count: 1
+    assert_select alert_frame_selector(due_today_alert), count: 1
+    assert_select alert_frame_selector(:expiry_warning), count: 0
+  end
+
+  test "active milestone reminder uses preference window messaging" do
+    preference = AlertPreference.for(users(:one), organizations(:one))
+    preference.update!(days_before_milestone: 14)
+    milestone_alert = create_alert_for_current_user(
+      trigger_date: 2.days.ago.to_date,
+      alert_type: "milestone_reminder",
+      message: "Custom — milestone reminder"
+    )
+
+    get alerts_path, params: { bucket: "active" }
+    assert_response :success
+    assert_select alert_frame_selector(milestone_alert), count: 1
+    assert_match "in 12 days", response.body
+    assert_no_match(/12 days overdue/i, response.body)
   end
 
   test "index falls back to active filter for invalid bucket" do
@@ -192,7 +221,21 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
 
   private
 
-  def alert_frame_selector(alert_fixture_name)
-    "turbo-frame#alert_#{alerts(alert_fixture_name).id}"
+  def alert_frame_selector(alert_or_fixture_name)
+    alert = alert_or_fixture_name.is_a?(Alert) ? alert_or_fixture_name : alerts(alert_or_fixture_name)
+    "turbo-frame#alert_#{alert.id}"
+  end
+
+  def create_alert_for_current_user(trigger_date:, alert_type:, message: nil, status: "pending")
+    alert = Alert.create!(
+      organization: organizations(:one),
+      contract: contracts(:hvac_maintenance),
+      alert_type: alert_type,
+      trigger_date: trigger_date,
+      status: status,
+      message: message || "#{alert_type} test alert"
+    )
+    AlertRecipient.create!(alert: alert, user: users(:one), channel: "in_app")
+    alert
   end
 end
