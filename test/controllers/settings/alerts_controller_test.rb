@@ -3,6 +3,7 @@ require "test_helper"
 class Settings::AlertsControllerTest < ActionDispatch::IntegrationTest
   setup do
     sign_in_as users(:one)
+    @org = organizations(:one)
   end
 
   test "should get show" do
@@ -12,14 +13,18 @@ class Settings::AlertsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should update preferences" do
-    patch settings_alerts_path, params: {
-      alert_preference: {
-        email_enabled: false,
-        in_app_enabled: true,
-        days_before_renewal: 45,
-        days_before_expiry: 7
+    expected_jobs = @org.contracts.where(status: Contract::ACTIVE_STATUSES).count
+
+    assert_enqueued_jobs expected_jobs, only: GenerateContractAlertsJob do
+      patch settings_alerts_path, params: {
+        alert_preference: {
+          email_enabled: false,
+          in_app_enabled: true,
+          days_before_renewal: 45,
+          days_before_expiry: 7
+        }
       }
-    }
+    end
 
     assert_redirected_to settings_alerts_path
     pref = AlertPreference.for(users(:one), organizations(:one))
@@ -30,12 +35,14 @@ class Settings::AlertsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "rejects invalid preferences" do
-    patch settings_alerts_path, params: {
-      alert_preference: {
-        days_before_renewal: 0,
-        days_before_expiry: -5
+    assert_no_enqueued_jobs only: GenerateContractAlertsJob do
+      patch settings_alerts_path, params: {
+        alert_preference: {
+          days_before_renewal: 0,
+          days_before_expiry: -5
+        }
       }
-    }
+    end
 
     assert_response :unprocessable_entity
   end

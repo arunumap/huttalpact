@@ -7,6 +7,7 @@ class Settings::AlertsController < ApplicationController
     @alert_preference = AlertPreference.for(Current.user, Current.organization)
 
     if @alert_preference.update(alert_preference_params)
+      enqueue_alert_regeneration
       redirect_to settings_alerts_path, notice: "Alert preferences updated."
     else
       render :show, status: :unprocessable_entity
@@ -22,5 +23,11 @@ class Settings::AlertsController < ApplicationController
       :days_before_option_exercise, :days_before_rent_escalation,
       :days_before_cam_reconciliation, :days_before_milestone
     )
+  end
+
+  def enqueue_alert_regeneration
+    Current.organization.contracts.where(status: Contract::ACTIVE_STATUSES).find_each do |contract|
+      GenerateContractAlertsJob.perform_later(contract.id)
+    end
   end
 end

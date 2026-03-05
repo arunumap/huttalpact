@@ -21,11 +21,48 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match(/Office Lease/, response.body)
   end
 
-  test "index separates scheduled alerts from upcoming" do
+  test "index defaults to active alerts filter" do
     get alerts_path
     assert_response :success
-    # The far-future alert should be in the Scheduled section, not Upcoming
-    assert_match "Scheduled", response.body
+    assert_select '[data-alerts-filter="active"][data-alerts-selected="true"]', count: 1
+    assert_select alert_frame_selector(:expiry_warning), count: 1
+    assert_select alert_frame_selector(:overdue_alert), count: 1
+    assert_select alert_frame_selector(:sent_alert), count: 1
+    assert_select alert_frame_selector(:renewal_upcoming), count: 0
+    assert_select alert_frame_selector(:scheduled_far_future), count: 0
+  end
+
+  test "index filters upcoming alerts" do
+    get alerts_path, params: { bucket: "upcoming" }
+    assert_response :success
+    assert_select '[data-alerts-filter="upcoming"][data-alerts-selected="true"]', count: 1
+    assert_select alert_frame_selector(:renewal_upcoming), count: 1
+    assert_select alert_frame_selector(:expiry_warning), count: 0
+    assert_select alert_frame_selector(:scheduled_far_future), count: 0
+  end
+
+  test "index filters scheduled alerts" do
+    get alerts_path, params: { bucket: "scheduled" }
+    assert_response :success
+    assert_select '[data-alerts-filter="scheduled"][data-alerts-selected="true"]', count: 1
+    assert_select alert_frame_selector(:scheduled_far_future), count: 1
+    assert_select alert_frame_selector(:renewal_upcoming), count: 0
+    assert_select alert_frame_selector(:expiry_warning), count: 0
+  end
+
+  test "index filters overdue alerts" do
+    get alerts_path, params: { bucket: "overdue" }
+    assert_response :success
+    assert_select '[data-alerts-filter="overdue"][data-alerts-selected="true"]', count: 1
+    assert_select alert_frame_selector(:overdue_alert), count: 1
+    assert_select alert_frame_selector(:sent_alert), count: 0
+    assert_select alert_frame_selector(:expiry_warning), count: 0
+  end
+
+  test "index falls back to active filter for invalid bucket" do
+    get alerts_path, params: { bucket: "invalid" }
+    assert_response :success
+    assert_select '[data-alerts-filter="active"][data-alerts-selected="true"]', count: 1
   end
 
   test "acknowledge marks alert as acknowledged" do
@@ -151,5 +188,11 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
   test "notification bell shows unread count" do
     get alerts_path
     assert_select "span.bg-red-500"
+  end
+
+  private
+
+  def alert_frame_selector(alert_fixture_name)
+    "turbo-frame#alert_#{alerts(alert_fixture_name).id}"
   end
 end

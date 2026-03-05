@@ -2,6 +2,8 @@ class AlertsController < ApplicationController
   include Pagy::Backend
   include ActionView::RecordIdentifier
 
+  BUCKETS = %w[active overdue today upcoming scheduled].freeze
+
   before_action :set_alert, only: %i[acknowledge snooze]
 
   def index
@@ -11,10 +13,9 @@ class AlertsController < ApplicationController
 
     alerts = alerts.where(status: params[:status]) if params[:status].present?
 
-    @overdue_alerts = alerts.overdue.to_a
-    @today_alerts = alerts.due_today.to_a
-    @upcoming_alerts = alerts.upcoming.limit(20).to_a
-    @scheduled_alerts = alerts.scheduled.limit(20).to_a
+    @selected_bucket = params[:bucket].presence_in(BUCKETS) || "active"
+    @bucket_counts = bucket_counts(alerts)
+    @filtered_alerts = alerts_for_bucket(alerts, @selected_bucket).to_a
     @acknowledged_alerts_count = AlertRecipient.where(user_id: Current.user.id)
                                               .where.not(read_at: nil)
                                               .count
@@ -46,6 +47,31 @@ class AlertsController < ApplicationController
   end
 
   private
+
+  def bucket_counts(alerts)
+    {
+      "active" => alerts.where(trigger_date: ..Date.current).count,
+      "overdue" => alerts.where(status: "pending", trigger_date: ..Date.yesterday).count,
+      "today" => alerts.where(trigger_date: Date.current).count,
+      "upcoming" => alerts.upcoming.count,
+      "scheduled" => alerts.scheduled.count
+    }
+  end
+
+  def alerts_for_bucket(alerts, bucket)
+    case bucket
+    when "overdue"
+      alerts.where(status: "pending", trigger_date: ..Date.yesterday)
+    when "today"
+      alerts.where(trigger_date: Date.current)
+    when "upcoming"
+      alerts.upcoming
+    when "scheduled"
+      alerts.scheduled
+    else
+      alerts.where(trigger_date: ..Date.current)
+    end
+  end
 
   def set_alert
     @alert = Alert.for_user(Current.user).find(params[:id])
