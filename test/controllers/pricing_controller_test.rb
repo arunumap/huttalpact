@@ -70,8 +70,17 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
   test "pricing page uses pricing layout not auth layout" do
     get pricing_path
     assert_response :success
-    # Should have the full-width pricing grid
-    assert_select "div.max-w-5xl"
+
+    tier_count = PlanCatalogService.active_tiers_for_pricing.size
+    expected_container_class = tier_count > 3 ? "max-w-7xl" : "max-w-5xl"
+
+    assert_select "div.#{expected_container_class}"
+    if tier_count > 3
+      assert_match(/sm:grid-cols-2/, response.body)
+      assert_match(/xl:grid-cols-4/, response.body)
+    else
+      assert_match(/sm:grid-cols-3/, response.body)
+    end
   end
 
   test "pricing page shows FAQ section" do

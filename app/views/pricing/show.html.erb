@@ -3,7 +3,8 @@
 <% content_for :meta_description, "Simple, transparent pricing for AI-powered contract tracking. Start free and upgrade as your contract operations grow." %>
 <% content_for :canonical_url, pricing_url %>
 
-<div class="mx-auto max-w-5xl py-12 px-4" data-controller="pricing-toggle">
+<% container_width_class = @plan_tiers.size > 3 ? "max-w-7xl" : "max-w-5xl" %>
+<div class="mx-auto <%= container_width_class %> py-12 px-4" data-controller="pricing-toggle">
   <div class="text-center">
     <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Simple, transparent pricing</h2>
     <p class="mt-4 text-lg text-gray-500">Smart contract tracking that won't let you forget. Start free, upgrade when you need more.</p>
@@ -34,7 +35,7 @@
   <% end %>
 
   <%# Pricing cards %>
-  <% card_grid_classes = @plan_tiers.size <= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 lg:grid-cols-3" %>
+  <% card_grid_classes = @plan_tiers.size <= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 xl:grid-cols-4" %>
   <div class="mt-10 grid grid-cols-1 gap-6 <%= card_grid_classes %>">
     <% @plan_tiers.each do |tier| %>
       <% monthly_price = number_to_currency(tier.monthly_price_cents.to_f / 100.0, precision: 0) %>
