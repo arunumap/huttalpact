@@ -184,6 +184,63 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
     assert_match "$1.25", response.body
   end
 
+  test "show displays extraction billing snapshot" do
+    get settings_billing_path
+    assert_response :success
+
+    assert_select "#extraction-billing-snapshot" do
+      assert_select "h3", text: "AI Extraction Billing Snapshot"
+      assert_select "dt", text: "Extractions used"
+      assert_select "dd", text: "0 / 5"
+      assert_select "dt", text: "Overage price"
+      assert_select "dd", text: "Not available"
+      assert_select "dt", text: "Estimated bill"
+      assert_select "dd", text: "$0.00"
+    end
+  end
+
+  test "show extraction snapshot estimated bill includes base plan and accrued overage charges" do
+    plan_tiers(:starter).update!(extraction_overage_cents: 50)
+    @org.update!(plan: "starter", ai_extractions_count: 52, ai_extractions_overage_count: 2)
+    create_active_subscription_for(@org, current_period_start: 10.days.ago, current_period_end: 20.days.from_now)
+
+    get settings_billing_path
+    assert_response :success
+
+    assert_select "#extraction-billing-snapshot" do
+      assert_select "dd", text: "$0.50"
+      assert_select "dd", text: "$50.00"
+    end
+  end
+
+  test "show extraction snapshot shows 80 percent warning" do
+    @org.update!(plan: "starter", ai_extractions_count: 40, ai_extractions_overage_count: 0)
+
+    get settings_billing_path
+    assert_response :success
+    assert_includes response.body, "You've used 80% of your AI extractions for this billing period."
+  end
+
+  test "show extraction snapshot shows upgrade nudge when higher tier lowers overage cost" do
+    plan_tiers(:starter).update!(extraction_overage_cents: 50)
+    plan_tiers(:pro).update!(extraction_limit: 500, extraction_overage_cents: 40)
+    @org.update!(plan: "starter", ai_extractions_count: 40, ai_extractions_overage_count: 0)
+
+    get settings_billing_path
+    assert_response :success
+    assert_includes response.body, "Upgrade to Pro and lower extraction overage cost by 20%."
+  end
+
+  test "show extraction snapshot hides upgrade nudge for unlimited higher tier even if overage is misconfigured" do
+    plan_tiers(:starter).update!(extraction_overage_cents: 50)
+    plan_tiers(:pro).update!(extraction_limit: nil, extraction_overage_cents: 40)
+    @org.update!(plan: "starter", ai_extractions_count: 40, ai_extractions_overage_count: 0)
+
+    get settings_billing_path
+    assert_response :success
+    assert_not_includes response.body, "Upgrade to Pro and lower extraction overage cost by"
+  end
+
   test "success message includes plan name" do
     get success_settings_billing_path
     assert_redirected_to settings_billing_path
@@ -495,6 +552,21 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  def create_active_subscription_for(org, current_period_start:, current_period_end:)
+    customer = org.set_payment_processor(:stripe)
+    customer.update!(processor_id: "cus_billing_snapshot_#{SecureRandom.hex(4)}")
+
+    Pay::Stripe::Subscription.create!(
+      customer: customer,
+      processor_id: "sub_billing_snapshot_#{SecureRandom.hex(4)}",
+      processor_plan: "price_billing_snapshot_monthly",
+      name: "default",
+      status: "active",
+      current_period_start: current_period_start,
+      current_period_end: current_period_end
+    )
+  end
 
   # Build a fake service object that responds to stubbed methods
   def build_fake_service(**method_results)

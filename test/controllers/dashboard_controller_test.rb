@@ -26,61 +26,11 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_select "dt", text: "Expiring Soon"
   end
 
-  test "displays extraction billing snapshot" do
+  test "does not display extraction billing snapshot" do
     get dashboard_path
     assert_response :success
 
-    assert_select "#extraction-billing-snapshot" do
-      assert_select "h3", text: "AI Extraction Billing Snapshot"
-      assert_select "dt", text: "Extractions used"
-      assert_select "dd", text: "0 / 5"
-      assert_select "dt", text: "Overage price"
-      assert_select "dd", text: "Not available"
-      assert_select "dt", text: "Estimated bill"
-      assert_select "dd", text: "$0.00"
-    end
-  end
-
-  test "estimated bill includes base plan and accrued overage charges" do
-    plan_tiers(:starter).update!(extraction_overage_cents: 50)
-    organizations(:one).update!(plan: "starter", ai_extractions_count: 52, ai_extractions_overage_count: 2)
-    create_active_subscription_for(organizations(:one), current_period_start: 10.days.ago, current_period_end: 20.days.from_now)
-
-    get dashboard_path
-    assert_response :success
-
-    assert_select "#extraction-billing-snapshot" do
-      assert_select "dd", text: "$0.50"
-      assert_select "dd", text: "$50.00"
-    end
-  end
-
-  test "shows 80 percent extraction usage warning" do
-    organizations(:one).update!(plan: "starter", ai_extractions_count: 40, ai_extractions_overage_count: 0)
-
-    get dashboard_path
-    assert_response :success
-    assert_includes response.body, "You've used 80% of your AI extractions for this billing period."
-  end
-
-  test "shows upgrade nudge when higher tier lowers overage cost" do
-    plan_tiers(:starter).update!(extraction_overage_cents: 50)
-    plan_tiers(:pro).update!(extraction_limit: 500, extraction_overage_cents: 40)
-    organizations(:one).update!(plan: "starter", ai_extractions_count: 40, ai_extractions_overage_count: 0)
-
-    get dashboard_path
-    assert_response :success
-    assert_includes response.body, "Upgrade to Pro and lower extraction overage cost by 20%."
-  end
-
-  test "does not show upgrade nudge for unlimited extraction tier even if misconfigured overage exists" do
-    plan_tiers(:starter).update!(extraction_overage_cents: 50)
-    plan_tiers(:pro).update!(extraction_limit: nil, extraction_overage_cents: 40)
-    organizations(:one).update!(plan: "starter", ai_extractions_count: 40, ai_extractions_overage_count: 0)
-
-    get dashboard_path
-    assert_response :success
-    assert_not_includes response.body, "Upgrade to Pro and lower extraction overage cost by"
+    assert_select "#extraction-billing-snapshot", count: 0
   end
 
   test "displays correct contract counts" do
@@ -246,22 +196,5 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     get dashboard_path
     assert_response :success
     assert_select "h2", text: "Lease Insights", count: 0
-  end
-
-  private
-
-  def create_active_subscription_for(org, current_period_start:, current_period_end:)
-    customer = org.set_payment_processor(:stripe)
-    customer.update!(processor_id: "cus_dashboard_#{SecureRandom.hex(4)}")
-
-    Pay::Stripe::Subscription.create!(
-      customer: customer,
-      processor_id: "sub_dashboard_#{SecureRandom.hex(4)}",
-      processor_plan: "price_dashboard_monthly",
-      name: "default",
-      status: "active",
-      current_period_start: current_period_start,
-      current_period_end: current_period_end
-    )
   end
 end

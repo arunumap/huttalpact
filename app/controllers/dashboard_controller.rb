@@ -57,9 +57,6 @@ class DashboardController < ApplicationController
     # Recently added
     @recent_contracts = Contract.order(created_at: :desc).limit(5)
 
-    # Extraction usage and billing transparency
-    set_extraction_dashboard_summary
-
     # Lease insights — only load when lease contracts exist
     @lease_contract_count = Contract.not_archived.where(contract_type: "lease").count
     if @lease_contract_count > 0
@@ -97,75 +94,5 @@ class DashboardController < ApplicationController
         .order(due_date: :asc)
         .limit(5)
     end
-  end
-
-  private
-
-  def set_extraction_dashboard_summary
-    org = current_organization
-    return unless org
-
-    limit = org.plan_extraction_limit
-    @dashboard_extraction_limit_display = limit == Float::INFINITY ? "∞" : limit
-    @dashboard_extraction_usage_percent = if limit == Float::INFINITY || limit.to_i <= 0
-      0
-    else
-      ((org.ai_extractions_count.to_f / limit) * 100).round
-    end
-
-    @dashboard_overage_rate_cents = org.plan_extraction_overage_cents
-    @dashboard_estimated_bill_cents = estimated_dashboard_bill_cents_for(org)
-    @dashboard_upgrade_overage_nudge = dashboard_upgrade_overage_nudge_for(org)
-  end
-
-  def estimated_dashboard_bill_cents_for(org)
-    estimated_base_subscription_cents_for(org) + org.estimated_extraction_overage_cents
-  end
-
-  def estimated_base_subscription_cents_for(org)
-    tier = PlanCatalogService.tier_for(org.plan)
-    return 0 unless tier
-
-    inferred_subscription_interval(org.active_subscription) == :annual ? tier.annual_price_cents.to_i : tier.monthly_price_cents.to_i
-  end
-
-  def inferred_subscription_interval(subscription)
-    return :monthly unless subscription&.current_period_start && subscription&.current_period_end
-
-    period_days = (subscription.current_period_end.to_date - subscription.current_period_start.to_date).to_i
-    period_days > 45 ? :annual : :monthly
-  end
-
-  def dashboard_upgrade_overage_nudge_for(org)
-    limit = org.plan_extraction_limit
-    return nil if limit == Float::INFINITY
-    return nil unless @dashboard_extraction_usage_percent >= 80
-
-    current_tier = PlanCatalogService.tier_for(org.plan)
-    return nil unless current_tier
-
-    current_rate_cents = current_tier.extraction_overage_cents.to_i
-    return nil unless current_rate_cents.positive?
-
-    cheaper_tier, cheaper_rate_cents = PlanCatalogService.active_tiers_for_billing
-      .select { |tier| tier.rank.to_i > current_tier.rank.to_i }
-      .map { |tier| [ tier, candidate_overage_rate_cents(tier) ] }
-      .select { |_, rate| rate.present? && rate < current_rate_cents }
-      .min_by { |_, rate| rate }
-
-    return nil unless cheaper_tier && cheaper_rate_cents
-
-    savings_percent = ((current_rate_cents - cheaper_rate_cents) * 100.0 / current_rate_cents).round
-    return nil if savings_percent <= 0
-
-    { tier_name: cheaper_tier.name, savings_percent: savings_percent }
-  end
-
-  def candidate_overage_rate_cents(tier)
-    rate = tier.extraction_overage_cents.to_i
-    return nil unless rate.positive?
-    return nil if tier.extraction_limit.nil?
-
-    rate
   end
 end

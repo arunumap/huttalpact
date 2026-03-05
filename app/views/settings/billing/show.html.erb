@@ -181,6 +181,69 @@
     </div>
   </div>
 
+  <% if @organization %>
+    <div id="extraction-billing-snapshot" class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 class="text-base font-semibold text-gray-900">AI Extraction Billing Snapshot</h3>
+          <p class="mt-1 text-sm text-gray-500">Track extraction usage and estimated current-cycle charges.</p>
+        </div>
+        <%= link_to "View plans", pricing_path, class: "text-sm font-medium text-amber-600 hover:text-amber-500" %>
+      </div>
+
+      <dl class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="rounded-lg bg-slate-50 px-4 py-3">
+          <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">Extractions used</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900">
+            <%= @organization.ai_extractions_count %> / <%= @dashboard_extraction_limit_display %>
+          </dd>
+        </div>
+        <div class="rounded-lg bg-slate-50 px-4 py-3">
+          <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">Overage price</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900">
+            <% if @dashboard_overage_rate_cents.to_i.positive? %>
+              <%= number_to_currency(@dashboard_overage_rate_cents.to_f / 100.0) %>
+            <% else %>
+              Not available
+            <% end %>
+          </dd>
+        </div>
+        <div class="rounded-lg bg-slate-50 px-4 py-3">
+          <dt class="text-xs font-medium uppercase tracking-wide text-gray-500">Estimated bill</dt>
+          <dd class="mt-1 text-lg font-semibold text-gray-900"><%= number_to_currency(@dashboard_estimated_bill_cents.to_f / 100.0) %></dd>
+        </div>
+      </dl>
+      <p class="mt-3 text-xs text-gray-500">
+        Estimate includes current-cycle base plan pricing and accrued extraction overage charges.
+      </p>
+
+      <% if @organization.plan_extraction_limit != Float::INFINITY && @dashboard_extraction_usage_percent >= 80 && !@organization.at_extraction_limit? %>
+        <div class="mt-4 rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-amber-200">
+          <p class="text-xs text-amber-700">
+            You've used <%= @dashboard_extraction_usage_percent %>% of your AI extractions for this billing period.
+          </p>
+        </div>
+      <% elsif @organization.at_extraction_limit? && @organization.extraction_overage_enabled? %>
+        <div class="mt-4 rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-amber-200">
+          <p class="text-xs text-amber-700">
+            You've used 100% of included AI extractions for this billing period. Additional extractions are billed at
+            <%= number_to_currency(@dashboard_overage_rate_cents.to_f / 100.0) %>/extraction.
+          </p>
+        </div>
+      <% elsif @organization.at_extraction_limit? %>
+        <div class="mt-4">
+          <%= render "shared/upgrade_prompt", compact: true, message: "You've used all #{@organization.plan_extraction_limit} AI extractions for this billing period." %>
+        </div>
+      <% end %>
+
+      <% if @dashboard_upgrade_overage_nudge.present? %>
+        <div class="mt-3">
+          <%= render "shared/upgrade_prompt", compact: true, message: "Upgrade to #{@dashboard_upgrade_overage_nudge[:tier_name]} and lower extraction overage cost by #{@dashboard_upgrade_overage_nudge[:savings_percent]}%." %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
   <%# ═══════════════════════════════════════════════════════════════════ %>
   <%# Section C: Usage Meters %>
   <%# ═══════════════════════════════════════════════════════════════════ %>
