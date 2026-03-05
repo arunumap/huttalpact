@@ -81,6 +81,15 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     assert_match "Can I change plans later?", response.body
   end
 
+  test "pricing page shows overage copy when tier has extraction overage price" do
+    plan_tiers(:starter).update!(extraction_overage_cents: 125)
+
+    get pricing_path
+    assert_response :success
+    assert_match "After included extractions:", response.body
+    assert_match "$1.25 per additional extraction", response.body
+  end
+
   test "guest sees sign up links instead of upgrade buttons" do
     sign_out
     get pricing_path

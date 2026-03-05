@@ -98,6 +98,7 @@ class PlanCatalogServiceTest < ActiveSupport::TestCase
       position: position,
       contract_limit: 50,
       extraction_limit: 25,
+      extraction_overage_cents: 0,
       user_limit: 5,
       monthly_price_cents: 5900,
       annual_price_cents: 59000,

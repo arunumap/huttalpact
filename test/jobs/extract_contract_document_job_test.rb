@@ -169,6 +169,25 @@ class ExtractContractDocumentJobTest < ActiveSupport::TestCase
     end
   end
 
+  test "chains AI extraction when at limit and overage is enabled" do
+    org = organizations(:one)
+    org.update!(
+      plan: "starter",
+      ai_extractions_count: 50,
+      ai_extractions_overage_count: 0,
+      ai_extractions_reset_at: Time.current
+    )
+    plan_tiers(:starter).update!(extraction_overage_cents: 125)
+    create_active_subscription_for(org)
+
+    @contract.contract_documents.update_all(extraction_status: "completed")
+    doc = create_text_document("New document content")
+
+    assert_enqueued_with(job: AiExtractContractJob) do
+      ExtractContractDocumentJob.perform_now(doc.id)
+    end
+  end
+
   test "chains AI extraction when org is on pro plan with unlimited extractions" do
     org = organizations(:one)
     org.update!(plan: "pro", ai_extractions_count: 999, ai_extractions_reset_at: Time.current)
@@ -196,5 +215,18 @@ class ExtractContractDocumentJobTest < ActiveSupport::TestCase
     )
     doc.save!
     doc
+  end
+
+  def create_active_subscription_for(org)
+    customer = org.set_payment_processor(:stripe)
+    customer.update!(processor_id: "cus_job_overage_#{SecureRandom.hex(4)}")
+
+    Pay::Stripe::Subscription.create!(
+      customer: customer,
+      processor_id: "sub_job_overage_#{SecureRandom.hex(4)}",
+      processor_plan: "price_overage_job",
+      name: "default",
+      status: "active"
+    )
   end
 end

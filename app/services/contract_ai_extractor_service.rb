@@ -271,7 +271,7 @@ class ContractAiExtractorService
     org = @contract.organization
     if org
       org.reset_monthly_extractions_if_needed!
-      if org.at_extraction_limit?
+      if org.at_extraction_limit? && !org.extraction_overage_enabled?
         Rails.logger.info("AI extraction blocked for contract #{@contract.id}: org #{org.id} at extraction limit")
         raise ExtractionLimitReachedError, "Monthly AI extraction limit reached (#{org.plan_extraction_limit} for #{org.plan} plan)"
       end
@@ -360,7 +360,12 @@ class ContractAiExtractorService
     @contract.update!(update_attrs)
 
     # Track extraction usage against plan limits
-    @contract.organization&.increment_extraction_count!
+    usage_result = @contract.organization&.consume_extraction_usage!
+    if usage_result && !usage_result.allowed?
+      Rails.logger.warn("AI extraction usage increment blocked post-success for contract #{@contract.id}: org #{@contract.organization_id} at extraction limit")
+    elsif usage_result&.overage?
+      enqueue_overage_billing(usage_result)
+    end
 
     log_ai_usage!(
       ai_model: extraction_config.ai_model,
@@ -482,6 +487,46 @@ class ContractAiExtractorService
     )
   rescue => e
     Rails.logger.error("Failed to write AI usage log for contract #{@contract.id}: #{e.message}")
+  end
+
+  def enqueue_overage_billing(usage_result)
+    organization = @contract.organization
+    return unless organization
+
+    period_start = usage_result.extraction_period_start
+    usage_position = usage_result.usage_position
+
+    overage_charge = ExtractionOverageCharge.create!(
+      organization:,
+      contract: @contract,
+      extraction_period_start_at: period_start,
+      usage_position:,
+      overage_cents: usage_result.overage_cents,
+      idempotency_key: overage_idempotency_key(organization.id, period_start, usage_position)
+    )
+
+    AuditLog.create(
+      organization:,
+      contract: @contract,
+      action: "extraction_overage",
+      details: "Usage position #{usage_position} billed at #{usage_result.overage_cents} cents (period start #{period_start.to_date})"
+    )
+
+    BillExtractionOverageJob.perform_later(overage_charge.id)
+  rescue ActiveRecord::RecordNotUnique
+    existing = ExtractionOverageCharge.find_by(
+      organization_id: organization.id,
+      extraction_period_start_at: period_start,
+      usage_position:
+    )
+    BillExtractionOverageJob.perform_later(existing.id) if existing
+  rescue => e
+    Rails.logger.error("Failed to enqueue overage billing for contract #{@contract.id}: #{e.message}")
+    Sentry.capture_exception(e, extra: { contract_id: @contract.id, organization_id: organization.id }) if defined?(Sentry) && Sentry.initialized?
+  end
+
+  def overage_idempotency_key(organization_id, period_start, usage_position)
+    "overage-#{organization_id}-#{period_start.utc.iso8601}-#{usage_position}"
   end
 
   # Truncate each document's text proportionally, keeping start and end

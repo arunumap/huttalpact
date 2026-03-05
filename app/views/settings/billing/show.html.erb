@@ -79,7 +79,7 @@
         <% annual_total_price = tier.annual_price_cents.to_i.positive? ? number_to_currency(tier.annual_price_cents.to_f / 100.0, precision: 0) : nil %>
         <% features = tier.feature_list.presence || [
           "#{tier.contract_limit || 'Unlimited'} contracts",
-          "#{tier.extraction_limit || 'Unlimited'} AI extractions/mo",
+          "#{tier.extraction_limit || 'Unlimited'} AI extractions/billing period",
           "#{tier.user_limit || 'Unlimited'} users",
           (tier.audit_log_days ? "#{tier.audit_log_days}-day activity log" : "Full activity log")
         ] %>
@@ -106,6 +106,9 @@
               <li><%= feature %></li>
             <% end %>
           </ul>
+          <% if tier.extraction_limit.present? && tier.extraction_overage_cents.to_i.positive? %>
+            <p class="mt-2 text-xs text-gray-500">Overage: <%= number_to_currency(tier.extraction_overage_cents.to_f / 100.0) %>/extraction after included quota.</p>
+          <% end %>
 
           <div class="mt-5">
             <% if @organization.plan == tier.slug %>
@@ -185,6 +188,9 @@
   <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-900/5">
     <h2 class="text-lg font-semibold text-gray-900">Usage</h2>
     <p class="mt-1 text-sm text-gray-500">Your current resource usage against plan limits.</p>
+    <% extraction_period_end = @organization.extraction_period_end %>
+    <% overage_rate_cents = @organization.plan_extraction_overage_cents %>
+    <% overage_estimate_cents = @organization.estimated_extraction_overage_cents %>
 
     <div class="mt-6 space-y-6">
       <%# Contracts %>
@@ -204,7 +210,7 @@
       <%# AI Extractions %>
       <div>
         <div class="flex items-center justify-between text-sm">
-          <span class="font-medium text-gray-700">AI Extractions (this month)</span>
+          <span class="font-medium text-gray-700">AI Extractions (this billing period)</span>
           <span class="text-gray-500">
             <%= @organization.ai_extractions_count %> / <%= @organization.plan_extraction_limit == Float::INFINITY ? "∞" : @organization.plan_extraction_limit %>
           </span>
@@ -213,7 +219,17 @@
         <div class="mt-2 overflow-hidden rounded-full bg-gray-200 h-2">
           <div class="h-2 rounded-full <%= extraction_pct >= 90 ? 'bg-red-500' : extraction_pct >= 70 ? 'bg-amber-500' : 'bg-green-500' %>" style="width: <%= extraction_pct %>%"></div>
         </div>
-        <p class="mt-1 text-xs text-gray-400">Resets on <%= Date.current.next_month.beginning_of_month.strftime("%B %-d, %Y") %></p>
+        <p class="mt-1 text-xs text-gray-400">Resets on <%= extraction_period_end.strftime("%B %-d, %Y") %></p>
+        <% if @organization.extraction_overage_count.positive? %>
+          <p class="mt-1 text-xs text-amber-700">
+            Overage usage this billing period: <%= @organization.extraction_overage_count %>
+            (<%= number_to_currency(overage_estimate_cents.to_f / 100.0) %> pending at <%= number_to_currency(overage_rate_cents.to_f / 100.0) %>/extraction).
+          </p>
+        <% elsif @organization.extraction_overage_enabled? %>
+          <p class="mt-1 text-xs text-gray-500">
+            Additional extractions are billed at <%= number_to_currency(overage_rate_cents.to_f / 100.0) %>/extraction after your included quota.
+          </p>
+        <% end %>
       </div>
 
       <%# Team Members %>

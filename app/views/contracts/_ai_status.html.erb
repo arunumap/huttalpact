@@ -1,7 +1,28 @@
 <div id="contract_ai_status">
-  <% if current_organization&.near_extraction_limit? && !current_organization&.at_extraction_limit? %>
+  <% if current_organization&.at_extraction_limit? %>
+    <% if current_organization.extraction_overage_enabled? %>
+      <div class="mb-3 rounded-lg bg-amber-50 px-3 py-2 ring-1 ring-amber-200">
+        <% if current_organization.extraction_overage_count.positive? %>
+          <p class="text-xs text-amber-700">
+            You've used <%= current_organization.extraction_overage_count %> overage <%= "extraction".pluralize(current_organization.extraction_overage_count) %> this billing period
+            (<%= number_to_currency(current_organization.estimated_extraction_overage_cents.to_f / 100.0) %> pending). Additional extractions are billed at
+            <%= number_to_currency(current_organization.plan_extraction_overage_cents.to_f / 100.0) %>/extraction.
+          </p>
+        <% else %>
+          <p class="text-xs text-amber-700">
+            Included extractions used for this billing period. Additional extractions are billed at
+            <%= number_to_currency(current_organization.plan_extraction_overage_cents.to_f / 100.0) %>/extraction.
+          </p>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="mb-3">
+        <%= render "shared/upgrade_prompt", compact: true, message: "You've used all #{current_organization.plan_extraction_limit} AI extractions for this billing period." %>
+      </div>
+    <% end %>
+  <% elsif current_organization&.near_extraction_limit? %>
     <div class="mb-3">
-      <%= render "shared/upgrade_prompt", compact: true, message: "You have #{current_organization.extractions_remaining} AI #{'extraction'.pluralize(current_organization.extractions_remaining)} remaining this month." %>
+      <%= render "shared/upgrade_prompt", compact: true, message: "You have #{current_organization.extractions_remaining} AI #{'extraction'.pluralize(current_organization.extractions_remaining)} remaining this billing period." %>
     </div>
   <% end %>
 
@@ -109,9 +130,12 @@
   <% if current_organization %>
     <p class="mt-2 text-xs text-gray-400">
       <% if current_organization.plan_extraction_limit == Float::INFINITY %>
-        <%= current_organization.ai_extractions_count %> AI <%= 'extraction'.pluralize(current_organization.ai_extractions_count) %> used this month
+        <%= current_organization.ai_extractions_count %> AI <%= 'extraction'.pluralize(current_organization.ai_extractions_count) %> used this billing period
       <% else %>
-        <%= current_organization.ai_extractions_count %> of <%= current_organization.plan_extraction_limit %> AI extractions used this month
+        <%= current_organization.ai_extractions_count %> of <%= current_organization.plan_extraction_limit %> AI extractions used this billing period
+        <% if current_organization.extraction_overage_count.positive? %>
+          (<%= current_organization.extraction_overage_count %> overage, <%= number_to_currency(current_organization.estimated_extraction_overage_cents.to_f / 100.0) %> pending)
+        <% end %>
       <% end %>
     </p>
   <% end %>

@@ -5,7 +5,7 @@ class AuditLog < ApplicationRecord
   belongs_to :user, optional: true
   belongs_to :contract, optional: true
 
-  ACTIONS = %w[created updated deleted viewed exported alert_sent alert_acknowledged alert_snoozed plan_changed member_invited member_removed member_role_changed invitation_revoked profile_updated password_changed organization_updated].freeze
+  ACTIONS = %w[created updated deleted viewed exported alert_sent alert_acknowledged alert_snoozed plan_changed member_invited member_removed member_role_changed invitation_revoked profile_updated password_changed organization_updated extraction_overage].freeze
 
   validates :action, presence: true, inclusion: { in: ACTIONS }
 

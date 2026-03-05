@@ -37,6 +37,7 @@ class Admin::PlanTiersControllerTest < ActionDispatch::IntegrationTest
           position: 10,
           contract_limit: 500,
           extraction_limit: 200,
+          extraction_overage_cents: 125,
           user_limit: 25,
           audit_log_days: 90,
           monthly_price_cents: 9900,
@@ -55,6 +56,7 @@ class Admin::PlanTiersControllerTest < ActionDispatch::IntegrationTest
 
     tier = PlanTier.find_by!(slug: "growth")
     assert_equal [ "Feature A", "Feature B" ], tier.feature_list
+    assert_equal 125, tier.extraction_overage_cents
     assert_redirected_to admin_plan_tier_path(tier)
   end
 
@@ -66,6 +68,7 @@ class Admin::PlanTiersControllerTest < ActionDispatch::IntegrationTest
         name: "Pro Plus",
         monthly_price_cents: 19900,
         annual_price_cents: 199000,
+        extraction_overage_cents: 225,
         feature_list_text: "Unlimited contracts\nUnlimited users"
       }
     }
@@ -74,6 +77,7 @@ class Admin::PlanTiersControllerTest < ActionDispatch::IntegrationTest
     @pro_tier.reload
     assert_equal "Pro Plus", @pro_tier.name
     assert_equal 19900, @pro_tier.monthly_price_cents
+    assert_equal 225, @pro_tier.extraction_overage_cents
     assert_equal [ "Unlimited contracts", "Unlimited users" ], @pro_tier.feature_list
   end
 
@@ -182,6 +186,7 @@ class Admin::PlanTiersControllerTest < ActionDispatch::IntegrationTest
       position: next_position,
       contract_limit: 300,
       extraction_limit: 150,
+      extraction_overage_cents: 0,
       user_limit: 20,
       monthly_price_cents: 8900,
       annual_price_cents: 89000,

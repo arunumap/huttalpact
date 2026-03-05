@@ -612,6 +612,51 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     assert_equal "completed", @contract.extraction_status
   end
 
+  test "allows overage extraction and records billing event when overage enabled" do
+    org = organizations(:one)
+    org.update!(
+      plan: "starter",
+      ai_extractions_count: 50,
+      ai_extractions_overage_count: 0,
+      ai_extractions_reset_at: Time.current
+    )
+    plan_tiers(:starter).update!(extraction_overage_cents: 125)
+    create_active_subscription_for(org)
+
+    ai_response = build_ai_response(key_clauses: [], summary: "Test")
+
+    assert_difference "ExtractionOverageCharge.count", 1 do
+      assert_difference "AuditLog.where(action: 'extraction_overage').count", 1 do
+        stub_anthropic_client(ai_response) do
+          ContractAiExtractorService.new(@contract).call
+        end
+      end
+    end
+
+    @contract.reload
+    assert_equal "completed", @contract.extraction_status
+    org.reload
+    assert_equal 51, org.ai_extractions_count
+    assert_equal 1, org.ai_extractions_overage_count
+
+    charge = ExtractionOverageCharge.order(:created_at).last
+    assert_equal org.id, charge.organization_id
+    assert_equal @contract.id, charge.contract_id
+    assert_equal 51, charge.usage_position
+    assert_equal 125, charge.overage_cents
+  end
+
+  test "blocks overage extraction when subscription is pending cancellation" do
+    org = organizations(:one)
+    org.update!(plan: "starter", ai_extractions_count: 50, ai_extractions_reset_at: Time.current)
+    plan_tiers(:starter).update!(extraction_overage_cents: 125)
+    create_active_subscription_for(org, ends_at: 7.days.from_now)
+
+    assert_raises ContractAiExtractorService::ExtractionLimitReachedError do
+      ContractAiExtractorService.new(@contract).call
+    end
+  end
+
   # --- Incremental prompt with new document focus ---
 
   test "incremental prompt includes new document filename hint" do
@@ -935,6 +980,20 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     fake_client.define_singleton_method(:messages) { |**_kwargs| response }
 
     Anthropic::Client.stub(:new, fake_client, &block)
+  end
+
+  def create_active_subscription_for(org, ends_at: nil)
+    customer = org.set_payment_processor(:stripe)
+    customer.update!(processor_id: "cus_overage_#{SecureRandom.hex(4)}")
+
+    Pay::Stripe::Subscription.create!(
+      customer: customer,
+      processor_id: "sub_overage_#{SecureRandom.hex(4)}",
+      processor_plan: "price_overage_test",
+      name: "default",
+      status: "active",
+      ends_at: ends_at
+    )
   end
 
   def build_lease_ai_response

@@ -1,4 +1,5 @@
 require "test_helper"
+require "ostruct"
 
 class PlanLimitsTest < ActiveSupport::TestCase
   setup do
@@ -95,6 +96,30 @@ class PlanLimitsTest < ActiveSupport::TestCase
     assert @org.at_extraction_limit?
   end
 
+  test "extraction_overage_enabled? returns true for paid finite tier with overage and active subscription" do
+    @org.plan = "starter"
+    plan_tiers(:starter).update!(extraction_overage_cents: 125)
+    subscription = OpenStruct.new(status: "active")
+
+    @org.stub(:active_subscription, subscription) do
+      @org.stub(:pending_cancellation?, false) do
+        assert @org.extraction_overage_enabled?
+      end
+    end
+  end
+
+  test "extraction_overage_enabled? returns false when pending cancellation" do
+    @org.plan = "starter"
+    plan_tiers(:starter).update!(extraction_overage_cents: 125)
+    subscription = OpenStruct.new(status: "active")
+
+    @org.stub(:active_subscription, subscription) do
+      @org.stub(:pending_cancellation?, true) do
+        assert_not @org.extraction_overage_enabled?
+      end
+    end
+  end
+
   # at_user_limit?
   test "at_user_limit? returns true for free plan with 1 member" do
     @org.plan = "free"
@@ -110,9 +135,10 @@ class PlanLimitsTest < ActiveSupport::TestCase
 
   # reset_monthly_extractions!
   test "reset_monthly_extractions! resets count to zero" do
-    @org.update!(ai_extractions_count: 5, ai_extractions_reset_at: 2.months.ago)
+    @org.update!(ai_extractions_count: 5, ai_extractions_overage_count: 2, ai_extractions_reset_at: 2.months.ago)
     @org.reset_monthly_extractions!
     assert_equal 0, @org.reload.ai_extractions_count
+    assert_equal 0, @org.reload.ai_extractions_overage_count
     assert_not_nil @org.ai_extractions_reset_at
   end
 
@@ -282,6 +308,44 @@ class PlanLimitsTest < ActiveSupport::TestCase
     assert @org.increment_extraction_count!
     # Reset to 0, then incremented to 1
     assert_equal 1, @org.reload.ai_extractions_count
+  end
+
+  test "consume_extraction_usage! blocks at limit when overage is disabled" do
+    @org.plan = "free"
+    @org.update!(ai_extractions_count: 5, ai_extractions_reset_at: Time.current)
+
+    result = @org.consume_extraction_usage!
+
+    assert_not result.allowed?
+    assert_not result.overage?
+    assert_equal 5, @org.reload.ai_extractions_count
+  end
+
+  test "consume_extraction_usage! records overage when at limit and overage enabled" do
+    @org.plan = "starter"
+    plan_tiers(:starter).update!(extraction_overage_cents: 125)
+    @org.update!(
+      ai_extractions_count: 50,
+      ai_extractions_overage_count: 0,
+      ai_extractions_reset_at: Time.current
+    )
+    subscription = OpenStruct.new(status: "active")
+
+    @org.stub(:active_subscription, subscription) do
+      @org.stub(:pending_cancellation?, false) do
+        result = @org.consume_extraction_usage!
+
+        assert result.allowed?
+        assert result.overage?
+        assert_equal 51, result.usage_position
+        assert_equal 1, result.overage_position
+        assert_equal 125, result.overage_cents
+      end
+    end
+
+    @org.reload
+    assert_equal 51, @org.ai_extractions_count
+    assert_equal 1, @org.ai_extractions_overage_count
   end
 
   test "reset_monthly_extractions_if_needed! is a no-op when already reset this period" do

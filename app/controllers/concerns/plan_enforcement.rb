@@ -13,8 +13,9 @@ module PlanEnforcement
   def enforce_extraction_limit!
     current_organization&.reset_monthly_extractions_if_needed!
     return unless current_organization&.at_extraction_limit?
+    return if current_organization.extraction_overage_enabled?
 
     redirect_to @contract || contracts_path,
-      alert: "You've used all #{current_organization.plan_extraction_limit} AI extractions for this month. <a href='#{pricing_path}' class='underline font-semibold'>Upgrade your plan</a> for more."
+      alert: "You've used all #{current_organization.plan_extraction_limit} AI extractions for this billing period. <a href='#{pricing_path}' class='underline font-semibold'>Upgrade your plan</a> for more."
   end
 end

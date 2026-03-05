@@ -95,6 +95,7 @@ class Admin::PlanTiersController < Admin::BaseController
       :position,
       :contract_limit,
       :extraction_limit,
+      :extraction_overage_cents,
       :user_limit,
       :audit_log_days,
       :monthly_price_cents,

@@ -16,6 +16,7 @@ class PlanTier < ApplicationRecord
   validates :extraction_limit, numericality: { greater_than: 0, only_integer: true }, allow_nil: true
   validates :user_limit, numericality: { greater_than: 0, only_integer: true }, allow_nil: true
   validates :audit_log_days, numericality: { greater_than: 0, only_integer: true }, allow_nil: true
+  validates :extraction_overage_cents, numericality: { greater_than_or_equal_to: 0, only_integer: true }
   validates :monthly_price_cents, numericality: { greater_than_or_equal_to: 0, only_integer: true }
   validates :annual_price_cents, numericality: { greater_than_or_equal_to: 0, only_integer: true }
 
@@ -74,6 +75,7 @@ class PlanTier < ApplicationRecord
     errors.add(:default_tier, "must be enabled for the free tier") unless default_tier?
     errors.add(:monthly_price_cents, "must be 0 for the free tier") unless monthly_price_cents.to_i.zero?
     errors.add(:annual_price_cents, "must be 0 for the free tier") unless annual_price_cents.to_i.zero?
+    errors.add(:extraction_overage_cents, "must be 0 for the free tier") unless extraction_overage_cents.to_i.zero?
   end
 
   def slug_immutable_for_in_use_tier

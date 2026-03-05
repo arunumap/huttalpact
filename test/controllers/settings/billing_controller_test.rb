@@ -165,8 +165,23 @@ class Settings::BillingControllerTest < ActionDispatch::IntegrationTest
   test "billing page shows extraction reset date" do
     get settings_billing_path
     assert_response :success
-    next_reset = Date.current.next_month.beginning_of_month.strftime("%B %-d, %Y")
+    next_reset = @org.extraction_period_end.strftime("%B %-d, %Y")
     assert_match "Resets on #{next_reset}", response.body
+  end
+
+  test "billing page shows overage usage and estimated charge" do
+    @org.update!(
+      plan: "starter",
+      ai_extractions_count: 51,
+      ai_extractions_overage_count: 1,
+      ai_extractions_reset_at: Time.current
+    )
+    plan_tiers(:starter).update!(extraction_overage_cents: 125)
+
+    get settings_billing_path
+    assert_response :success
+    assert_match "Overage usage this billing period: 1", response.body
+    assert_match "$1.25", response.body
   end
 
   test "success message includes plan name" do

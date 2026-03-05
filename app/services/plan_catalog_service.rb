@@ -7,6 +7,7 @@ class PlanCatalogService
     :position,
     :contract_limit,
     :extraction_limit,
+    :extraction_overage_cents,
     :user_limit,
     :audit_log_days,
     :monthly_price_cents,
@@ -75,6 +76,7 @@ class PlanCatalogService
       position: 0,
       contract_limit: 10,
       extraction_limit: 5,
+      extraction_overage_cents: 0,
       user_limit: 1,
       audit_log_days: 7,
       monthly_price_cents: 0,
@@ -88,7 +90,7 @@ class PlanCatalogService
       default_tier: true,
       feature_list: [
         "Up to 10 contracts",
-        "5 AI extractions/month",
+        "5 AI extractions per billing period",
         "1 user",
         "7-day activity log"
       ]
@@ -101,6 +103,7 @@ class PlanCatalogService
       position: 1,
       contract_limit: 100,
       extraction_limit: 50,
+      extraction_overage_cents: 0,
       user_limit: 5,
       audit_log_days: 30,
       monthly_price_cents: 4900,
@@ -114,7 +117,7 @@ class PlanCatalogService
       default_tier: false,
       feature_list: [
         "Up to 100 contracts",
-        "50 AI extractions/month",
+        "50 AI extractions per billing period",
         "Up to 5 team members",
         "30-day activity log"
       ]
@@ -127,6 +130,7 @@ class PlanCatalogService
       position: 2,
       contract_limit: nil,
       extraction_limit: nil,
+      extraction_overage_cents: 0,
       user_limit: nil,
       audit_log_days: nil,
       monthly_price_cents: 14900,

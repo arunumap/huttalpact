@@ -32,7 +32,7 @@ class ExtractContractDocumentJob < ApplicationJob
           org = contract.organization
           if org
             org.reset_monthly_extractions_if_needed!
-            if org.at_extraction_limit?
+            if org.at_extraction_limit? && !org.extraction_overage_enabled?
               Rails.logger.info("Skipping auto AI extraction for contract #{contract.id}: org #{org.id} at extraction limit (#{org.ai_extractions_count}/#{org.plan_extraction_limit})")
               next
             end

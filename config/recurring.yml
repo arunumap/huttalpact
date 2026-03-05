@@ -26,6 +26,10 @@ production:
     class: ResetMonthlyExtractionsJob
     schedule: at midnight every day
 
+  reconcile_extraction_overage_charges:
+    class: ReconcileExtractionOverageChargesJob
+    schedule: every hour at minute 27
+
   clean_stale_drafts:
     class: CleanStaleDraftsJob
     schedule: at 3am every day

@@ -40,7 +40,7 @@
       </div>
     </dl>
 
-    <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+    <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-4">
       <div>
         <dt class="text-slate-500">Contract limit</dt>
         <dd class="font-medium text-slate-900"><%= @plan_tier.contract_limit || "Unlimited" %></dd>
@@ -48,6 +48,12 @@
       <div>
         <dt class="text-slate-500">Extraction limit</dt>
         <dd class="font-medium text-slate-900"><%= @plan_tier.extraction_limit || "Unlimited" %></dd>
+      </div>
+      <div>
+        <dt class="text-slate-500">Extraction overage</dt>
+        <dd class="font-medium text-slate-900">
+          <%= @plan_tier.extraction_overage_cents.to_i.positive? ? "#{number_to_currency(@plan_tier.extraction_overage_cents.to_f / 100.0)}/extraction" : "Disabled" %>
+        </dd>
       </div>
       <div>
         <dt class="text-slate-500">User limit</dt>

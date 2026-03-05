@@ -18,6 +18,7 @@
           <th class="px-3 py-2 text-left font-medium text-slate-600">Rank</th>
           <th class="px-3 py-2 text-left font-medium text-slate-600">Monthly</th>
           <th class="px-3 py-2 text-left font-medium text-slate-600">Annual</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Overage</th>
           <th class="px-3 py-2 text-left font-medium text-slate-600">Status</th>
           <th class="px-3 py-2 text-left font-medium text-slate-600">Stripe</th>
           <th class="px-3 py-2 text-right font-medium text-slate-600">Actions</th>
@@ -33,6 +34,9 @@
             <td class="px-3 py-2 text-slate-700"><%= tier.rank %></td>
             <td class="px-3 py-2 text-slate-700"><%= number_to_currency(tier.monthly_price_cents.to_f / 100.0) %></td>
             <td class="px-3 py-2 text-slate-700"><%= number_to_currency(tier.annual_price_cents.to_f / 100.0) %></td>
+            <td class="px-3 py-2 text-slate-700">
+              <%= tier.extraction_overage_cents.to_i.positive? ? "#{number_to_currency(tier.extraction_overage_cents.to_f / 100.0)}/extraction" : "Disabled" %>
+            </td>
             <td class="px-3 py-2">
               <div class="flex items-center gap-2">
                 <% if tier.active? %>

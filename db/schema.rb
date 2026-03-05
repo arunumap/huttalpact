@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_04_170000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_04_223000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -264,6 +264,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_170000) do
     t.index ["user_id"], name: "index_extraction_feedbacks_on_user_id"
   end
 
+  create_table "extraction_overage_charges", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "billed_at"
+    t.uuid "contract_id"
+    t.datetime "created_at", null: false
+    t.text "error_message"
+    t.datetime "extraction_period_start_at", null: false
+    t.string "idempotency_key", null: false
+    t.uuid "organization_id", null: false
+    t.integer "overage_cents", null: false
+    t.string "status", default: "pending", null: false
+    t.string "stripe_invoice_item_id"
+    t.datetime "updated_at", null: false
+    t.integer "usage_position", null: false
+    t.index ["contract_id"], name: "index_extraction_overage_charges_on_contract_id"
+    t.index ["idempotency_key"], name: "index_extraction_overage_charges_on_idempotency_key", unique: true
+    t.index ["organization_id", "extraction_period_start_at", "usage_position"], name: "index_extraction_overage_charges_on_org_period_position", unique: true
+    t.index ["organization_id"], name: "index_extraction_overage_charges_on_organization_id"
+    t.index ["status", "created_at"], name: "index_extraction_overage_charges_on_status_and_created_at"
+  end
+
   create_table "invitations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "accepted_at"
     t.datetime "created_at", null: false
@@ -378,6 +398,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_170000) do
 
   create_table "organizations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.integer "ai_extractions_count", default: 0, null: false
+    t.integer "ai_extractions_overage_count", default: 0, null: false
     t.datetime "ai_extractions_reset_at"
     t.integer "contracts_count", default: 0
     t.datetime "created_at", null: false
@@ -504,6 +525,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_170000) do
     t.boolean "default_tier", default: false, null: false
     t.text "description"
     t.integer "extraction_limit"
+    t.integer "extraction_overage_cents", default: 0, null: false
     t.text "feature_list", default: [], null: false, array: true
     t.boolean "featured", default: false, null: false
     t.string "monthly_lookup_key"
@@ -587,6 +609,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_170000) do
   add_foreign_key "extraction_feedbacks", "contracts"
   add_foreign_key "extraction_feedbacks", "organizations"
   add_foreign_key "extraction_feedbacks", "users"
+  add_foreign_key "extraction_overage_charges", "contracts", on_delete: :nullify
+  add_foreign_key "extraction_overage_charges", "organizations"
   add_foreign_key "invitations", "organizations"
   add_foreign_key "invitations", "users", column: "inviter_id"
   add_foreign_key "key_clauses", "contract_documents", column: "source_document_id", on_delete: :cascade
