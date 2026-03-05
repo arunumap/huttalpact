@@ -56,6 +56,6 @@ export default class extends Controller {
         const key = period === "annual" ? annualKey : monthlyKey
         if (key) lookupInput.value = key
       }
-    }
+    })
   }
 }

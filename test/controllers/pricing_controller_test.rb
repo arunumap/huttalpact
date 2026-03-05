@@ -83,6 +83,20 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "pricing page includes annual toggle wiring hooks" do
+    get pricing_path
+    assert_response :success
+
+    tiers = PlanCatalogService.active_tiers_for_pricing
+    annual_priced_tier_count = tiers.count { |tier| tier.annual_price_cents.to_i.positive? }
+
+    assert_select "div[data-controller='pricing-toggle']", 1
+    assert_select "button[data-action='click->pricing-toggle#selectMonthly'][data-pricing-toggle-target='monthlyBtn']", 1
+    assert_select "button[data-action='click->pricing-toggle#selectAnnual'][data-pricing-toggle-target='annualBtn']", 1
+    assert_select "div[data-pricing-toggle-target='planCard'][data-pricing-toggle-monthly-price][data-pricing-toggle-annual-price]", tiers.size
+    assert_select "[data-pricing-toggle-role='annual-total']", annual_priced_tier_count
+  end
+
   test "pricing page shows FAQ section" do
     get pricing_path
     assert_response :success
