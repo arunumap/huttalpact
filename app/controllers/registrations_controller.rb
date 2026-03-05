@@ -1,4 +1,7 @@
 class RegistrationsController < ApplicationController
+  AD_ATTRIBUTION_QUERY_KEYS = PagesController::AD_ATTRIBUTION_QUERY_KEYS
+  ADS_LANDING_SOURCE = PagesController::ADS_LANDING_SOURCE
+
   allow_unauthenticated_access
   before_action :redirect_if_authenticated, only: [ :new, :create ]
   rate_limit to: 10, within: 1.minute, only: :create, with: -> { redirect_to new_registration_path, alert: "Too many sign-up attempts. Try again later." }
@@ -20,9 +23,10 @@ class RegistrationsController < ApplicationController
     @user = User.new(user_params)
 
     if params[:token].present? && @invitation.nil?
-      flash.now[:alert] = "Invitation link is invalid or expired."
-      render :new, status: :unprocessable_entity
-      return
+      return render_registration_error(
+        status: :unprocessable_entity,
+        alert: "Invitation link is invalid or expired."
+      )
     end
 
     if @invitation
@@ -55,7 +59,7 @@ class RegistrationsController < ApplicationController
 
     UserMailer.welcome(@user).deliver_later
     start_new_session_for @user
-    track_analytics_event("sign_up", method: "email")
+    track_analytics_event("sign_up", method: "email", source: params[:source].presence)
     destination = if @invitation&.organization&.onboarding_complete?
       root_path
     else
@@ -63,7 +67,7 @@ class RegistrationsController < ApplicationController
     end
     redirect_to destination, notice: "Welcome to PactBadger!"
   rescue ActiveRecord::RecordInvalid
-    render :new, status: :unprocessable_entity
+    render_registration_error(status: :unprocessable_entity)
   end
 
   private
@@ -86,5 +90,22 @@ class RegistrationsController < ApplicationController
 
   def redirect_if_authenticated
     redirect_to root_path if authenticated?
+  end
+
+  def ads_landing_signup?
+    params[:source].to_s == ADS_LANDING_SOURCE
+  end
+
+  def render_registration_error(status:, alert: nil)
+    flash.now[:alert] = alert if alert
+
+    if ads_landing_signup?
+      @ads_signup_params = request.parameters.slice(*AD_ATTRIBUTION_QUERY_KEYS).compact
+      @ads_signup_params["source"] = ADS_LANDING_SOURCE
+      @organization_name = params.dig(:user, :organization_name)
+      render "pages/ads_contracts", layout: "marketing_funnel", status: status
+    else
+      render :new, status: status
+    end
   end
 end

@@ -47,29 +47,36 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
   test "ads landing page is accessible to unauthenticated users" do
     get ads_contracts_landing_path
     assert_response :success
-    assert_select "h1", /Stop missing contract deadlines/
+    assert_select "h1", /Never miss a lease or vendor contract deadline again/
+    assert_select "p", /For Property Managers/
   end
 
-  test "ads landing page has signup CTA and noindex robots tag" do
+  test "ads landing page has inline signup form and noindex robots tag" do
     get ads_contracts_landing_path
     assert_response :success
 
-    assert_select "a[href='#{new_registration_path(source: "ads_contracts_landing")}']", minimum: 2
+    assert_select "form[action='#{registration_path}']"
+    assert_select "input[name='user[first_name]']"
+    assert_select "input[name='user[last_name]']"
+    assert_select "input[name='user[organization_name]']"
+    assert_select "input[name='user[email_address]']"
+    assert_select "input[name='user[password]']"
+    assert_select "input[name='user[password_confirmation]']"
+    assert_select "input[name='source'][value='ads_contracts_landing']", count: 1
     assert_select "meta[name='robots'][content='noindex, nofollow']", count: 1
   end
 
-  test "ads landing page preserves attribution params in signup CTA links" do
+  test "ads landing page preserves attribution params in inline signup form" do
     get ads_contracts_landing_path(utm_source: "google", utm_medium: "cpc", utm_campaign: "spring", gclid: "abc123")
     assert_response :success
 
-    expected_signup_path = new_registration_path(
-      utm_source: "google",
-      utm_medium: "cpc",
-      utm_campaign: "spring",
-      gclid: "abc123",
-      source: "ads_contracts_landing"
-    )
-    assert_select "a[href='#{expected_signup_path}']", minimum: 2
+    assert_select "form[action='#{registration_path}']" do
+      assert_select "input[name='utm_source'][value='google']", count: 1
+      assert_select "input[name='utm_medium'][value='cpc']", count: 1
+      assert_select "input[name='utm_campaign'][value='spring']", count: 1
+      assert_select "input[name='gclid'][value='abc123']", count: 1
+      assert_select "input[name='source'][value='ads_contracts_landing']", count: 1
+    end
   end
 
   test "home page does not reference ads landing page" do

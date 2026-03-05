@@ -46,7 +46,7 @@
         "#{tier.user_limit || 'Unlimited'} users",
         (tier.audit_log_days ? "#{tier.audit_log_days}-day activity log" : "Full activity history")
       ] %>
-      <% highlighted = @current_plan == tier.slug || tier.featured? %>
+      <% highlighted = tier.featured? || (@current_plan == tier.slug && !tier.free?) %>
       <% card_ring_class = highlighted ? "ring-2 ring-amber-500" : "ring-1 ring-gray-200" %>
       <% primary_button_base = tier.featured? ? "bg-amber-600 hover:bg-amber-500" : "bg-gray-900 hover:bg-gray-800" %>
 

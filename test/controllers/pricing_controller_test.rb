@@ -98,4 +98,13 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     assert_match "Sign In", response.body
     assert_match "Sign Up", response.body
   end
+
+  test "guest free tier uses non-highlight card style" do
+    sign_out
+    get pricing_path
+    assert_response :success
+
+    assert_select "div.ring-2.ring-amber-500 h3", text: "Free", count: 0
+    assert_select "div.ring-1.ring-gray-200 h3", text: "Free", count: 1
+  end
 end

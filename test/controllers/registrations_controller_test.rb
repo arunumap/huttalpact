@@ -252,4 +252,53 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
     assert_not_nil user
     assert_not_nil user.terms_accepted_at
   end
+
+  test "ads landing signup creates account without extra click-through" do
+    assert_difference [ "User.count", "Organization.count", "Membership.count" ], 1 do
+      post registration_path, params: {
+        source: "ads_contracts_landing",
+        utm_source: "google",
+        utm_campaign: "pm_search",
+        user: {
+          first_name: "Paula",
+          last_name: "Manager",
+          organization_name: "Oak Property Management",
+          email_address: "paula.manager@example.com",
+          password: "password123",
+          password_confirmation: "password123",
+          terms_accepted: "1"
+        }
+      }
+    end
+
+    assert_redirected_to onboarding_organization_path
+    user = User.find_by(email_address: "paula.manager@example.com")
+    assert_not_nil user
+    assert_equal "Oak Property Management", user.organizations.first.name
+  end
+
+  test "ads landing signup failures re-render landing page with inline errors" do
+    assert_no_difference "User.count" do
+      post registration_path, params: {
+        source: "ads_contracts_landing",
+        utm_source: "google",
+        user: {
+          first_name: "Pat",
+          last_name: "Ops",
+          organization_name: "Downtown Properties",
+          email_address: "invalid",
+          password: "password123",
+          password_confirmation: "password123",
+          terms_accepted: "1"
+        }
+      }
+    end
+
+    assert_response :unprocessable_entity
+    assert_select "h2", /Create your free account/
+    assert_select "form[action='#{registration_path}']"
+    assert_select "input[name='source'][value='ads_contracts_landing']", count: 1
+    assert_select "input[name='utm_source'][value='google']", count: 1
+    assert_select "input[name='user[organization_name]'][value='Downtown Properties']", count: 1
+  end
 end
