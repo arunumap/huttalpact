@@ -25,8 +25,9 @@ class Admin::BillingController < Admin::BaseController
 
     if result[:success]
       created = result[:created]
+      updated = result.fetch(:updated, [])
       skipped = result[:skipped]
-      flash[:notice] = "Stripe setup complete. Created: #{created.join(', ').presence || 'none'}. Skipped: #{skipped.join(', ').presence || 'none'}."
+      flash[:notice] = "Stripe setup complete. Created: #{created.join(', ').presence || 'none'}. Updated: #{updated.join(', ').presence || 'none'}. Unchanged: #{skipped.join(', ').presence || 'none'}."
     else
       flash[:alert] = "Stripe setup failed: #{result[:message]}"
     end

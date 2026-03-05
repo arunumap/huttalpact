@@ -62,12 +62,30 @@ class StripeAdminService
     skipped = []
     products_cache = {}
 
+    updated = []
+
     configs.each do |config|
       if existing_keys.include?(config[:lookup_key])
-        skipped << config[:lookup_key]
-        if config[:tier]
-          existing_price = existing_by_lookup[config[:lookup_key]]
-          update_tier_stripe_ids(config[:tier], existing_price, config[:interval]) if existing_price
+        existing_price = existing_by_lookup[config[:lookup_key]]
+
+        if existing_price && existing_price.unit_amount != config[:amount]
+          # Amount changed — create a new price and transfer the lookup key
+          product = products_cache[config[:plan]] ||= find_or_create_product(config[:plan], tier: config[:tier])
+
+          price = Stripe::Price.create(
+            product: product.id,
+            unit_amount: config[:amount],
+            currency: "usd",
+            recurring: { interval: config[:interval] },
+            lookup_key: config[:lookup_key],
+            transfer_lookup_key: true
+          )
+
+          update_tier_stripe_ids(config[:tier], price, config[:interval], product.id) if config[:tier]
+          updated << config[:lookup_key]
+        else
+          skipped << config[:lookup_key]
+          update_tier_stripe_ids(config[:tier], existing_price, config[:interval]) if config[:tier] && existing_price
         end
         next
       end
@@ -87,9 +105,9 @@ class StripeAdminService
       created << config[:lookup_key]
     end
 
-    { success: true, message: "Setup complete", created: created, skipped: skipped }
+    { success: true, message: "Setup complete", created: created, skipped: skipped, updated: updated }
   rescue Stripe::StripeError => e
-    { success: false, message: e.message, created: created || [], skipped: skipped || [] }
+    { success: false, message: e.message, created: created || [], skipped: skipped || [], updated: updated || [] }
   end
 
   # Creates a Stripe Billing Portal Configuration
@@ -172,12 +190,31 @@ class StripeAdminService
     created = []
     skipped = []
 
+    updated = []
+
     configs.each do |config|
       existing_price = existing_by_lookup[config[:lookup_key]]
       if existing_price
-        skipped << config[:lookup_key]
-        update_tier_stripe_ids(plan_tier, existing_price, config[:interval], product.id)
-        next
+        if existing_price.unit_amount == config[:amount]
+          skipped << config[:lookup_key]
+          update_tier_stripe_ids(plan_tier, existing_price, config[:interval], product.id)
+          next
+        else
+          # Amount changed — create a new price and transfer the lookup key
+          # (Stripe prices are immutable; transfer_lookup_key reassigns the key)
+          price = Stripe::Price.create(
+            product: product.id,
+            unit_amount: config[:amount],
+            currency: "usd",
+            recurring: { interval: config[:interval] },
+            lookup_key: config[:lookup_key],
+            transfer_lookup_key: true
+          )
+
+          update_tier_stripe_ids(plan_tier, price, config[:interval], product.id)
+          updated << config[:lookup_key]
+          next
+        end
       end
 
       price = Stripe::Price.create(
@@ -193,9 +230,9 @@ class StripeAdminService
       created << config[:lookup_key]
     end
 
-    { success: true, message: "Tier sync complete", created: created, skipped: skipped }
+    { success: true, message: "Tier sync complete", created: created, skipped: skipped, updated: updated }
   rescue Stripe::StripeError => e
-    { success: false, message: e.message, created: created || [], skipped: skipped || [] }
+    { success: false, message: e.message, created: created || [], skipped: skipped || [], updated: updated || [] }
   end
 
   # Finds or creates a Stripe product

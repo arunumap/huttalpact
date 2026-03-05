@@ -146,10 +146,10 @@ class Admin::PlanTiersControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Plan tier deleted.", flash[:notice]
   end
 
-  test "sync_to_stripe success includes created and skipped" do
+  test "sync_to_stripe success includes created, updated, and unchanged" do
     sign_in_as_admin(@admin_user)
 
-    result = { success: true, created: [ "pro_monthly" ], skipped: [ "pro_annual" ] }
+    result = { success: true, created: [ "pro_monthly" ], skipped: [ "pro_annual" ], updated: [] }
     StripeAdminService.stub(:sync_plan_tier!, result) do
       post sync_to_stripe_admin_plan_tier_path(@pro_tier)
     end
@@ -157,7 +157,19 @@ class Admin::PlanTiersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to admin_plan_tier_path(@pro_tier)
     assert_match "Stripe sync complete", flash[:notice]
     assert_match "Created: pro_monthly", flash[:notice]
-    assert_match "Skipped: pro_annual", flash[:notice]
+    assert_match "Unchanged: pro_annual", flash[:notice]
+  end
+
+  test "sync_to_stripe success shows updated prices" do
+    sign_in_as_admin(@admin_user)
+
+    result = { success: true, created: [], skipped: [], updated: [ "pro_monthly", "pro_annual" ] }
+    StripeAdminService.stub(:sync_plan_tier!, result) do
+      post sync_to_stripe_admin_plan_tier_path(@pro_tier)
+    end
+
+    assert_redirected_to admin_plan_tier_path(@pro_tier)
+    assert_match "Updated: pro_monthly, pro_annual", flash[:notice]
   end
 
   test "sync_to_stripe failure shows alert" do

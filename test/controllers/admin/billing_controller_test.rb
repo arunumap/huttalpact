@@ -36,12 +36,20 @@ class Admin::BillingControllerTest < ActionDispatch::IntegrationTest
   test "setup_stripe redirects with notice on success" do
     sign_in_as_admin(@admin_user)
 
-    mock_result = { success: true, created: [ "starter_monthly" ], skipped: [ "pro_annual" ] }
+    mock_result = {
+      success: true,
+      created: [ "starter_monthly" ],
+      updated: [ "starter_annual" ],
+      skipped: [ "pro_annual" ]
+    }
     StripeAdminService.stub :setup_products_and_prices!, mock_result do
       post setup_stripe_admin_billing_path
 
       assert_redirected_to admin_billing_path
       assert_match "Stripe setup complete", flash[:notice]
+      assert_match "Created: starter_monthly", flash[:notice]
+      assert_match "Updated: starter_annual", flash[:notice]
+      assert_match "Unchanged: pro_annual", flash[:notice]
     end
   end
 

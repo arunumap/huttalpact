@@ -73,7 +73,8 @@ class Admin::PlanTiersController < Admin::BaseController
     if result[:success]
       message = "Stripe sync complete."
       message += " Created: #{result[:created].join(', ')}." if result[:created].present?
-      message += " Skipped: #{result[:skipped].join(', ')}." if result[:skipped].present?
+      message += " Updated: #{result[:updated].join(', ')}." if result[:updated].present?
+      message += " Unchanged: #{result[:skipped].join(', ')}." if result[:skipped].present?
       redirect_to admin_plan_tier_path(@plan_tier), notice: message
     else
       redirect_to admin_plan_tier_path(@plan_tier), alert: "Stripe sync failed: #{result[:message]}"

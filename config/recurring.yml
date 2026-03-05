@@ -35,5 +35,5 @@ production:
     schedule: at 3am every day
 
   refresh_sitemap:
-    command: "SitemapGenerator::Sitemap.create"
+    command: "load Rails.root.join('config/sitemap.rb').to_s"
     schedule: at 4am every day

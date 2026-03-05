@@ -83,10 +83,10 @@ class StripeAdminServiceTest < ActiveSupport::TestCase
     end
   end
 
-  test "setup_products_and_prices skips existing prices (idempotent)" do
-    # All prices already exist
-    mock_prices = PlanCatalogService.lookup_keys.keys.map do |key|
-      OpenStruct.new(lookup_key: key, id: "price_existing")
+  test "setup_products_and_prices skips existing prices when amounts match (idempotent)" do
+    price_configs = StripeAdminService::PRICE_CONFIGS
+    mock_prices = price_configs.map do |config|
+      OpenStruct.new(lookup_key: config[:lookup_key], id: "price_existing", unit_amount: config[:amount])
     end
     mock_list = OpenStruct.new(data: mock_prices)
 
@@ -95,7 +95,33 @@ class StripeAdminServiceTest < ActiveSupport::TestCase
 
       assert result[:success]
       assert_empty result[:created]
+      assert_empty result[:updated]
       assert_equal 4, result[:skipped].size
+    end
+  end
+
+  test "setup_products_and_prices creates new price when amount changes" do
+    price_configs = StripeAdminService::PRICE_CONFIGS
+    # Existing prices with stale amounts (each off by 100 cents)
+    mock_prices = price_configs.map do |config|
+      OpenStruct.new(lookup_key: config[:lookup_key], id: "price_old", unit_amount: config[:amount] + 100)
+    end
+    mock_list = OpenStruct.new(data: mock_prices)
+    mock_product = OpenStruct.new(id: "prod_existing", name: "PactBadger Starter")
+    mock_products_list = OpenStruct.new(data: [ mock_product ])
+    mock_new_price = OpenStruct.new(id: "price_new")
+
+    Stripe::Price.stub :list, mock_list do
+      Stripe::Product.stub :list, mock_products_list do
+        Stripe::Price.stub :create, mock_new_price do
+          result = StripeAdminService.setup_products_and_prices!
+
+          assert result[:success]
+          assert_empty result[:created]
+          assert_empty result[:skipped]
+          assert_equal 4, result[:updated].size
+        end
+      end
     end
   end
 
@@ -170,6 +196,102 @@ class StripeAdminServiceTest < ActiveSupport::TestCase
 
       refute result[:success]
       assert_equal "Stripe unreachable", result[:message]
+    end
+  end
+
+  # ── sync_plan_tier! ──
+
+  test "sync_plan_tier creates prices for tier with no existing Stripe prices" do
+    tier = plan_tiers(:pro)
+    mock_list = OpenStruct.new(data: [])
+    mock_product = OpenStruct.new(id: "prod_pro", name: "PactBadger Pro")
+    mock_products_list = OpenStruct.new(data: [ mock_product ])
+    mock_price = OpenStruct.new(id: "price_new", product: "prod_pro")
+
+    Stripe::Price.stub :list, mock_list do
+      Stripe::Product.stub :list, mock_products_list do
+        Stripe::Price.stub :create, mock_price do
+          result = StripeAdminService.sync_plan_tier!(tier)
+
+          assert result[:success]
+          assert_equal 2, result[:created].size
+          assert_includes result[:created], "pro_monthly"
+          assert_includes result[:created], "pro_annual"
+          assert_empty result[:skipped]
+          assert_empty result[:updated]
+        end
+      end
+    end
+  end
+
+  test "sync_plan_tier skips prices when amounts match" do
+    tier = plan_tiers(:pro)
+    mock_prices = [
+      OpenStruct.new(lookup_key: "pro_monthly", id: "price_m", unit_amount: 14900, product: "prod_pro"),
+      OpenStruct.new(lookup_key: "pro_annual", id: "price_a", unit_amount: 149000, product: "prod_pro")
+    ]
+    mock_list = OpenStruct.new(data: mock_prices)
+    mock_product = OpenStruct.new(id: "prod_pro", name: "PactBadger Pro")
+    mock_products_list = OpenStruct.new(data: [ mock_product ])
+
+    Stripe::Price.stub :list, mock_list do
+      Stripe::Product.stub :list, mock_products_list do
+        result = StripeAdminService.sync_plan_tier!(tier)
+
+        assert result[:success]
+        assert_empty result[:created]
+        assert_empty result[:updated]
+        assert_equal 2, result[:skipped].size
+      end
+    end
+  end
+
+  test "sync_plan_tier creates new prices when amounts change" do
+    tier = plan_tiers(:pro)
+    # Update tier price locally to simulate admin editing the price
+    tier.update!(monthly_price_cents: 29900, annual_price_cents: 299000)
+
+    mock_prices = [
+      OpenStruct.new(lookup_key: "pro_monthly", id: "price_old_m", unit_amount: 14900, product: "prod_pro"),
+      OpenStruct.new(lookup_key: "pro_annual", id: "price_old_a", unit_amount: 149000, product: "prod_pro")
+    ]
+    mock_list = OpenStruct.new(data: mock_prices)
+    mock_product = OpenStruct.new(id: "prod_pro", name: "PactBadger Pro")
+    mock_products_list = OpenStruct.new(data: [ mock_product ])
+    mock_new_price = OpenStruct.new(id: "price_new", product: "prod_pro")
+
+    Stripe::Price.stub :list, mock_list do
+      Stripe::Product.stub :list, mock_products_list do
+        Stripe::Price.stub :create, mock_new_price do
+          result = StripeAdminService.sync_plan_tier!(tier)
+
+          assert result[:success]
+          assert_empty result[:created]
+          assert_empty result[:skipped]
+          assert_equal 2, result[:updated].size
+          assert_includes result[:updated], "pro_monthly"
+          assert_includes result[:updated], "pro_annual"
+        end
+      end
+    end
+  end
+
+  test "sync_plan_tier fails for free tier" do
+    tier = plan_tiers(:free)
+    result = StripeAdminService.sync_plan_tier!(tier)
+
+    refute result[:success]
+    assert_match(/free tier/i, result[:message])
+  end
+
+  test "sync_plan_tier handles Stripe API errors" do
+    tier = plan_tiers(:pro)
+
+    Stripe::Price.stub :list, ->(_) { raise Stripe::StripeError, "Network error" } do
+      result = StripeAdminService.sync_plan_tier!(tier)
+
+      refute result[:success]
+      assert_equal "Network error", result[:message]
     end
   end
 
