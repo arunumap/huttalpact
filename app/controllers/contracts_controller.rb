@@ -18,6 +18,11 @@ class ContractsController < ApplicationController
       format.html do
         @pagy, @contracts = pagy(contracts)
         @drafts = Contract.draft.order(updated_at: :desc)
+        @active_bulk_delete_operation = BulkDeleteOperation
+          .where(organization: current_organization, user: Current.user)
+          .in_progress
+          .recent_first
+          .first
       end
       format.csv do
         @contracts = contracts
@@ -117,6 +122,43 @@ class ContractsController < ApplicationController
     log_audit("deleted", contract: @contract, details: "Deleted contract: #{@saved_contract_title}")
     @contract.destroy!
     redirect_to contracts_path, notice: "Contract was successfully deleted.", status: :see_other
+  end
+
+  def bulk_delete
+    ids = Array(params[:ids]).compact_blank.uniq
+    if ids.empty?
+      redirect_to contracts_path, alert: "No contracts selected."
+      return
+    end
+
+    selected_ids = Contract.where(id: ids).pluck(:id)
+    if selected_ids.empty?
+      redirect_to contracts_path, notice: "Selected contracts were already deleted."
+      return
+    end
+
+    operation = BulkDeleteOperation.create!(
+      organization: current_organization,
+      user: Current.user,
+      requested_count: selected_ids.length
+    )
+
+    BulkDeleteContractsJob.perform_later(operation.id, selected_ids)
+    selection_label = "#{selected_ids.length} #{'contract'.pluralize(selected_ids.length)}"
+
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.update(
+          "contracts_bulk_delete_status",
+          partial: "contracts/bulk_delete_status",
+          locals: {
+            operation: operation,
+            inline_message: "Deleting #{selection_label} in background…"
+          }
+        )
+      end
+      format.html { redirect_to contracts_path, notice: "Queued deletion for #{selection_label}. They will be removed shortly." }
+    end
   end
 
   def bulk_archive

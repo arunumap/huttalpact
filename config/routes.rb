@@ -64,6 +64,7 @@ Rails.application.routes.draw do
     resources :lease_milestones, only: %i[new create edit update destroy]
     collection do
       post :create_draft
+      post :bulk_delete
       post :bulk_archive
       post :bulk_export
     end

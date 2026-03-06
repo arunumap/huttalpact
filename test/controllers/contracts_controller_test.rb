@@ -176,6 +176,35 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_match "2 contracts archived", flash[:notice]
   end
 
+  test "bulk_delete enqueues asynchronous deletion operation" do
+    contract2 = contracts(:landscaping)
+
+    assert_difference "BulkDeleteOperation.count", 1 do
+      assert_enqueued_with(job: BulkDeleteContractsJob) do
+        post bulk_delete_contracts_path, params: { ids: [ @contract.id, contract2.id ] }
+      end
+    end
+
+    operation = BulkDeleteOperation.order(created_at: :desc).first
+    assert_equal organizations(:one), operation.organization
+    assert_equal users(:one), operation.user
+    assert_equal "queued", operation.status
+    assert_equal 2, operation.requested_count
+    assert_redirected_to contracts_path
+    assert_match "Queued deletion for 2 contracts", flash[:notice]
+  end
+
+  test "bulk_delete returns turbo stream status update" do
+    assert_enqueued_with(job: BulkDeleteContractsJob) do
+      post bulk_delete_contracts_path, params: { ids: [ @contract.id ] }, as: :turbo_stream
+    end
+
+    assert_response :success
+    assert_equal Mime[:turbo_stream].to_s, response.media_type
+    assert_includes response.body, 'target="contracts_bulk_delete_status"'
+    assert_includes response.body, "Deleting 1 contract in background"
+  end
+
   test "bulk_export returns CSV of selected contracts" do
     post bulk_export_contracts_path, params: { ids: [ @contract.id ] }
     assert_response :success
@@ -424,6 +453,12 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
   # Bulk archive edge cases
   test "bulk_archive with empty ids redirects with alert" do
     post bulk_archive_contracts_path, params: { ids: [] }
+    assert_redirected_to contracts_path
+    assert_match "No contracts selected", flash[:alert]
+  end
+
+  test "bulk_delete with empty ids redirects with alert" do
+    post bulk_delete_contracts_path, params: { ids: [] }
     assert_redirected_to contracts_path
     assert_match "No contracts selected", flash[:alert]
   end

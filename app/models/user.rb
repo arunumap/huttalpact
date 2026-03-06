@@ -7,6 +7,7 @@ class User < ApplicationRecord
   has_many :alerts, through: :alert_recipients
   has_many :alert_preferences, dependent: :destroy
   has_many :audit_logs
+  has_many :bulk_delete_operations, dependent: :destroy
   has_many :extraction_feedbacks, dependent: :destroy
   has_many :sent_invitations, class_name: "Invitation", foreign_key: :inviter_id, dependent: :nullify
 

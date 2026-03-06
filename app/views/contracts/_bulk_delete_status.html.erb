@@ -1,0 +1,53 @@
+<% return unless operation.present? %>
+
+<% status = operation.status %>
+<% banner_classes, title_classes, detail_classes = case status
+   when BulkDeleteOperation::STATUS_QUEUED
+     [ "bg-amber-50 ring-amber-200", "text-amber-800", "text-amber-700" ]
+   when BulkDeleteOperation::STATUS_PROCESSING
+     [ "bg-blue-50 ring-blue-200", "text-blue-800", "text-blue-700" ]
+   when BulkDeleteOperation::STATUS_COMPLETED
+     [ "bg-green-50 ring-green-200", "text-green-800", "text-green-700" ]
+   when BulkDeleteOperation::STATUS_COMPLETED_WITH_ERRORS
+     [ "bg-amber-50 ring-amber-200", "text-amber-800", "text-amber-700" ]
+   else
+     [ "bg-red-50 ring-red-200", "text-red-800", "text-red-700" ]
+   end %>
+
+<% title_text =
+   local_assigns[:inline_message].presence ||
+     case status
+     when BulkDeleteOperation::STATUS_QUEUED
+       "Bulk delete queued."
+     when BulkDeleteOperation::STATUS_PROCESSING
+       "Deleting contracts..."
+      when BulkDeleteOperation::STATUS_COMPLETED
+        "Deleted #{operation.deleted_count} #{'contract'.pluralize(operation.deleted_count)}."
+      when BulkDeleteOperation::STATUS_COMPLETED_WITH_ERRORS
+        "Deleted #{operation.deleted_count} #{'contract'.pluralize(operation.deleted_count)} with #{pluralize(operation.failed_count, 'failure')}."
+      else
+        "Bulk delete failed."
+      end %>
+
+<div class="rounded-lg px-4 py-3 ring-1 <%= banner_classes %>">
+  <div class="flex items-start gap-2">
+    <% if operation.in_progress? %>
+      <svg class="mt-0.5 h-4 w-4 animate-spin text-current <%= title_classes %>" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+      </svg>
+    <% end %>
+    <div>
+      <p class="text-sm font-semibold <%= title_classes %>"><%= title_text %></p>
+      <% if operation.in_progress? %>
+        <p class="text-xs <%= detail_classes %> mt-0.5">
+          <%= operation.processed_count %> of <%= operation.requested_count %> processed.
+        </p>
+      <% elsif operation.failed_count.positive? %>
+        <p class="text-xs <%= detail_classes %> mt-0.5">
+          <%= pluralize(operation.failed_count, "contract") %> could not be deleted.
+        </p>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_04_223000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_06_195000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -198,6 +198,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_223000) do
     t.index ["published_at"], name: "index_blog_posts_on_published_at"
     t.index ["slug"], name: "index_blog_posts_on_slug", unique: true
     t.index ["status"], name: "index_blog_posts_on_status"
+  end
+
+  create_table "bulk_delete_operations", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.datetime "completed_at"
+    t.datetime "created_at", null: false
+    t.integer "deleted_count", default: 0, null: false
+    t.text "error_message"
+    t.integer "failed_count", default: 0, null: false
+    t.uuid "organization_id", null: false
+    t.integer "processed_count", default: 0, null: false
+    t.integer "requested_count", default: 0, null: false
+    t.string "status", default: "queued", null: false
+    t.datetime "updated_at", null: false
+    t.uuid "user_id", null: false
+    t.index ["organization_id", "status", "created_at"], name: "index_bulk_delete_ops_on_org_status_created_at"
+    t.index ["organization_id", "user_id", "created_at"], name: "index_bulk_delete_ops_on_org_user_created_at"
+    t.index ["organization_id"], name: "index_bulk_delete_operations_on_organization_id"
+    t.index ["user_id"], name: "index_bulk_delete_operations_on_user_id"
   end
 
   create_table "contract_documents", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -602,6 +620,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_04_223000) do
   add_foreign_key "audit_logs", "users"
   add_foreign_key "blog_posts", "admin_users"
   add_foreign_key "blog_posts", "blog_categories"
+  add_foreign_key "bulk_delete_operations", "organizations"
+  add_foreign_key "bulk_delete_operations", "users"
   add_foreign_key "contract_documents", "contracts", on_delete: :cascade
   add_foreign_key "contracts", "organizations"
   add_foreign_key "contracts", "users", column: "uploaded_by_id"
