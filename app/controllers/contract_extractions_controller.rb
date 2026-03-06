@@ -14,7 +14,16 @@ class ContractExtractionsController < ApplicationController
     AiExtractContractJob.perform_later(@contract.id)
     log_audit("updated", contract: @contract, details: "Triggered AI re-extraction")
 
-    redirect_to @contract, notice: "AI extraction started. Results will appear shortly."
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: turbo_stream.replace(
+          "contract_ai_status",
+          partial: "contracts/ai_status",
+          locals: { contract: @contract, status_override: "processing" }
+        )
+      end
+      format.html { redirect_to @contract, notice: "AI extraction started. Results will appear shortly." }
+    end
   end
 
   def redetect

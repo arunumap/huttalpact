@@ -20,6 +20,23 @@ class ContractExtractionsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "pending", @contract.extraction_status
   end
 
+  test "turbo stream request shows analyzing state immediately" do
+    @contract.update!(extraction_status: "completed", ai_extracted_data: '{"vendor_name":"Acme"}')
+
+    assert_enqueued_with(job: AiExtractContractJob, args: [ @contract.id ]) do
+      post contract_extraction_path(@contract), as: :turbo_stream
+    end
+
+    assert_response :success
+    assert_equal Mime[:turbo_stream].to_s, response.media_type
+    assert_includes response.body, 'target="contract_ai_status"'
+    assert_includes response.body, "AI is analyzing your contract..."
+    assert_not_includes response.body, "Ready for AI extraction"
+
+    @contract.reload
+    assert_equal "pending", @contract.extraction_status
+  end
+
   test "should redirect with alert when no completed documents" do
     @contract.contract_documents.update_all(extraction_status: "pending")
 
