@@ -15,7 +15,9 @@ class PagesController < ApplicationController
   layout :marketing_layout
 
   def home
-    redirect_to dashboard_path if authenticated?
+    return redirect_to dashboard_path if authenticated?
+
+    @plan_tiers = PlanCatalogService.active_tiers_for_pricing
   end
 
   def ads_contracts

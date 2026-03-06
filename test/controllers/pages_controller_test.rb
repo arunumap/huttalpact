@@ -44,6 +44,44 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2", /Simple, transparent pricing/
   end
 
+  test "landing page pricing teaser renders dynamic tiers from plan catalog" do
+    custom_tiers = [
+      PlanCatalogService::FallbackTier.new(
+        slug: "pilot",
+        name: "Pilot",
+        contract_limit: 25,
+        extraction_limit: 15,
+        user_limit: 2,
+        monthly_price_cents: 5900,
+        featured: false,
+        active: true,
+        visible_on_pricing_page: true
+      ),
+      PlanCatalogService::FallbackTier.new(
+        slug: "growth_plus",
+        name: "Growth Plus",
+        contract_limit: nil,
+        extraction_limit: nil,
+        user_limit: nil,
+        monthly_price_cents: 12900,
+        featured: true,
+        active: true,
+        visible_on_pricing_page: true
+      )
+    ]
+
+    PlanCatalogService.stub(:active_tiers_for_pricing, custom_tiers) do
+      get root_path
+    end
+
+    assert_response :success
+    assert_select "h3", text: "Pilot"
+    assert_select "h3", text: "Growth Plus"
+    assert_select "h3", text: "Starter", count: 0
+    assert_match "$59", response.body
+    assert_match "$129", response.body
+  end
+
   test "ads landing page is accessible to unauthenticated users" do
     get ads_contracts_landing_path
     assert_response :success
