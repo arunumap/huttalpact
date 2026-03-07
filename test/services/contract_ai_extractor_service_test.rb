@@ -761,6 +761,30 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     assert_equal "AI Suggested Title", @contract.title, "Title should be set from AI when blank"
   end
 
+  test "full extraction replaces untitled draft placeholder title" do
+    @contract.update!(title: "Untitled Draft", extraction_status: "pending")
+    @contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "Sample contract text",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    ai_response = build_ai_response(
+      title: "AI Suggested Title",
+      key_clauses: [],
+      summary: "Test summary"
+    )
+
+    stub_anthropic_client(ai_response) do
+      ContractAiExtractorService.new(@contract).call
+    end
+
+    @contract.reload
+    assert_equal "AI Suggested Title", @contract.title, "Placeholder draft title should be replaced by AI title"
+  end
+
   test "full extraction maps ai_summary from summary separate from notes" do
     @contract.update!(notes: "User notes here", ai_summary: nil, extraction_status: "pending")
     @contract.contract_documents.create!(

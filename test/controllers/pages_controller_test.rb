@@ -104,14 +104,45 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "meta[name='robots'][content='noindex, nofollow']", count: 1
   end
 
+  test "ads landing page shows first-week case study section" do
+    get ads_contracts_landing_path
+    assert_response :success
+
+    assert_select "p", /What a typical first week looks like/i
+    assert_select "h2", /How a 12-property management team got control of 87 contract deadlines/
+    assert_select "h3", text: "The situation"
+    assert_select "h3", text: "What happened"
+    assert_select "h3", text: "The result"
+
+    assert_not_includes response.body, "Trusted by Property Teams"
+    assert_not_includes response.body, "Placeholder testimonials"
+  end
+
+  test "ads landing page applies dmm hero copy from utm_term" do
+    get ads_contracts_landing_path(utm_term: "lease renewals")
+    assert_response :success
+
+    assert_select "h1", /Never miss critical lease renewals deadlines again/
+    assert_select "p", /stay ahead of lease renewals deadlines/i
+    assert_select "input[name='utm_term'][value='lease renewals']", count: 1
+  end
+
+  test "ads landing page falls back to default hero copy when utm_term is blank" do
+    get ads_contracts_landing_path(utm_term: "   ")
+    assert_response :success
+
+    assert_select "h1", /Never miss a lease or vendor contract deadline again/
+  end
+
   test "ads landing page preserves attribution params in inline signup form" do
-    get ads_contracts_landing_path(utm_source: "google", utm_medium: "cpc", utm_campaign: "spring", gclid: "abc123")
+    get ads_contracts_landing_path(utm_source: "google", utm_medium: "cpc", utm_campaign: "spring", utm_term: "lease tracking", gclid: "abc123")
     assert_response :success
 
     assert_select "form[action='#{registration_path}']" do
       assert_select "input[name='utm_source'][value='google']", count: 1
       assert_select "input[name='utm_medium'][value='cpc']", count: 1
       assert_select "input[name='utm_campaign'][value='spring']", count: 1
+      assert_select "input[name='utm_term'][value='lease tracking']", count: 1
       assert_select "input[name='gclid'][value='abc123']", count: 1
       assert_select "input[name='source'][value='ads_contracts_landing']", count: 1
     end

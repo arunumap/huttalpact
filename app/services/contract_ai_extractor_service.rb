@@ -725,7 +725,7 @@ class ContractAiExtractorService
   # Full mode: only fill blank fields (first-time or re-extract)
   def apply_full_extraction(data)
     update_attrs = {}
-    update_attrs[:title] = data["title"] if data["title"].present? && @contract.title.blank?
+    update_attrs[:title] = data["title"] if data["title"].present? && title_eligible_for_autofill?
     update_attrs[:vendor_name] = data["vendor_name"] if data["vendor_name"].present? && @contract.vendor_name.blank?
     update_attrs[:premises_address] = data["premises_address"] if data["premises_address"].present? && @contract.premises_address.blank?
     update_attrs[:contract_type] = data["contract_type"] if data["contract_type"].present? && @contract.contract_type.blank?
@@ -744,6 +744,10 @@ class ContractAiExtractorService
 
     # Fallback: compute next_renewal_date from end_date if still blank
     compute_next_renewal_date!
+  end
+
+  def title_eligible_for_autofill?
+    @contract.title.blank? || @contract.title == "Untitled Draft"
   end
 
   # Incremental mode: only update fields where the AI produced a DIFFERENT value

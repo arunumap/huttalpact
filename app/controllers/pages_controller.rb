@@ -1,5 +1,6 @@
 class PagesController < ApplicationController
   ADS_LANDING_SOURCE = "ads_contracts_landing".freeze
+  ADS_DMM_MAX_LENGTH = 80
   AD_ATTRIBUTION_QUERY_KEYS = %w[
     utm_source
     utm_medium
@@ -23,6 +24,7 @@ class PagesController < ApplicationController
   def ads_contracts
     @user = User.new
     @organization_name = nil
+    @dmm_term = normalized_dmm_term(params[:utm_term])
     @ads_signup_params = request.query_parameters.slice(*AD_ATTRIBUTION_QUERY_KEYS)
       .merge("source" => ADS_LANDING_SOURCE)
   end
@@ -40,5 +42,11 @@ class PagesController < ApplicationController
 
   def marketing_layout
     action_name == "ads_contracts" ? "marketing_funnel" : "marketing"
+  end
+
+  def normalized_dmm_term(raw_term)
+    term = raw_term.to_s.tr("_", " ").squish
+    term = term.gsub(/[^[:alnum:]\s&\/-]/, "").first(ADS_DMM_MAX_LENGTH)&.strip
+    term.presence
   end
 end
