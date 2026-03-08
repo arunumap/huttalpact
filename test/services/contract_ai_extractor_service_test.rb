@@ -769,6 +769,46 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     assert_includes prompt, "PRIOR EXTRACTION RESULT"
   end
 
+  test "lease prompt review field reference only lists tracked direct keys" do
+    lease_contract = contracts(:commercial_lease)
+    lease_contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "This is a sample commercial lease.",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    service = ContractAiExtractorService.new(lease_contract)
+    prompt = service.send(:build_prompt, service.send(:build_document_text))
+
+    assert_includes prompt, "contract.end_date"
+    assert_includes prompt, "lease_milestone.recurrence_interval"
+    assert_includes prompt, "do NOT create review_fields entries for schema fields that are not listed"
+    refute_includes prompt, "contract.start_date"
+    refute_includes prompt, "lease_option.option_type"
+    refute_includes prompt, "rent_escalation.base_rent_monthly"
+    refute_includes prompt, "lease_milestone.milestone_type"
+  end
+
+  test "lease prompt explains nullable repeatable review field counts" do
+    lease_contract = contracts(:commercial_lease)
+    lease_contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "This is a sample commercial lease.",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    service = ContractAiExtractorService.new(lease_contract)
+    prompt = service.send(:build_prompt, service.send(:build_document_text))
+
+    assert_includes prompt, "one entry for each non-null tracked extracted sub-field"
+    assert_includes prompt, "Return recurrence_interval entries only for the milestone indices where recurrence_interval has a non-null value."
+    assert_includes prompt, "must return exactly 10 review_fields entries"
+  end
+
   # --- Source document mapping edge cases ---
 
   test "source_document_id is nil when filename does not match any document" do
@@ -1207,6 +1247,78 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     document_text = service.send(:build_document_text)
     prompt = service.send(:build_prompt, document_text)
     assert_includes prompt, "commercial real estate lease analysis specialist"
+  end
+
+  test "normalize_review_fields ignores untracked keys" do
+    service = ContractAiExtractorService.new(@contract)
+
+    normalized = service.send(:normalize_review_fields, [
+      {
+        "field_key" => "lease_option.option_type",
+        "field_index" => 0,
+        "confidence_score" => 91,
+        "source_excerpt" => "Tenant has one renewal option."
+      }
+    ])
+
+    assert_empty normalized
+  end
+
+  test "backfills missing confidence for tracked repeatable direct fields" do
+    lease_contract = contracts(:commercial_lease)
+    lease_contract.lease_detail&.destroy
+    lease_contract.rent_escalations.destroy_all
+    lease_contract.lease_options.destroy_all
+    lease_contract.lease_milestones.destroy_all
+    lease_contract.contract_documents.create!(
+      extraction_status: "completed",
+      extracted_text: "This is a sample commercial lease.",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+
+    ai_response = build_lease_ai_response
+    parsed = JSON.parse(ai_response["content"][0]["text"])
+    parsed["review_fields"] = [
+      {
+        "field_key" => "lease_milestone.due_date",
+        "field_index" => 0,
+        "confidence_score" => 92,
+        "source_excerpt" => "Annual CAM reconciliation due March 1.",
+        "source_reference" => "Page 5"
+      },
+      {
+        "field_key" => "lease_milestone.due_date",
+        "field_index" => 1,
+        "confidence_score" => 90,
+        "source_excerpt" => "Insurance certificate due June 15.",
+        "source_reference" => "Page 6"
+      },
+      {
+        "field_key" => "lease_milestone.recurring",
+        "field_index" => 0,
+        "confidence_score" => 95,
+        "source_excerpt" => "This obligation recurs each year.",
+        "source_reference" => "Page 5"
+      }
+    ]
+    ai_response["content"][0]["text"] = parsed.to_json
+
+    stub_anthropic_client(ai_response) do
+      result = ContractAiExtractorService.new(lease_contract).call
+      recurring_field = result["review_fields"].find do |field|
+        field["field_key"] == "lease_milestone.recurring" && field["field_index"] == 1
+      end
+      interval_field = result["review_fields"].find do |field|
+        field["field_key"] == "lease_milestone.recurrence_interval" && field["field_index"] == 1
+      end
+
+      assert_equal 50, recurring_field["confidence_score"]
+      assert_includes recurring_field["readiness_reasons"], "confidence_backfilled"
+      assert_equal 50, interval_field["confidence_score"]
+      assert_includes interval_field["readiness_reasons"], "confidence_backfilled"
+    end
   end
 
   test "uses generic prompt for non-lease contract" do

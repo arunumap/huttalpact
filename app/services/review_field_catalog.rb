@@ -104,6 +104,29 @@ class ReviewFieldCatalog
       alert_families.values.select { |family| family.applicable_to_contract_type?(contract_type) }
     end
 
+    def tracked_direct_fields
+      @tracked_direct_fields ||= fields.values.select(&:direct?).freeze
+    end
+
+    def review_prompt_field_groups
+      @review_prompt_field_groups ||= {
+        contract_level: tracked_direct_fields
+          .reject(&:repeatable?)
+          .select { |definition| definition.key.start_with?("contract.") }
+          .map(&:key)
+          .freeze,
+        lease_detail: tracked_direct_fields
+          .reject(&:repeatable?)
+          .select { |definition| definition.key.start_with?("lease_detail.") }
+          .map(&:key)
+          .freeze,
+        repeatable: tracked_direct_fields
+          .select(&:repeatable?)
+          .map(&:key)
+          .freeze
+      }.freeze
+    end
+
     def lease_only_field_keys
       fields.values.select(&:lease_only?).map(&:key)
     end

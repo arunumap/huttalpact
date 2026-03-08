@@ -3,6 +3,14 @@ class ContractAiExtractorService
 
   # ~400k chars ≈ ~100k tokens, safely under Claude's 200k context window
   MAX_INPUT_CHARS = 400_000
+  TRACKED_REVIEW_FIELD_GROUPS = ReviewFieldCatalog.review_prompt_field_groups
+  TRACKED_DIRECT_REVIEW_FIELD_KEYS = TRACKED_REVIEW_FIELD_GROUPS.values.flatten.freeze
+  REVIEW_FIELDS_SCHEMA_DESCRIPTION = "REQUIRED array — one entry per non-null tracked direct review field value. Only use field keys listed in the review_fields instructions below; do not create entries for other schema fields."
+  REVIEW_FIELD_REFERENCE = <<~REFERENCE.chomp
+    - Contract-level: #{TRACKED_REVIEW_FIELD_GROUPS[:contract_level].join(",\n      ")}
+    - Lease detail: #{TRACKED_REVIEW_FIELD_GROUPS[:lease_detail].join(",\n      ")}
+    - Repeatable (use field_index): #{TRACKED_REVIEW_FIELD_GROUPS[:repeatable].join(",\n      ")}
+  REFERENCE
 
   JSON_SCHEMA = <<~SCHEMA
     {
@@ -29,7 +37,7 @@ class ContractAiExtractorService
         }
       ],
       "summary": "2-3 sentence summary of the contract",
-      "review_fields": "Array — see review_fields instructions below"
+      "review_fields": "#{REVIEW_FIELDS_SCHEMA_DESCRIPTION}"
     }
   SCHEMA
 
@@ -120,7 +128,7 @@ class ContractAiExtractorService
         }
       ],
       "summary": "2-3 sentence summary of the lease",
-      "review_fields": "Array — see review_fields instructions below"
+      "review_fields": "#{REVIEW_FIELDS_SCHEMA_DESCRIPTION}"
     }
   SCHEMA
 
@@ -252,9 +260,23 @@ class ContractAiExtractorService
   REVIEW_METADATA_PROMPT = <<~PROMPT
     IMPORTANT — review_fields (REQUIRED in your JSON response):
     You MUST include a "review_fields" array as a top-level key in the JSON you return.
-    Every directly-extracted field MUST have a corresponding entry. For repeatable fields
-    (rent_escalations, lease_options, lease_milestones), include one entry PER ITEM using the
-    matching field_index (0-based, matching the array index of the item in the parent collection).
+    Every tracked direct field with a non-null extracted value MUST have a corresponding entry.
+    Do NOT skip any tracked value, and do NOT create review_fields entries for schema fields that are not listed in the field key reference below.
+    `key_clauses` keep using their inline `confidence_score`; do not mirror them into `review_fields`.
+
+    COMPLETENESS RULE FOR REPEATABLE FIELDS:
+    For repeatable fields (rent_escalations, lease_options, lease_milestones), you MUST include
+    one entry for each non-null tracked extracted sub-field of each item, using the matching field_index (0-based).
+    Example: if you extract 6 lease_milestones, you must return 6 entries for due_date (indices 0-5)
+    and 6 entries for recurring (indices 0-5).
+    Return recurrence_interval entries only for the milestone indices where recurrence_interval has a non-null value.
+    Missing entries cause fields to appear without confidence scores in the review UI, which blocks activation.
+
+    VERIFICATION BEFORE RETURNING:
+    Count your review_fields entries. The count must equal the number of non-null tracked direct values
+    you extracted for the field keys listed below.
+    Example: if you extract 5 rent_escalation.effective_date values, 2 lease_option.notice_deadline values,
+    and 3 tracked contract/lease_detail values, you must return exactly 10 review_fields entries.
 
     Example review_fields entries:
       "review_fields": [
@@ -285,20 +307,7 @@ class ContractAiExtractorService
       ]
 
     Field key reference for review_fields entries:
-    - Contract-level: contract.start_date, contract.end_date, contract.next_renewal_date,
-      contract.auto_renews, contract.notice_period_days, contract.monthly_value,
-      contract.total_value, contract.contract_type, contract.direction, contract.renewal_term,
-      contract.vendor_name, contract.premises_address
-    - Lease detail: lease_detail.lease_type, lease_detail.rentable_sqft, lease_detail.usable_sqft,
-      lease_detail.security_deposit, lease_detail.free_rent_months, lease_detail.cam_base_amount,
-      lease_detail.cam_cap_percentage, lease_detail.cam_reconciliation_month,
-      lease_detail.ti_total_amount, lease_detail.ti_deadline,
-      lease_detail.percentage_rent_report_date, lease_detail.permitted_use
-    - Repeatable (use field_index): rent_escalation.effective_date,
-      rent_escalation.base_rent_monthly, rent_escalation.escalation_type,
-      lease_option.option_type, lease_option.notice_deadline, lease_option.exercise_deadline,
-      lease_milestone.milestone_type, lease_milestone.due_date, lease_milestone.recurring,
-      lease_milestone.recurrence_interval
+    #{REVIEW_FIELD_REFERENCE}
 
     Rules for each review_fields entry:
     - field_key: REQUIRED. Must be one of the keys listed above.
