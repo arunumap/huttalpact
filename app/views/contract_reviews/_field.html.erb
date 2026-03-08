@@ -1,0 +1,140 @@
+<% review = local_assigns.fetch(:review, @review) %>
+
+<div id="<%= dom_id(field) %>" class="px-6 py-5">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div class="min-w-0 flex-1 space-y-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <h4 class="text-sm font-semibold text-gray-900"><%= review_field_label(field) %></h4>
+        <%= review_readiness_badge(field) %>
+        <%= review_status_badge(field.review_status) %>
+        <% if field.gates_activation? %>
+          <span class="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">Activation-driving</span>
+        <% end %>
+        <% if field.field_index.present? %>
+          <% group_context = review_field_group_context(field, contract) %>
+          <span class="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-inset ring-indigo-600/20">
+            <%= group_context || "Item #{field.field_index + 1}" %>
+          </span>
+        <% end %>
+        <%# Readiness reasons are tracked internally for debugging but not shown to end users %>
+      </div>
+
+      <% if review_field_description(field).present? %>
+        <p class="text-sm text-gray-500"><%= review_field_description(field) %></p>
+      <% end %>
+
+      <div class="grid gap-3 sm:grid-cols-3">
+        <div class="rounded-lg bg-gray-50 px-3 py-3 ring-1 ring-gray-200">
+          <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Extracted</p>
+          <p class="mt-1 text-sm text-gray-900"><%= display_review_value(field.extracted_value) %></p>
+        </div>
+        <div class="rounded-lg bg-gray-50 px-3 py-3 ring-1 ring-gray-200">
+          <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Current record</p>
+          <p class="mt-1 text-sm text-gray-900"><%= display_review_value(field.current_value) %></p>
+        </div>
+        <div class="rounded-lg bg-amber-50 px-3 py-3 ring-1 ring-amber-200">
+          <p class="text-xs font-medium uppercase tracking-wide text-amber-700">Approved</p>
+          <p class="mt-1 text-sm font-medium text-gray-900"><%= display_review_value(field.effective_value) %></p>
+        </div>
+      </div>
+
+      <% if field.source_document_name.present? || field.source_locator.present? || field.source_span.present? %>
+        <div class="rounded-lg bg-blue-50 px-4 py-3 ring-1 ring-blue-200">
+          <div class="flex flex-wrap items-center gap-2 text-xs font-medium uppercase tracking-wide text-blue-700">
+            <% if field.source_document_name.present? %>
+              <span><%= field.source_document_name %></span>
+            <% end %>
+            <% if field.source_locator.present? %>
+              <span>·</span>
+              <span><%= field.source_locator %></span>
+            <% end %>
+            <% if field.confidence_score.present? %>
+              <span>·</span>
+              <span class="<%= field.confidence_score >= 90 ? 'text-green-700' : field.confidence_score >= 75 ? 'text-amber-700' : 'text-red-700' %>">
+                Confidence: <%= field.confidence_score %>%
+              </span>
+            <% end %>
+            <% if field.source_quality_flag.present? && field.source_quality_flag != "good" %>
+              <span>·</span>
+              <span class="text-amber-700">Quality: <%= field.source_quality_flag %></span>
+            <% end %>
+          </div>
+          <% if field.source_span&.dig("excerpt").present? %>
+            <p class="mt-2 text-sm italic text-blue-900">"<%= field.source_span["excerpt"] %>"</p>
+          <% end %>
+          <% if field.source_span&.dig("precedence_hint").present? && field.source_span["precedence_hint"] != "direct_extraction" %>
+            <p class="mt-1 text-xs text-blue-600"><%= field.source_span["precedence_hint"].tr("_", " ").capitalize %></p>
+          <% end %>
+        </div>
+      <% end %>
+
+      <% if field.contract_review_conflicts.open.any? %>
+        <div class="space-y-2 rounded-lg bg-red-50 px-4 py-3 ring-1 ring-red-200">
+          <% field.contract_review_conflicts.open.each do |conflict| %>
+            <div>
+              <p class="text-sm font-medium text-red-800"><%= conflict.summary %></p>
+              <% if conflict.details.present? %>
+                <p class="mt-1 text-sm text-red-700"><%= conflict.details %></p>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <% if field.review_note.present? %>
+        <div class="rounded-lg bg-gray-50 px-4 py-3 ring-1 ring-gray-200">
+          <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Latest note</p>
+          <p class="mt-1 text-sm text-gray-700"><%= field.review_note %></p>
+        </div>
+      <% end %>
+    </div>
+
+    <div class="w-full space-y-3 lg:w-72">
+      <% editable = !field.source_type.in?(["app_managed"]) && (!field.gates_activation? || review.open?) %>
+      <% if editable %>
+        <div class="flex flex-wrap gap-2">
+          <%= button_to contract_review_field_confirm_path(contract, field), method: :patch,
+              class: "inline-flex items-center justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500" do %>
+            Confirm
+          <% end %>
+          <%= button_to contract_review_field_mark_not_found_path(contract, field), method: :patch,
+              class: "inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-inset ring-red-200 hover:bg-red-50" do %>
+            Not found
+          <% end %>
+          <%= button_to contract_review_field_mark_not_applicable_path(contract, field), method: :patch,
+              class: "inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-medium text-purple-600 ring-1 ring-inset ring-purple-200 hover:bg-purple-50" do %>
+            Not applicable
+          <% end %>
+        </div>
+
+        <details class="rounded-lg bg-white ring-1 ring-gray-200">
+          <summary class="cursor-pointer list-none px-4 py-3 text-sm font-medium text-gray-700">Edit approved value</summary>
+          <div class="border-t border-gray-200 px-4 py-4">
+            <%= form_with model: field, url: contract_review_field_path(contract, field), method: :patch, class: "space-y-3" do |form| %>
+              <% case review_field_input_kind(field) %>
+              <% when :date %>
+                <%= form.date_field :approved_value, value: review_field_form_value(field), class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
+              <% when :boolean %>
+                <%= form.select :approved_value, options_for_select([["Yes", "true"], ["No", "false"]], review_field_form_value(field)), {}, class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
+              <% when :number %>
+                <%= form.number_field :approved_value, value: review_field_form_value(field), step: "any", class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
+              <% else %>
+                <%= form.text_field :approved_value, value: review_field_form_value(field), class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
+              <% end %>
+              <%= form.text_area :review_note, rows: 3, placeholder: "Why are you editing this value?", class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
+              <%= form.submit "Save approved value", class: "inline-flex items-center rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-500" %>
+            <% end %>
+          </div>
+        </details>
+      <% else %>
+        <div class="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600 ring-1 ring-gray-200">
+          <% if field.source_type == "app_managed" %>
+            This field is managed automatically by the workflow.
+          <% else %>
+            Activation-driving fields are locked after completion. Upload an addendum or start a new review to change them.
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

@@ -26,7 +26,7 @@ class Settings::AlertsController < ApplicationController
   end
 
   def enqueue_alert_regeneration
-    Current.organization.contracts.where(status: Contract::ACTIVE_STATUSES).find_each do |contract|
+    Current.organization.contracts.where(status: Contract::ALERT_GENERATION_STATUSES).find_each do |contract|
       GenerateContractAlertsJob.perform_later(contract.id)
     end
   end

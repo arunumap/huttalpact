@@ -1,6 +1,7 @@
 class ContractDocument < ApplicationRecord
   belongs_to :contract
   has_many :key_clauses, foreign_key: :source_document_id, dependent: :destroy
+  has_many :sourced_contract_review_fields, class_name: "ContractReviewField", foreign_key: :source_document_id, dependent: :nullify
 
   has_one_attached :file
 

@@ -8,11 +8,16 @@ class Contract < ApplicationRecord
   has_many :alerts, dependent: :destroy
   has_many :audit_logs, dependent: :nullify
   has_many :ai_usage_logs, dependent: :nullify
+  has_many :contract_reviews, dependent: :destroy
   has_many :extraction_feedbacks, dependent: :destroy
   has_one :lease_detail, dependent: :destroy
   has_many :rent_escalations, dependent: :destroy
   has_many :lease_options, dependent: :destroy
   has_many :lease_milestones, dependent: :destroy
+  has_many :contract_review_fields, through: :contract_reviews
+  has_many :contract_review_conflicts, through: :contract_reviews
+  has_many :contract_review_field_events, through: :contract_reviews
+  has_one :current_contract_review, -> { where(status: "open").order(created_at: :desc) }, class_name: "ContractReview"
 
   normalizes :vendor_name, with: ->(v) { v.strip.squeeze(" ") }
   normalizes :premises_address, with: ->(v) { v.strip.squeeze(" ") }
@@ -20,7 +25,7 @@ class Contract < ApplicationRecord
   validates :title, presence: true, length: { maximum: 255 }, unless: :draft?
   validates :title, length: { maximum: 255 }, if: :draft?
   validates :vendor_name, length: { maximum: 255 }, allow_nil: true
-  validates :status, inclusion: { in: %w[draft active expiring_soon expired renewed cancelled archived] }
+  validates :status, inclusion: { in: %w[draft active in_review expiring_soon expired renewed cancelled archived] }
   validates :contract_type, inclusion: { in: %w[lease service_agreement maintenance insurance software other] }, allow_blank: true
   validates :direction, inclusion: { in: %w[inbound outbound] }
   validates :monthly_value, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
@@ -38,6 +43,7 @@ class Contract < ApplicationRecord
   validate :renewal_date_after_start_date
 
   scope :active, -> { where(status: "active") }
+  scope :in_review, -> { where(status: "in_review") }
   scope :expiring_soon, -> { where(status: "expiring_soon") }
   scope :expired, -> { where(status: "expired") }
   scope :archived, -> { where(status: "archived") }
@@ -55,7 +61,7 @@ class Contract < ApplicationRecord
   scope :expiring_within, ->(days) { where(end_date: ..days.days.from_now.to_date).where.not(status: %w[expired archived]) }
   scope :renewal_within, ->(days) { where(next_renewal_date: ..days.days.from_now.to_date) }
 
-  STATUSES = %w[draft active expiring_soon expired renewed cancelled archived].freeze
+  STATUSES = %w[draft active in_review expiring_soon expired renewed cancelled archived].freeze
   CONTRACT_TYPES = %w[lease service_agreement maintenance insurance software other].freeze
   RENEWAL_TERMS = %w[month-to-month annual 2-year custom].freeze
   DIRECTIONS = %w[inbound outbound].freeze
@@ -64,6 +70,8 @@ class Contract < ApplicationRecord
   INACTIVE_STATUSES = %w[archived cancelled expired].freeze
   DRAFT_STATUSES = %w[draft].freeze
   ACTIVE_STATUSES = (STATUSES - INACTIVE_STATUSES - DRAFT_STATUSES).freeze
+  ALERT_GENERATION_STATUSES = (ACTIVE_STATUSES - %w[in_review]).freeze
+  AUTO_EXPIRING_STATUSES = %w[active expiring_soon in_review].freeze
 
   def status_label
     status.titleize.gsub("_", " ")
@@ -89,6 +97,14 @@ class Contract < ApplicationRecord
     status == "draft"
   end
 
+  def in_review?
+    status == "in_review"
+  end
+
+  def alert_generation_enabled?
+    ALERT_GENERATION_STATUSES.include?(status)
+  end
+
   def days_until_expiry
     return nil unless end_date
     (end_date - Date.current).to_i
@@ -103,12 +119,36 @@ class Contract < ApplicationRecord
     contract_type == "lease"
   end
 
+  def extraction_blocked_by_limit?
+    return false unless extraction_status.in?(%w[pending failed])
+    return false unless organization
+    return false if organization.extraction_overage_enabled?
+    return false unless organization.at_extraction_limit?
+    return false if contract_documents.none?
+
+    contract_documents.where.not(extraction_status: %w[completed failed]).none?
+  end
+
   def current_rent
     rent_escalations.past_or_current.last
   end
 
   def next_rent_escalation
     rent_escalations.future.first
+  end
+
+  def review_workspace
+    current_contract_review ||
+      contract_reviews.completed.recent.detect { |review| review.standard_priority_open_items_summary[:count].positive? } ||
+      contract_reviews.recent.first
+  end
+
+  def review_pending?
+    in_review? && review_workspace.present?
+  end
+
+  def follow_through_pending?
+    review_workspace&.completed? && review_workspace.standard_priority_open_items_summary[:count].positive?
   end
 
   private

@@ -29,7 +29,7 @@ class AlertGeneratorService
   private
 
   def skip_contract?
-    @contract.status.in?(%w[expired cancelled])
+    !@contract.alert_generation_enabled?
   end
 
   def clear_regenerable_alerts!

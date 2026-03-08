@@ -8,8 +8,13 @@ class Organization < ApplicationRecord
   has_many :contracts, dependent: :destroy
   has_many :alerts, dependent: :destroy
   has_many :alert_preferences, dependent: :destroy
+  has_many :audit_logs, dependent: :destroy
   has_many :invitations, dependent: :destroy
   has_many :ai_usage_logs, dependent: :destroy
+  has_many :contract_reviews, dependent: :destroy
+  has_many :contract_review_fields, dependent: :destroy
+  has_many :contract_review_conflicts, dependent: :destroy
+  has_many :contract_review_field_events, dependent: :destroy
   has_many :extraction_overage_charges, dependent: :destroy
   has_many :bulk_delete_operations, dependent: :destroy
 

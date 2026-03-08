@@ -15,6 +15,21 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert cookies[:session_id]
   end
 
+  test "create with valid credentials redirects orgless user to organization access" do
+    user = User.create!(
+      email_address: "orgless-login@example.com",
+      password: "password123",
+      first_name: "Login",
+      last_name: "Orgless",
+      terms_accepted: "1"
+    )
+
+    post session_path, params: { email_address: user.email_address, password: "password123" }
+
+    assert_redirected_to organization_access_path
+    assert cookies[:session_id]
+  end
+
   test "create with invalid credentials" do
     post session_path, params: { email_address: @user.email_address, password: "wrong" }
 

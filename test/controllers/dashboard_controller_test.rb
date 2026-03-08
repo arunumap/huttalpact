@@ -75,6 +75,19 @@ class DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_select "h3", text: "Status Overview"
   end
 
+  test "status overview includes in_review contracts" do
+    Contract.create!(
+      title: "Pending Human Review",
+      status: "in_review",
+      organization: organizations(:one),
+      uploaded_by: users(:one)
+    )
+
+    get dashboard_path
+
+    assert_select "span", text: "In Review"
+  end
+
   test "displays monthly revenue by type" do
     get dashboard_path
     assert_select "h3", text: "Monthly Revenue by Type"

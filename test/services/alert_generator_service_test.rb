@@ -44,6 +44,25 @@ class AlertGeneratorServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "skips in_review contracts without mutating existing alerts" do
+    @contract.update!(status: "in_review")
+    @contract.alerts.destroy_all
+
+    existing_alert = @contract.alerts.create!(
+      organization: @organization,
+      alert_type: "expiry_warning",
+      trigger_date: 10.days.from_now,
+      status: "pending",
+      message: "Keep me"
+    )
+
+    assert_no_difference "Alert.count" do
+      AlertGeneratorService.new(@contract).call
+    end
+
+    assert Alert.exists?(existing_alert.id), "Existing alert should be preserved while contract is in review"
+  end
+
   test "skips contracts without relevant dates" do
     # Clear existing alerts first so clear_regenerable_alerts! doesn't affect count
     @contract.alerts.destroy_all

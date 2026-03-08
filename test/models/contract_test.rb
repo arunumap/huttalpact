@@ -41,6 +41,14 @@ class ContractTest < ActiveSupport::TestCase
     assert_not_includes active, contracts(:expired_insurance)
   end
 
+  test "in_review scope" do
+    @contract.update!(status: "in_review")
+
+    in_review = Contract.in_review
+    assert_includes in_review, @contract
+    assert_not_includes in_review, contracts(:expired_insurance)
+  end
+
   test "expiring_soon scope" do
     expiring = Contract.expiring_soon
     assert_includes expiring, contracts(:landscaping)
@@ -166,6 +174,11 @@ class ContractTest < ActiveSupport::TestCase
     assert @contract.valid?
   end
 
+  test "in_review is a valid status" do
+    @contract.status = "in_review"
+    assert @contract.valid?
+  end
+
   test "archived scope returns only archived contracts" do
     @contract.update!(status: "archived")
     assert_includes Contract.archived, @contract
@@ -177,9 +190,21 @@ class ContractTest < ActiveSupport::TestCase
     assert_includes Contract.not_archived, contracts(:landscaping)
   end
 
+  test "not_archived scope includes in_review contracts" do
+    @contract.update!(status: "in_review")
+
+    assert_includes Contract.not_archived, @contract
+  end
+
   test "expiring_within excludes archived contracts" do
     @contract.update!(status: "archived", end_date: 10.days.from_now)
     assert_not_includes Contract.expiring_within(30), @contract
+  end
+
+  test "expiring_within includes in_review contracts" do
+    @contract.update!(status: "in_review", end_date: 10.days.from_now)
+
+    assert_includes Contract.expiring_within(30), @contract
   end
 
   test "model validation prevents creation when at contract limit" do
@@ -294,6 +319,21 @@ class ContractTest < ActiveSupport::TestCase
     archived_contract = org.contracts.archived.first
     archived_contract.status = "active"
     assert archived_contract.valid?
+  end
+
+  test "prevents reactivation from archived to in_review when at contract limit" do
+    org = organizations(:one)
+    org.update!(plan: "free")
+    org.contracts.update_all(status: "archived")
+    10.times do |i|
+      Contract.create!(title: "Filler #{i}", status: "active", organization: org)
+    end
+
+    archived_contract = org.contracts.archived.first
+    archived_contract.status = "in_review"
+
+    assert_not archived_contract.valid?
+    assert_includes archived_contract.errors[:base].join, "Contract limit reached"
   end
 
   test "allows status change between active statuses without limit check" do
@@ -474,6 +514,15 @@ class ContractTest < ActiveSupport::TestCase
     assert_not @contract.draft?
   end
 
+  test "in_review? returns true for in_review contracts" do
+    @contract.status = "in_review"
+    assert @contract.in_review?
+  end
+
+  test "in_review? returns false for non-review contracts" do
+    assert_not @contract.in_review?
+  end
+
   test "draft contracts do not require title" do
     contract = Contract.new(
       status: "draft",
@@ -531,5 +580,13 @@ class ContractTest < ActiveSupport::TestCase
 
   test "ACTIVE_STATUSES excludes draft" do
     assert_not_includes Contract::ACTIVE_STATUSES, "draft"
+  end
+
+  test "ACTIVE_STATUSES includes in_review" do
+    assert_includes Contract::ACTIVE_STATUSES, "in_review"
+  end
+
+  test "ALERT_GENERATION_STATUSES excludes in_review" do
+    assert_not_includes Contract::ALERT_GENERATION_STATUSES, "in_review"
   end
 end

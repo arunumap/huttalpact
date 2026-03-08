@@ -325,10 +325,11 @@
           <% next if count == 0 %>
           <% pct = (count.to_f / total * 100).round %>
           <% bar_colors = {
-            "active" => "bg-green-500",
-            "expiring_soon" => "bg-amber-500",
-            "expired" => "bg-red-500",
-            "renewed" => "bg-blue-500",
+             "active" => "bg-green-500",
+             "in_review" => "bg-orange-500",
+             "expiring_soon" => "bg-amber-500",
+             "expired" => "bg-red-500",
+             "renewed" => "bg-blue-500",
             "cancelled" => "bg-gray-400"
           } %>
           <div>

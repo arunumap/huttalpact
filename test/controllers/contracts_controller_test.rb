@@ -31,6 +31,54 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "index filters by in_review status" do
+    @contract.update!(status: "in_review")
+
+    get contracts_path(status: "in_review")
+
+    assert_response :success
+    assert_select "turbo-frame#contracts" do
+      assert_select "a", text: "HVAC Maintenance - Building A"
+      assert_select "a", text: "Landscaping Services", count: 0
+    end
+  end
+
+  test "index shows review action for contracts with review workspace" do
+    @contract.update!(status: "in_review")
+    ActsAsTenant.with_tenant(@contract.organization) do
+      review = @contract.contract_reviews.create!(organization: @contract.organization, review_trigger: "initial_extraction")
+      review.contract_review_fields.create!(
+        contract: @contract,
+        organization: @contract.organization,
+        field_key: "contract.end_date",
+        extracted_value: "2028-12-31",
+        readiness_bucket: "looks_good"
+      )
+    end
+
+    get contracts_path
+
+    assert_response :success
+    assert_match "Review", response.body
+  end
+
+  test "index shows AI limit reached for blocked drafts" do
+    @contract.update!(status: "draft", title: "Untitled Draft", extraction_status: "pending")
+    @contract.contract_documents.destroy_all
+    @contract.contract_documents.create!(
+      extraction_status: "completed",
+      document_type: "main_contract",
+      position: 0,
+      file: Rack::Test::UploadedFile.new(Rails.root.join("test/fixtures/files/test.txt"), "text/plain")
+    )
+    @contract.organization.update!(plan: "free", ai_extractions_count: 5, ai_extractions_reset_at: Time.current)
+
+    get contracts_path
+
+    assert_response :success
+    assert_match "AI limit reached", response.body
+  end
+
   test "index filters by contract_type" do
     get contracts_path(contract_type: "maintenance")
     assert_response :success
@@ -64,6 +112,25 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match @contract.title, response.body
     assert_match @contract.vendor_name, response.body
+  end
+
+  test "show surfaces open review entry point for in review contracts" do
+    @contract.update!(status: "in_review")
+    ActsAsTenant.with_tenant(@contract.organization) do
+      review = @contract.contract_reviews.create!(organization: @contract.organization, review_trigger: "initial_extraction")
+      review.contract_review_fields.create!(
+        contract: @contract,
+        organization: @contract.organization,
+        field_key: "contract.end_date",
+        extracted_value: "2028-12-31",
+        readiness_bucket: "looks_good"
+      )
+    end
+
+    get contract_path(@contract)
+
+    assert_response :success
+    assert_match "Open Review", response.body
   end
 
   # New
@@ -420,6 +487,18 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_no_enqueued_jobs(only: GenerateContractAlertsJob)
   end
 
+  test "update to in_review does not enqueue alert job" do
+    clear_enqueued_jobs
+
+    patch contract_path(@contract), params: {
+      contract: { status: "in_review" }
+    }
+
+    assert_redirected_to contract_path(@contract)
+    assert_no_enqueued_jobs(only: GenerateContractAlertsJob)
+    assert_match "marked In Review", flash[:notice]
+  end
+
   # Combined filters
   test "index filters by status and type combined" do
     get contracts_path(status: "active", contract_type: "maintenance")
@@ -539,7 +618,7 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Untitled Draft", draft.title
     assert_equal users(:one), draft.uploaded_by
     assert_equal 1, draft.contract_documents.count
-    assert_redirected_to edit_contract_path(draft)
+    assert_redirected_to contract_review_path(draft)
   end
 
   test "create_draft with multiple files creates multiple documents" do
@@ -589,10 +668,10 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     get contracts_path
     assert_response :success
     assert_match "Drafts", response.body
-    assert_match "Continue", response.body
+    assert_select "a[href='#{contract_review_path(draft)}']", text: "Continue"
   end
 
-  test "draft does not count toward contract limit" do
+  test "create_draft is blocked when at contract limit" do
     org = organizations(:one)
     org.update!(plan: "free")
     org.contracts.update_all(status: "archived")
@@ -600,13 +679,14 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     10.times { |i| Contract.create!(title: "Filler #{i}", status: "active", organization: org) }
     assert org.reload.at_contract_limit?
 
-    # Should still be able to create a draft
-    assert_difference "Contract.count", 1 do
+    assert_no_difference "Contract.count" do
       post create_draft_contracts_path, params: {
         contract_documents: [ fixture_file_upload("test.txt", "text/plain") ]
       }
     end
-    assert_equal "draft", Contract.order(created_at: :desc).first.status
+
+    assert_redirected_to contracts_path
+    assert_match "You've reached the Free plan limit", flash[:alert]
   end
 
   test "finalizing draft updates status and generates alerts" do
@@ -632,6 +712,30 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "Finalized Contract", draft.title
     assert_redirected_to contract_path(draft)
     assert_match "successfully created", flash[:notice]
+  end
+
+  test "finalizing draft to in_review does not generate alerts" do
+    draft = Contract.create!(
+      title: "Untitled Draft",
+      status: "draft",
+      organization: organizations(:one),
+      uploaded_by: users(:one)
+    )
+
+    assert_no_enqueued_jobs(only: GenerateContractAlertsJob) do
+      patch contract_path(draft), params: {
+        contract: {
+          title: "Review Me",
+          status: "in_review",
+          vendor_name: "Test Vendor"
+        }
+      }
+    end
+
+    draft.reload
+    assert_equal "in_review", draft.status
+    assert_redirected_to contract_path(draft)
+    assert_match "marked In Review", flash[:notice]
   end
 
   test "finalizing draft blocked when at contract limit" do
@@ -668,6 +772,20 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_match "Save Contract", response.body
   end
 
+  test "edit page defaults draft status to in_review" do
+    draft = Contract.create!(
+      title: "Untitled Draft",
+      status: "draft",
+      organization: organizations(:one),
+      uploaded_by: users(:one)
+    )
+
+    get edit_contract_path(draft)
+
+    assert_response :success
+    assert_select "select[name='contract[status]'] option[selected][value='in_review']"
+  end
+
   test "new page shows upload-first layout" do
     get new_contract_path
     assert_response :success
@@ -680,6 +798,13 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     # The status filter dropdown should not include "Draft"
     assert_select "option[value='draft']", count: 0
+  end
+
+  test "index shows in_review status in filter options" do
+    get contracts_path
+
+    assert_response :success
+    assert_select "option[value='in_review']", text: "In Review"
   end
 
   # --- Lease-specific rendering tests ---

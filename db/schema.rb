@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_06_195000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_08_045958) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -230,6 +230,128 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_06_195000) do
     t.index ["contract_id", "created_at"], name: "index_contract_documents_on_contract_id_and_created_at"
     t.index ["contract_id", "position"], name: "index_contract_documents_on_contract_id_and_position"
     t.index ["contract_id"], name: "index_contract_documents_on_contract_id"
+  end
+
+  create_table "contract_review_conflicts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "alert_family_keys", default: [], null: false, array: true
+    t.jsonb "approved_value"
+    t.boolean "blocks_activation", default: true, null: false
+    t.string "conflict_type", null: false
+    t.uuid "contract_id", null: false
+    t.uuid "contract_review_field_id", null: false
+    t.uuid "contract_review_id", null: false
+    t.datetime "created_at", null: false
+    t.text "details"
+    t.jsonb "extracted_value"
+    t.uuid "organization_id", null: false
+    t.text "resolution_notes"
+    t.jsonb "resolution_value"
+    t.datetime "resolved_at"
+    t.uuid "resolved_by_id"
+    t.jsonb "source_span", default: {}, null: false
+    t.string "status", default: "open", null: false
+    t.string "summary", null: false
+    t.datetime "updated_at", null: false
+    t.index ["contract_id"], name: "index_contract_review_conflicts_on_contract_id"
+    t.index ["contract_review_field_id", "status"], name: "index_review_conflicts_on_field_and_status"
+    t.index ["contract_review_field_id"], name: "index_contract_review_conflicts_on_contract_review_field_id"
+    t.index ["contract_review_id", "status"], name: "index_review_conflicts_on_review_and_status"
+    t.index ["contract_review_id"], name: "index_contract_review_conflicts_on_contract_review_id"
+    t.index ["organization_id", "status", "created_at"], name: "index_review_conflicts_on_org_status_created"
+    t.index ["organization_id"], name: "index_contract_review_conflicts_on_organization_id"
+    t.index ["resolved_by_id"], name: "index_contract_review_conflicts_on_resolved_by_id"
+  end
+
+  create_table "contract_review_field_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "action", null: false
+    t.uuid "contract_id", null: false
+    t.uuid "contract_review_field_id", null: false
+    t.uuid "contract_review_id", null: false
+    t.datetime "created_at", null: false
+    t.string "from_review_status"
+    t.jsonb "from_value"
+    t.jsonb "metadata", default: {}, null: false
+    t.text "note"
+    t.uuid "organization_id", null: false
+    t.string "to_review_status"
+    t.jsonb "to_value"
+    t.datetime "updated_at", null: false
+    t.uuid "user_id"
+    t.index ["contract_id"], name: "index_contract_review_field_events_on_contract_id"
+    t.index ["contract_review_field_id", "created_at"], name: "index_review_field_events_on_field_created"
+    t.index ["contract_review_field_id"], name: "index_contract_review_field_events_on_contract_review_field_id"
+    t.index ["contract_review_id", "action"], name: "index_review_field_events_on_review_action"
+    t.index ["contract_review_id"], name: "index_contract_review_field_events_on_contract_review_id"
+    t.index ["organization_id", "created_at"], name: "index_review_field_events_on_org_created"
+    t.index ["organization_id"], name: "index_contract_review_field_events_on_organization_id"
+    t.index ["user_id"], name: "index_contract_review_field_events_on_user_id"
+  end
+
+  create_table "contract_review_fields", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "alert_family_keys", default: [], null: false, array: true
+    t.jsonb "approved_value"
+    t.string "classification", null: false
+    t.integer "confidence_score"
+    t.uuid "contract_id", null: false
+    t.uuid "contract_review_id", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "current_value"
+    t.text "derived_dependency_keys", default: [], null: false, array: true
+    t.jsonb "extracted_value"
+    t.string "field_family", null: false
+    t.integer "field_index"
+    t.string "field_key", null: false
+    t.boolean "gates_activation", default: false, null: false
+    t.uuid "organization_id", null: false
+    t.string "readiness_bucket", default: "pending", null: false
+    t.text "readiness_reasons", default: [], null: false, array: true
+    t.boolean "repeatable", default: false, null: false
+    t.text "review_note"
+    t.string "review_status", default: "pending", null: false
+    t.datetime "reviewed_at"
+    t.uuid "reviewed_by_id"
+    t.uuid "source_document_id"
+    t.string "source_document_name"
+    t.string "source_locator"
+    t.string "source_quality_flag"
+    t.jsonb "source_span", default: {}, null: false
+    t.string "source_type", null: false
+    t.datetime "updated_at", null: false
+    t.index ["contract_id", "field_key"], name: "index_review_fields_on_contract_and_key"
+    t.index ["contract_id"], name: "index_contract_review_fields_on_contract_id"
+    t.index ["contract_review_id", "field_key", "field_index"], name: "index_review_fields_on_review_key_index", unique: true, where: "(field_index IS NOT NULL)"
+    t.index ["contract_review_id", "field_key"], name: "index_review_fields_on_review_and_key", unique: true, where: "(field_index IS NULL)"
+    t.index ["contract_review_id", "gates_activation"], name: "index_review_fields_on_review_and_gate"
+    t.index ["contract_review_id"], name: "index_contract_review_fields_on_contract_review_id"
+    t.index ["organization_id", "contract_review_id", "readiness_bucket"], name: "index_review_fields_on_org_review_readiness"
+    t.index ["organization_id", "contract_review_id", "review_status"], name: "index_review_fields_on_org_review_status"
+    t.index ["organization_id"], name: "index_contract_review_fields_on_organization_id"
+    t.index ["reviewed_by_id"], name: "index_contract_review_fields_on_reviewed_by_id"
+    t.index ["source_document_id"], name: "index_contract_review_fields_on_source_document_id"
+  end
+
+  create_table "contract_reviews", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "ai_usage_log_id"
+    t.integer "blocked_fields_count", default: 0, null: false
+    t.datetime "completed_at"
+    t.uuid "contract_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "looks_good_fields_count", default: 0, null: false
+    t.integer "needs_review_fields_count", default: 0, null: false
+    t.integer "open_conflicts_count", default: 0, null: false
+    t.uuid "organization_id", null: false
+    t.integer "pending_fields_count", default: 0, null: false
+    t.string "review_trigger", default: "initial_extraction", null: false
+    t.string "status", default: "open", null: false
+    t.datetime "superseded_at"
+    t.integer "total_fields_count", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["ai_usage_log_id"], name: "index_contract_reviews_on_ai_usage_log_id"
+    t.index ["ai_usage_log_id"], name: "index_contract_reviews_on_unique_ai_usage_log", unique: true, where: "(ai_usage_log_id IS NOT NULL)"
+    t.index ["contract_id"], name: "index_contract_reviews_on_contract_id"
+    t.index ["contract_id"], name: "index_open_contract_reviews_on_contract_id", unique: true, where: "((status)::text = 'open'::text)"
+    t.index ["organization_id", "status", "created_at"], name: "index_contract_reviews_on_org_status_created"
+    t.index ["organization_id"], name: "index_contract_reviews_on_organization_id"
   end
 
   create_table "contracts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -623,6 +745,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_06_195000) do
   add_foreign_key "bulk_delete_operations", "organizations"
   add_foreign_key "bulk_delete_operations", "users"
   add_foreign_key "contract_documents", "contracts", on_delete: :cascade
+  add_foreign_key "contract_review_conflicts", "contract_review_fields"
+  add_foreign_key "contract_review_conflicts", "contract_reviews"
+  add_foreign_key "contract_review_conflicts", "contracts"
+  add_foreign_key "contract_review_conflicts", "organizations"
+  add_foreign_key "contract_review_conflicts", "users", column: "resolved_by_id"
+  add_foreign_key "contract_review_field_events", "contract_review_fields"
+  add_foreign_key "contract_review_field_events", "contract_reviews"
+  add_foreign_key "contract_review_field_events", "contracts"
+  add_foreign_key "contract_review_field_events", "organizations"
+  add_foreign_key "contract_review_field_events", "users"
+  add_foreign_key "contract_review_fields", "contract_documents", column: "source_document_id"
+  add_foreign_key "contract_review_fields", "contract_reviews"
+  add_foreign_key "contract_review_fields", "contracts"
+  add_foreign_key "contract_review_fields", "organizations"
+  add_foreign_key "contract_review_fields", "users", column: "reviewed_by_id"
+  add_foreign_key "contract_reviews", "ai_usage_logs"
+  add_foreign_key "contract_reviews", "contracts"
+  add_foreign_key "contract_reviews", "organizations"
   add_foreign_key "contracts", "organizations"
   add_foreign_key "contracts", "users", column: "uploaded_by_id"
   add_foreign_key "extraction_feedbacks", "ai_usage_logs"

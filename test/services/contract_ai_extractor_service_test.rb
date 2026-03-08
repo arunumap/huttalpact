@@ -53,6 +53,59 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     assert usage_log.success?
   end
 
+  test "returns synthesized review metadata for canonical review fields" do
+    ai_response = build_ai_response(
+      end_date: "2026-12-31",
+      auto_renews: false,
+      key_clauses: [],
+      summary: "HVAC maintenance contract for Building A."
+    )
+
+    stub_anthropic_client(ai_response) do
+      result = ContractAiExtractorService.new(@contract).call
+      end_date_field = result["review_fields"].find { |field| field["field_key"] == "contract.end_date" }
+
+      assert_not_nil end_date_field
+      assert_equal "2026-12-31", end_date_field["value"]
+      assert_equal "alert_driving", end_date_field["classification"]
+      assert_equal %w[expiry_warning notice_period_start], end_date_field["alert_family_keys"]
+      assert_includes result["changed_field_keys"], "contract.end_date"
+    end
+  end
+
+  test "preserves ai provided review metadata when present" do
+    completed_doc = contract_documents(:completed_doc)
+    ai_response = build_ai_response(
+      end_date: "2026-12-31",
+      key_clauses: [],
+      review_fields: [
+        {
+          "field_key" => "contract.end_date",
+          "field_index" => nil,
+          "value" => "2026-12-31",
+          "confidence_score" => 91,
+          "source_document" => completed_doc.filename,
+          "source_reference" => "Page 4",
+          "source_excerpt" => "The term expires on December 31, 2026.",
+          "precedence_hint" => "direct_extraction",
+          "supersedes_prior_value" => false,
+          "impacted_by_new_document" => false,
+          "conflict_candidate" => false
+        }
+      ]
+    )
+
+    stub_anthropic_client(ai_response) do
+      result = ContractAiExtractorService.new(@contract).call
+      end_date_field = result["review_fields"].find { |field| field["field_key"] == "contract.end_date" }
+
+      assert_equal 91, end_date_field["confidence_score"]
+      assert_equal completed_doc.filename, end_date_field["source_document"]
+      assert_equal "Page 4", end_date_field["source_reference"]
+      assert_equal "The term expires on December 31, 2026.", end_date_field["source_excerpt"]
+    end
+  end
+
   test "only overwrites blank fields" do
     # Contract already has vendor_name = "CoolAir Services" and contract_type = "maintenance"
     ai_response = build_ai_response(
@@ -313,6 +366,39 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
     assert_equal "User Edited Vendor", @contract.vendor_name     # Unchanged by AI
     assert_equal Date.new(2027, 6, 30), @contract.end_date       # Updated by AI
     assert_equal "End date extended from 2026-12-31 to 2027-06-30", @contract.last_changes_summary
+  end
+
+  test "incremental review metadata only flags changed alert driving fields" do
+    prior_data = {
+      "end_date" => "2026-12-31",
+      "auto_renews" => false,
+      "notice_period_days" => nil,
+      "key_clauses" => [],
+      "summary" => "HVAC contract"
+    }
+    @contract.update!(
+      ai_extracted_data: prior_data.to_json,
+      end_date: Date.new(2026, 12, 31),
+      auto_renews: false,
+      notice_period_days: nil,
+      extraction_status: "completed"
+    )
+
+    ai_response = build_ai_response(
+      end_date: "2027-06-30",
+      auto_renews: false,
+      notice_period_days: nil,
+      key_clauses: [],
+      summary: "HVAC contract extended",
+      changes_summary: "End date extended from 2026-12-31 to 2027-06-30"
+    )
+
+    stub_anthropic_client(ai_response) do
+      result = ContractAiExtractorService.new(@contract, mode: :incremental).call
+
+      assert_equal [ "contract.end_date" ], result["changed_field_keys"]
+      assert_equal [ "contract.end_date" ], result["impacted_field_keys"]
+    end
   end
 
   test "incremental mode falls back to full when no prior AI data" do
@@ -972,7 +1058,9 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
                         start_date: nil, end_date: nil, monthly_value: nil,
                         total_value: nil, auto_renews: false, renewal_term: nil,
                         notice_period_days: nil, key_clauses: [], summary: nil,
-                        changes_summary: nil, usage: nil)
+                        changes_summary: nil, review_fields: nil,
+                        changed_field_keys: nil, impacted_field_keys: nil,
+                        usage: nil)
     {
       "content" => [
         {
@@ -990,7 +1078,10 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
             "notice_period_days" => notice_period_days,
             "key_clauses" => key_clauses,
             "summary" => summary,
-            "changes_summary" => changes_summary
+            "changes_summary" => changes_summary,
+            "review_fields" => review_fields,
+            "changed_field_keys" => changed_field_keys,
+            "impacted_field_keys" => impacted_field_keys
           }.compact.to_json
         }
       ]

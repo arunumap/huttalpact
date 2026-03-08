@@ -13,7 +13,7 @@ class Settings::AlertsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should update preferences" do
-    expected_jobs = @org.contracts.where(status: Contract::ACTIVE_STATUSES).count
+    expected_jobs = @org.contracts.where(status: Contract::ALERT_GENERATION_STATUSES).count
 
     assert_enqueued_jobs expected_jobs, only: GenerateContractAlertsJob do
       patch settings_alerts_path, params: {

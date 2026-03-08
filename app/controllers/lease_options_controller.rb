@@ -9,7 +9,7 @@ class LeaseOptionsController < ApplicationController
   def create
     @lease_option = @contract.lease_options.build(lease_option_params)
     if @lease_option.save
-      GenerateContractAlertsJob.perform_later(@contract.id)
+      enqueue_alert_regeneration
       log_audit("updated", contract: @contract, details: "Added #{@lease_option.option_type} option")
       redirect_to @contract, notice: "Lease option added."
     else
@@ -22,7 +22,7 @@ class LeaseOptionsController < ApplicationController
 
   def update
     if @lease_option.update(lease_option_params)
-      GenerateContractAlertsJob.perform_later(@contract.id)
+      enqueue_alert_regeneration
       log_audit("updated", contract: @contract, details: "Updated #{@lease_option.option_type} option")
       redirect_to @contract, notice: "Lease option updated."
     else
@@ -32,7 +32,7 @@ class LeaseOptionsController < ApplicationController
 
   def destroy
     @lease_option.destroy!
-    GenerateContractAlertsJob.perform_later(@contract.id)
+    enqueue_alert_regeneration
     log_audit("updated", contract: @contract, details: "Removed lease option")
     redirect_to @contract, notice: "Lease option removed.", status: :see_other
   end
@@ -52,5 +52,9 @@ class LeaseOptionsController < ApplicationController
       :option_type, :exercise_deadline, :notice_deadline,
       :term_length_months, :rent_terms, :penalty_amount, :conditions
     )
+  end
+
+  def enqueue_alert_regeneration
+    GenerateContractAlertsJob.perform_later(@contract.id) if @contract.alert_generation_enabled?
   end
 end

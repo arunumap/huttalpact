@@ -100,4 +100,14 @@ class AlertDeliveryServiceTest < ActiveSupport::TestCase
     end
     assert_equal "cancelled", @alert.reload.status
   end
+
+  test "continues delivery for in_review contract" do
+    @alert.contract.update_columns(status: "in_review")
+
+    assert_enqueued_emails 1 do
+      AlertDeliveryService.new(@alert).call
+    end
+
+    assert_equal "sent", @alert.reload.status
+  end
 end

@@ -81,6 +81,33 @@ class ContractStatusUpdaterJobTest < ActiveJob::TestCase
     assert_equal "renewed", contract.reload.status
   end
 
+  test "expires expiring_soon contracts past end_date" do
+    contract = contracts(:hvac_maintenance)
+    contract.update_columns(status: "expiring_soon", end_date: 1.day.ago.to_date)
+
+    ContractStatusUpdaterJob.perform_now
+
+    assert_equal "expired", contract.reload.status
+  end
+
+  test "expires in_review contracts past end_date" do
+    contract = contracts(:hvac_maintenance)
+    contract.update_columns(status: "in_review", end_date: 1.day.ago.to_date)
+
+    ContractStatusUpdaterJob.perform_now
+
+    assert_equal "expired", contract.reload.status
+  end
+
+  test "does not change in_review contracts that have not yet expired" do
+    contract = contracts(:hvac_maintenance)
+    contract.update_columns(status: "in_review", end_date: 15.days.from_now.to_date)
+
+    ContractStatusUpdaterJob.perform_now
+
+    assert_equal "in_review", contract.reload.status
+  end
+
   test "cancels pending alerts when contract expires" do
     contract = contracts(:hvac_maintenance)
     contract.update_columns(status: "active", end_date: 1.day.ago.to_date)

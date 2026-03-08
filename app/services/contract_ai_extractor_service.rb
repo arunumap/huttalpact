@@ -28,7 +28,8 @@ class ContractAiExtractorService
           "source_document": "The exact filename of the document this clause came from"
         }
       ],
-      "summary": "2-3 sentence summary of the contract"
+      "summary": "2-3 sentence summary of the contract",
+      "review_fields": "Array — see review_fields instructions below"
     }
   SCHEMA
 
@@ -118,7 +119,8 @@ class ContractAiExtractorService
           "source_document": "The exact filename of the document this clause came from"
         }
       ],
-      "summary": "2-3 sentence summary of the lease"
+      "summary": "2-3 sentence summary of the lease",
+      "review_fields": "Array — see review_fields instructions below"
     }
   SCHEMA
 
@@ -247,6 +249,82 @@ class ContractAiExtractorService
     CONTRACT DOCUMENTS:
   PROMPT
 
+  REVIEW_METADATA_PROMPT = <<~PROMPT
+    IMPORTANT — review_fields (REQUIRED in your JSON response):
+    You MUST include a "review_fields" array as a top-level key in the JSON you return.
+    Every directly-extracted field MUST have a corresponding entry. For repeatable fields
+    (rent_escalations, lease_options, lease_milestones), include one entry PER ITEM using the
+    matching field_index (0-based, matching the array index of the item in the parent collection).
+
+    Example review_fields entries:
+      "review_fields": [
+        {
+          "field_key": "contract.end_date",
+          "field_index": null,
+          "confidence_score": 95,
+          "source_quality": "good",
+          "source_excerpt": "The Term of this Lease shall expire on December 31, 2029.",
+          "source_reference": "Section 2.1, Page 3"
+        },
+        {
+          "field_key": "rent_escalation.effective_date",
+          "field_index": 0,
+          "confidence_score": 92,
+          "source_quality": "good",
+          "source_excerpt": "Commencing May 1, 2025, Base Rent shall increase to $4,500.00 per month.",
+          "source_reference": "Section 3.2, Page 5"
+        },
+        {
+          "field_key": "lease_milestone.due_date",
+          "field_index": 2,
+          "confidence_score": 80,
+          "source_quality": "warning",
+          "source_excerpt": "Tenant shall deliver proof of insurance renewal on or before each anniversary.",
+          "source_reference": "Section 9.1, Page 12"
+        }
+      ]
+
+    Field key reference for review_fields entries:
+    - Contract-level: contract.start_date, contract.end_date, contract.next_renewal_date,
+      contract.auto_renews, contract.notice_period_days, contract.monthly_value,
+      contract.total_value, contract.contract_type, contract.direction, contract.renewal_term,
+      contract.vendor_name, contract.premises_address
+    - Lease detail: lease_detail.lease_type, lease_detail.rentable_sqft, lease_detail.usable_sqft,
+      lease_detail.security_deposit, lease_detail.free_rent_months, lease_detail.cam_base_amount,
+      lease_detail.cam_cap_percentage, lease_detail.cam_reconciliation_month,
+      lease_detail.ti_total_amount, lease_detail.ti_deadline,
+      lease_detail.percentage_rent_report_date, lease_detail.permitted_use
+    - Repeatable (use field_index): rent_escalation.effective_date,
+      rent_escalation.base_rent_monthly, rent_escalation.escalation_type,
+      lease_option.option_type, lease_option.notice_deadline, lease_option.exercise_deadline,
+      lease_milestone.milestone_type, lease_milestone.due_date, lease_milestone.recurring,
+      lease_milestone.recurrence_interval
+
+    Rules for each review_fields entry:
+    - field_key: REQUIRED. Must be one of the keys listed above.
+    - field_index: REQUIRED for repeatable fields (rent_escalation.*, lease_option.*, lease_milestone.*).
+      Use the 0-based index matching the item's position in the parent array (rent_escalations[0] → field_index 0).
+      Use null for non-repeatable fields.
+    - confidence_score (integer 0-100): REQUIRED. Rate how confident you are in the extracted value.
+      95+ means the source text explicitly and unambiguously states the value.
+      80-94 means the value is likely correct but some interpretation was needed.
+      Below 80 means significant uncertainty.
+    - source_quality (string): REQUIRED. One of "good" (clean text, clearly readable),
+      "warning" (some OCR artifacts, faded text, or ambiguous formatting),
+      or "poor" (significant OCR issues, illegible sections, or corrupted text near the field).
+    - source_excerpt (string): REQUIRED. Include the verbatim text span from the document
+      that supports the extracted value. This is shown to users for human verification.
+      Keep it concise (1-3 sentences) but include enough context to verify the value.
+    - source_reference (string): Section number, page number, or clause reference where the value was found.
+    - source_document (string): The exact filename of the document this value was found in.
+    - precedence_hint: "direct_extraction" for unambiguous single-source values,
+      "later_addendum_overrides_prior_terms" when an amendment overrides a base document value.
+    - conflict_candidate: Set true when multiple plausible values exist for the same field.
+    - conflict_candidate_reason: Brief explanation of the conflict.
+  PROMPT
+
+  REVIEW_METADATA_KEYS = %w[review_fields changed_field_keys impacted_field_keys].freeze
+
   # Lease-indicative terms for auto-detection
   LEASE_INDICATORS = %w[landlord tenant premises lease rent commencement demised leasehold lessee lessor].freeze
   LEASE_INDICATOR_THRESHOLD = 3
@@ -339,15 +417,18 @@ class ContractAiExtractorService
     end
 
     extracted = JSON.parse(json_text)
+    current_snapshot = current_canonical_snapshot
+    prior_data = prior_extracted_data
 
     # Sanitize/coerce AI output before applying to models
     sanitize_extracted_data!(extracted)
+    extracted.merge!(build_review_metadata(extracted, prior_data:, current_snapshot:))
 
     apply_extraction(extracted)
 
     update_attrs = {
       extraction_status: "completed",
-      ai_extracted_data: extracted.except("changes_summary").to_json
+      ai_extracted_data: extracted.except("changes_summary", *REVIEW_METADATA_KEYS).to_json
     }
     update_attrs[:last_changes_summary] = extracted["changes_summary"] if extracted["changes_summary"].present?
 
@@ -558,7 +639,7 @@ class ContractAiExtractorService
 
   def build_prompt(document_text)
     if @mode == :incremental
-      prior_json = @contract.ai_extracted_data
+      prior_json = prior_extracted_data.to_json
       new_doc_hint = ""
       if @new_document_id
         new_doc = @contract.contract_documents.find_by(id: @new_document_id)
@@ -567,10 +648,10 @@ class ContractAiExtractorService
         end
       end
       prompt_template = lease_extraction? ? LEASE_INCREMENTAL_PROMPT : INCREMENTAL_EXTRACTION_PROMPT
-      format(prompt_template, prior_json: prior_json) + new_doc_hint + "\n#{document_text}"
+      format(prompt_template, prior_json: prior_json) + "\n\n#{REVIEW_METADATA_PROMPT}" + new_doc_hint + "\n#{document_text}"
     else
       prompt_template = lease_extraction? ? LEASE_EXTRACTION_PROMPT : FULL_EXTRACTION_PROMPT
-      "#{prompt_template}\n#{document_text}"
+      "#{prompt_template}\n\n#{REVIEW_METADATA_PROMPT}\n#{document_text}"
     end
   end
 
@@ -689,6 +770,8 @@ class ContractAiExtractorService
 
     # Sanitize lease-specific data if present
     sanitize_lease_data!(data) if data["lease_details"].is_a?(Hash) || data["rent_escalations"].is_a?(Array) || data["lease_options"].is_a?(Array) || data["lease_milestones"].is_a?(Array)
+
+    sanitize_review_metadata!(data)
 
     data
   end
@@ -1048,6 +1131,474 @@ class ContractAiExtractorService
         recurring: ms["recurring"] || false,
         recurrence_interval: ms["recurrence_interval"]
       )
+    end
+  end
+
+  def sanitize_review_metadata!(data)
+    data["review_fields"] = normalize_review_fields(data["review_fields"])
+    data["changed_field_keys"] = normalize_field_key_list(data["changed_field_keys"])
+    data["impacted_field_keys"] = normalize_field_key_list(data["impacted_field_keys"])
+  end
+
+  def build_review_metadata(data, prior_data:, current_snapshot:)
+    current_values = review_field_values_from_data(data)
+    prior_values = review_field_values_from_data(prior_data)
+    changed_field_keys = normalized_changed_field_keys(current_values, prior_values, data["changed_field_keys"])
+    impacted_field_keys = normalized_impacted_field_keys(current_values, prior_values, changed_field_keys, data["impacted_field_keys"])
+    provided_entries = index_review_fields(data["review_fields"])
+
+    review_fields = current_values.map do |entry|
+      merge_review_field_entry(
+        build_generated_review_field_entry(
+          entry,
+          prior_values:,
+          current_snapshot:,
+          changed_field_keys:,
+          impacted_field_keys:
+        ),
+        lookup_provided_entry(provided_entries, entry["field_key"], entry["field_index"])
+      )
+    end
+
+    backfill_missing_confidence!(review_fields)
+
+    {
+      "review_fields" => review_fields,
+      "changed_field_keys" => changed_field_keys,
+      "impacted_field_keys" => impacted_field_keys
+    }
+  end
+
+  def lookup_provided_entry(provided_entries, field_key, field_index)
+    # Exact match: [field_key, field_index]
+    exact = provided_entries[[ field_key, field_index ]]
+    return exact if exact
+
+    # Fallback for repeatable fields: if AI returned entry without field_index,
+    # use the un-indexed entry for all items of that field_key.
+    return nil if field_index.nil?
+
+    provided_entries[[ field_key, nil ]]
+  end
+
+  def normalize_review_fields(review_fields)
+    Array(review_fields).filter_map do |entry|
+      entry = entry.to_h.stringify_keys
+      definition = review_field_definition(entry["field_key"])
+      next unless definition
+
+      {
+        "field_key" => definition.key,
+        "field_index" => normalize_field_index(entry["field_index"]),
+        "value" => entry.key?("value") ? entry["value"] : nil,
+        "confidence_score" => normalize_confidence_score(entry["confidence_score"]),
+        "source_document" => entry["source_document"].presence,
+        "source_reference" => entry["source_reference"].presence,
+        "source_excerpt" => entry["source_excerpt"].presence,
+        "precedence_hint" => entry["precedence_hint"].presence,
+        "supersedes_prior_value" => normalize_boolean(entry["supersedes_prior_value"]),
+        "impacted_by_new_document" => normalize_boolean(entry["impacted_by_new_document"]),
+        "conflict_candidate" => normalize_boolean(entry["conflict_candidate"]),
+        "conflict_candidate_reason" => entry["conflict_candidate_reason"].presence,
+        "derived_input_keys" => normalize_field_key_list(entry["derived_input_keys"]),
+        "source_quality" => normalize_source_quality(entry["source_quality"])
+      }
+    end
+  end
+
+  def review_field_values_from_data(data)
+    contract_type = extracted_contract_type(data)
+
+    ReviewFieldCatalog.fields.values.flat_map do |definition|
+      next [] unless definition.app_managed? || definition.applicable_to_contract_type?(contract_type)
+
+      if definition.repeatable?
+        repeatable_field_values(definition, data)
+      else
+        [
+          {
+            "field_key" => definition.key,
+            "field_index" => nil,
+            "value" => field_value_for(definition.key, data),
+            "definition" => definition
+          }
+        ]
+      end
+    end
+  end
+
+  def repeatable_field_values(definition, data)
+    collection = case definition.key
+    when /^rent_escalation\./
+                   Array(data["rent_escalations"])
+    when /^lease_option\./
+                   Array(data["lease_options"])
+    when /^lease_milestone\./, /^recurring_milestone_next_occurrence_date$/
+                   Array(data["lease_milestones"])
+    else
+                   []
+    end
+
+    collection.each_with_index.map do |_, index|
+      {
+        "field_key" => definition.key,
+        "field_index" => index,
+        "value" => field_value_for(definition.key, data, field_index: index),
+        "definition" => definition
+      }
+    end
+  end
+
+  def build_generated_review_field_entry(entry, prior_values:, current_snapshot:, changed_field_keys:, impacted_field_keys:)
+    definition = entry["definition"]
+    prior_entry = prior_values.find { |value| review_field_identity(value) == review_field_identity(entry) }
+    changed = changed_field_keys.include?(entry["field_key"])
+    impacted = impacted_field_keys.include?(entry["field_key"])
+    current_value = field_value_for(entry["field_key"], current_snapshot, field_index: entry["field_index"])
+    extracted_value = entry["value"]
+    conflict_candidate = conflict_candidate?(changed:, extracted_value:, current_value:)
+
+    {
+      "field_key" => entry["field_key"],
+      "field_index" => entry["field_index"],
+      "value" => extracted_value,
+      "prior_extracted_value" => prior_entry&.dig("value"),
+      "current_canonical_value" => current_value,
+      "field_family" => definition.field_family,
+      "classification" => definition.classification,
+      "source_type" => definition.source_type,
+      "repeatable" => definition.repeatable?,
+      "alert_family_keys" => definition.alert_families,
+      "gates_activation" => definition.blocks_activation?,
+      "derived_input_keys" => definition.dependencies,
+      "confidence_score" => nil,
+      "source_quality" => nil,
+      "source_document" => default_source_document(changed:, impacted:),
+      "source_reference" => nil,
+      "source_excerpt" => nil,
+      "precedence_hint" => default_precedence_hint(changed:, impacted:),
+      "supersedes_prior_value" => @mode == :incremental && changed,
+      "impacted_by_new_document" => @mode == :incremental && @new_document_id.present? && impacted,
+      "conflict_candidate" => conflict_candidate,
+      "conflict_candidate_reason" => conflict_candidate_reason(changed:, extracted_value:, current_value:)
+    }
+  end
+
+  def merge_review_field_entry(generated_entry, provided_entry)
+    return generated_entry unless provided_entry
+
+    generated_entry.merge(provided_entry.compact)
+  end
+
+  # When the AI returns review_fields for some repeatable items but not all,
+  # direct fields with extracted values end up with nil confidence. Assign a
+  # conservative default so the readiness policy can bucket them (instead of
+  # treating nil as "no data" which leads to confusing blocked/needs_review).
+  BACKFILL_CONFIDENCE_DEFAULT = 50
+
+  def backfill_missing_confidence!(review_fields)
+    review_fields.each do |entry|
+      next if entry["confidence_score"].present?
+      next unless entry["source_type"] == "direct"
+      next if value_absent?(entry["value"])
+
+      entry["confidence_score"] = BACKFILL_CONFIDENCE_DEFAULT
+      (entry["readiness_reasons"] ||= []) << "confidence_backfilled"
+    end
+  end
+
+  def value_absent?(value)
+    value.nil? || (value.is_a?(String) && value.blank?)
+  end
+
+  def index_review_fields(review_fields)
+    Array(review_fields).index_by { |entry| review_field_identity(entry) }
+  end
+
+  def review_field_identity(entry)
+    [ entry["field_key"], entry["field_index"] ]
+  end
+
+  def normalized_changed_field_keys(current_values, prior_values, provided_keys)
+    changed_keys = normalize_field_key_list(provided_keys)
+    return changed_keys if changed_keys.present?
+
+    if @mode == :incremental
+      current_index = current_values.index_by { |entry| review_field_identity(entry) }
+      prior_index = prior_values.index_by { |entry| review_field_identity(entry) }
+
+      (current_index.keys | prior_index.keys).filter_map do |identity|
+        current_entry = current_index[identity]
+        prior_entry = prior_index[identity]
+        next if current_entry&.dig("definition")&.app_managed? || prior_entry&.dig("definition")&.app_managed?
+        next unless values_differ?(current_entry&.dig("value"), prior_entry&.dig("value"))
+
+        identity.first
+      end.uniq
+    else
+      current_values.filter_map do |entry|
+        next if entry["definition"].app_managed?
+        next unless entry["value"].present?
+
+        entry["field_key"]
+      end.uniq
+    end
+  end
+
+  def normalized_impacted_field_keys(current_values, prior_values, changed_field_keys, provided_keys)
+    impacted_keys = normalize_field_key_list(provided_keys)
+    impacted_keys = changed_field_keys if impacted_keys.empty?
+
+    derived_keys = ReviewFieldCatalog.fields.values.select(&:derived?).filter_map do |definition|
+      next unless (definition.dependencies & impacted_keys).any?
+
+      current_for_key = current_values.select { |entry| entry["field_key"] == definition.key }
+      prior_for_key = prior_values.select { |entry| entry["field_key"] == definition.key }
+      next unless review_field_value_set_changed?(current_for_key, prior_for_key)
+
+      definition.key
+    end
+
+    (impacted_keys + derived_keys).uniq
+  end
+
+  def review_field_value_set_changed?(current_entries, prior_entries)
+    current_index = current_entries.index_by { |entry| review_field_identity(entry) }
+    prior_index = prior_entries.index_by { |entry| review_field_identity(entry) }
+
+    (current_index.keys | prior_index.keys).any? do |identity|
+      values_differ?(current_index[identity]&.dig("value"), prior_index[identity]&.dig("value"))
+    end
+  end
+
+  def normalize_field_key_list(field_keys)
+    Array(field_keys).map(&:to_s).select { |field_key| review_field_definition(field_key).present? }.uniq
+  end
+
+  def field_value_for(field_key, data, field_index: nil)
+    return @contract.status if field_key == "contract.status"
+
+    case field_key
+    when /^contract\./
+      data[field_key.split(".").last]
+    when /^lease_detail\./
+      data.dig("lease_details", field_key.split(".").last)
+    when /^rent_escalation\./
+      Array(data["rent_escalations"])[field_index].to_h[field_key.split(".").last]
+    when /^lease_option\./
+      Array(data["lease_options"])[field_index].to_h[field_key.split(".").last]
+    when /^lease_milestone\./
+      Array(data["lease_milestones"])[field_index].to_h[field_key.split(".").last]
+    when "contract.next_renewal_date_fallback"
+      compute_next_renewal_date_fallback(data)
+    when "notice_period_start_date"
+      compute_notice_period_start_date(data)
+    when "cam_reconciliation_alert_date"
+      compute_cam_reconciliation_alert_date(data)
+    when "recurring_milestone_next_occurrence_date"
+      compute_recurring_milestone_next_occurrence(Array(data["lease_milestones"])[field_index].to_h)
+    end
+  end
+
+  def compute_next_renewal_date_fallback(data)
+    return nil unless normalize_boolean(data["auto_renews"])
+    return nil if data["next_renewal_date"].present?
+
+    parse_date_string(data["end_date"])&.iso8601
+  end
+
+  def compute_notice_period_start_date(data)
+    notice_period_days = data["notice_period_days"]
+    return nil if notice_period_days.blank?
+
+    reference_date = data["next_renewal_date"].presence || compute_next_renewal_date_fallback(data) || data["end_date"]
+    parsed_reference = parse_date_string(reference_date)
+    return nil unless parsed_reference
+
+    (parsed_reference - notice_period_days.to_i).iso8601
+  end
+
+  def compute_cam_reconciliation_alert_date(data)
+    month = Integer(data.dig("lease_details", "cam_reconciliation_month")) rescue nil
+    return nil unless month&.between?(1, 12)
+
+    candidate = Date.new(Date.current.year, month, 1)
+    candidate = candidate.next_year if candidate < Date.current.beginning_of_month
+    candidate.iso8601
+  end
+
+  def compute_recurring_milestone_next_occurrence(milestone)
+    due_date = parse_date_string(milestone["due_date"])
+    return nil unless due_date
+    return due_date.iso8601 unless normalize_boolean(milestone["recurring"])
+
+    months = case milestone["recurrence_interval"]
+    when "monthly" then 1
+    when "quarterly" then 3
+    when "annual" then 12
+    end
+    return due_date.iso8601 unless months
+
+    candidate = due_date
+    candidate = candidate >> months while candidate < Date.current
+    candidate.iso8601
+  end
+
+  def current_canonical_snapshot
+    {
+      "title" => @contract.title,
+      "vendor_name" => @contract.vendor_name,
+      "premises_address" => @contract.premises_address,
+      "contract_type" => @contract.contract_type,
+      "direction" => @contract.direction,
+      "start_date" => serialize_value(@contract.start_date),
+      "end_date" => serialize_value(@contract.end_date),
+      "next_renewal_date" => serialize_value(@contract.next_renewal_date),
+      "monthly_value" => serialize_value(@contract.monthly_value),
+      "total_value" => serialize_value(@contract.total_value),
+      "auto_renews" => @contract.auto_renews,
+      "renewal_term" => @contract.renewal_term,
+      "notice_period_days" => @contract.notice_period_days,
+      "summary" => @contract.ai_summary,
+      "lease_details" => serialize_lease_detail,
+      "rent_escalations" => serialize_collection(@contract.rent_escalations.order(:position, :created_at), %w[
+        effective_date base_rent_monthly base_rent_annual escalation_type escalation_value description
+      ]),
+      "lease_options" => serialize_collection(@contract.lease_options.order(:position, :created_at), %w[
+        option_type exercise_deadline notice_deadline term_length_months rent_terms penalty_amount conditions
+      ]),
+      "lease_milestones" => serialize_collection(@contract.lease_milestones.order(:created_at), %w[
+        milestone_type due_date description recurring recurrence_interval
+      ])
+    }
+  end
+
+  def serialize_lease_detail
+    return nil unless @contract.lease_detail
+
+    %w[
+      lease_type rentable_sqft usable_sqft load_factor permitted_use security_deposit
+      security_deposit_conditions parking_spaces parking_monthly_cost free_rent_months
+      rent_commencement_date percentage_rent_breakpoint percentage_rent_rate
+      percentage_rent_report_date cam_base_amount cam_base_year cam_cap_percentage
+      cam_cap_type cam_reconciliation_month cam_audit_rights cam_gross_up_provision
+      cam_controllable_cap ti_allowance_psf ti_total_amount ti_deadline
+      ti_disbursement_type ti_amortization_rate ti_amortization_term_months
+      ti_landlord_work_description ti_tenant_work_description
+    ].index_with { |attribute| serialize_value(@contract.lease_detail.public_send(attribute)) }
+  end
+
+  def serialize_collection(collection, attributes)
+    collection.map do |record|
+      attributes.index_with { |attribute| serialize_value(record.public_send(attribute)) }
+    end
+  end
+
+  def prior_extracted_data
+    @prior_extracted_data ||= begin
+      JSON.parse(@contract.ai_extracted_data.presence || "{}")
+    rescue JSON::ParserError
+      {}
+    end
+  end
+
+  def default_source_document(changed:, impacted:)
+    if @mode == :incremental && @new_document_id.present? && (changed || impacted)
+      @contract.contract_documents.find_by(id: @new_document_id)&.filename
+    else
+      @contract.contract_documents.completed.ordered.last&.filename
+    end
+  end
+
+  def default_precedence_hint(changed:, impacted:)
+    if @mode == :incremental && @new_document_id.present? && (changed || impacted)
+      "later_addendum_overrides_prior_terms"
+    elsif @mode == :incremental
+      "unchanged_from_prior_extraction"
+    else
+      "direct_extraction"
+    end
+  end
+
+  def conflict_candidate?(changed:, extracted_value:, current_value:)
+    return false unless @mode == :incremental
+    return false unless changed
+
+    values_differ?(extracted_value, current_value)
+  end
+
+  def conflict_candidate_reason(changed:, extracted_value:, current_value:)
+    return nil unless conflict_candidate?(changed:, extracted_value:, current_value:)
+
+    if current_value.nil? && extracted_value.present?
+      "The new extraction introduced a value where the current contract record is blank."
+    elsif extracted_value.nil? && current_value.present?
+      "The new extraction no longer surfaced a value that currently exists on the contract."
+    else
+      "The new extraction produced a value that differs from the current contract record."
+    end
+  end
+
+  def values_differ?(left, right)
+    normalize_for_comparison(left) != normalize_for_comparison(right)
+  end
+
+  def extracted_contract_type(data)
+    data["contract_type"].presence || @contract.contract_type
+  end
+
+  def review_field_definition(field_key)
+    ReviewFieldCatalog.fetch(field_key)
+  rescue KeyError
+    nil
+  end
+
+  def normalize_field_index(field_index)
+    return nil if field_index.nil? || field_index == ""
+
+    Integer(field_index)
+  rescue ArgumentError, TypeError
+    nil
+  end
+
+  def normalize_confidence_score(confidence_score)
+    return nil if confidence_score.blank?
+
+    Integer(confidence_score).clamp(0, 100)
+  rescue ArgumentError, TypeError
+    nil
+  end
+
+  VALID_SOURCE_QUALITIES = %w[good warning poor].freeze
+
+  def normalize_source_quality(value)
+    normalized = value.to_s.strip.downcase
+    VALID_SOURCE_QUALITIES.include?(normalized) ? normalized : nil
+  end
+
+  def normalize_boolean(value)
+    return value if value.is_a?(TrueClass) || value.is_a?(FalseClass)
+    return nil if value.nil?
+
+    ActiveModel::Type::Boolean.new.cast(value)
+  end
+
+  def parse_date_string(value)
+    return if value.blank?
+
+    Date.parse(value.to_s)
+  rescue Date::Error, ArgumentError
+    nil
+  end
+
+  def serialize_value(value)
+    case value
+    when Date, Time, DateTime
+      value.iso8601
+    when BigDecimal
+      value.to_f
+    else
+      value
     end
   end
 end

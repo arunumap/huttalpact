@@ -26,6 +26,21 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to dashboard_path
   end
 
+  test "authenticated orgless user is redirected to organization access" do
+    user = User.create!(
+      email_address: "orgless-root@example.com",
+      password: "password123",
+      first_name: "Root",
+      last_name: "Orgless",
+      terms_accepted: "1"
+    )
+    sign_in_as(user)
+
+    get root_path
+
+    assert_redirected_to organization_access_path
+  end
+
   test "landing page has features section" do
     get root_path
     assert_response :success

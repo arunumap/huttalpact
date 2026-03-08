@@ -6,6 +6,7 @@ class ExtractContractDocumentJob < ApplicationJob
 
   def perform(contract_document_id)
     document = ContractDocument.find(contract_document_id)
+    contract = document.contract
 
     # Idempotency guard: skip if already completed (e.g., job retried after success)
     if document.completed?
@@ -21,7 +22,6 @@ class ExtractContractDocumentJob < ApplicationJob
     # Chain AI extraction only when ALL documents have finished text extraction
     # Use with_lock to prevent race condition when multiple docs finish simultaneously
     if document.completed?
-      contract = document.contract
       contract.with_lock do
         all_done = contract.contract_documents.where.not(
           extraction_status: %w[completed failed]
@@ -34,6 +34,7 @@ class ExtractContractDocumentJob < ApplicationJob
             org.reset_monthly_extractions_if_needed!
             if org.at_extraction_limit? && !org.extraction_overage_enabled?
               Rails.logger.info("Skipping auto AI extraction for contract #{contract.id}: org #{org.id} at extraction limit (#{org.ai_extractions_count}/#{org.plan_extraction_limit})")
+              contract.update!(extraction_status: "failed")
               next
             end
           end
@@ -48,6 +49,8 @@ class ExtractContractDocumentJob < ApplicationJob
         end
       end
     end
+
+    broadcast_contract_status(contract)
   rescue ActiveRecord::RecordNotFound
     # Document was deleted before job ran — nothing to do
     Rails.logger.warn("ContractDocument #{contract_document_id} not found, skipping extraction")
@@ -61,6 +64,22 @@ class ExtractContractDocumentJob < ApplicationJob
       target: "contract_document_#{document.id}",
       partial: "contract_documents/contract_document",
       locals: { contract_document: document }
+    )
+  end
+
+  def broadcast_contract_status(contract)
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "contract_#{contract.id}",
+      target: contract.draft? ? "draft_extraction_status" : "contract_ai_status",
+      partial: contract.draft? ? "contracts/draft_extraction_status" : "contracts/ai_status",
+      locals: { contract: }
+    )
+
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "contract_#{contract.id}",
+      target: "contract_review_workspace",
+      partial: "contract_reviews/workspace",
+      locals: { contract: }
     )
   end
 end

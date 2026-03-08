@@ -1,0 +1,29 @@
+<% review = local_assigns[:review].presence || contract.review_workspace %>
+
+<% if review.present? %>
+  <%
+    # Sort repeatable fields by parent item (same milestone/escalation fields grouped together)
+    display_fields = review.contract_review_fields
+      .where.not(source_type: "app_managed")
+      .includes(:source_document, :contract_review_conflicts)
+      .to_a
+      .sort_by { |f|
+        prefix = f.field_key.split(".").first
+        [f.field_index || -1, prefix, f.field_key]
+      }
+    blocked_fields = display_fields.select { |f| f.readiness_bucket == "blocked" && f.review_status == "pending" }
+    needs_review_fields = display_fields.select { |f| f.readiness_bucket == "needs_review" && f.review_status == "pending" }
+    looks_good_fields = display_fields.select { |f| f.readiness_bucket == "looks_good" && f.review_status == "pending" }
+    follow_through_summary = review.follow_through_summary
+  %>
+
+  <%= render "contract_reviews/workspace_ready",
+      contract:,
+      review:,
+      blocked_fields:,
+      needs_review_fields:,
+      looks_good_fields:,
+      follow_through_summary: %>
+<% else %>
+  <%= render "contract_reviews/workspace_pending", contract: %>
+<% end %>

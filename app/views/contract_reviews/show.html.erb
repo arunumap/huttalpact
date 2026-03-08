@@ -1,0 +1,7 @@
+<% content_for :page_title, "Review #{@contract.title}" %>
+
+<%= turbo_stream_from "contract_#{@contract.id}" %>
+
+<div id="contract_review_workspace">
+  <%= render "workspace", contract: @contract, review: @review %>
+</div>

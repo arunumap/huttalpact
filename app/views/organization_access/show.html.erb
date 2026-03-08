@@ -1,0 +1,36 @@
+<% content_for :title, "Organization access required — PactBadger" %>
+<% content_for :heading, "Your account is not associated with any organizations" %>
+<% content_for :subheading do %>
+  If this seems wrong, please contact <a href="mailto:support@pactbadger.com" class="font-semibold text-amber-600 hover:text-amber-500">support@pactbadger.com</a>.
+<% end %>
+
+<div class="space-y-6">
+  <div class="rounded-lg bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
+    <p>
+      We signed in <strong><%= Current.user.email_address %></strong>, but there are no organizations linked to this account.
+    </p>
+    <p class="mt-2">
+      If this is a mistake, reach out to <a href="mailto:support@pactbadger.com" class="font-semibold text-amber-700 underline hover:text-amber-600">support@pactbadger.com</a> so we can help restore access.
+    </p>
+  </div>
+
+  <div class="rounded-lg border border-red-200 bg-red-50 p-4">
+    <h3 class="text-sm font-semibold text-gray-900">Delete this account</h3>
+    <p class="mt-2 text-sm text-gray-600">
+      If you no longer need this login, you can permanently delete your user record.
+    </p>
+
+    <div class="mt-4 flex flex-col gap-3 sm:flex-row">
+      <%= button_to "Delete my account",
+          organization_access_path,
+          method: :delete,
+          data: { turbo_confirm: "This will permanently delete your user record. Continue?" },
+          class: "inline-flex items-center justify-center rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600" %>
+
+      <%= link_to "Sign out",
+          session_path,
+          data: { turbo_method: :delete },
+          class: "inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" %>
+    </div>
+  </div>
+</div>

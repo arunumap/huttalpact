@@ -5,7 +5,7 @@ class ContractsController < ApplicationController
 
   before_action :set_contract, only: %i[edit update destroy]
   before_action :capture_contract_title, only: %i[destroy]
-  before_action :enforce_contract_limit!, only: %i[new create]
+  before_action :enforce_contract_limit!, only: %i[new create create_draft]
 
   def index
     contracts = Contract.not_draft.order(created_at: :desc)
@@ -57,7 +57,7 @@ class ContractsController < ApplicationController
         # Text extraction + AI extraction will be chained automatically via after_create_commit
       end
 
-      GenerateContractAlertsJob.perform_later(@contract.id)
+      enqueue_alert_regeneration(@contract)
       log_audit("created", contract: @contract, details: "Created contract: #{@contract.title}")
       track_analytics_event("contract_created", contract_type: @contract.contract_type)
       redirect_to @contract, notice: "Contract was successfully created."
@@ -84,7 +84,7 @@ class ContractsController < ApplicationController
     ).call
 
     log_audit("created", contract: @contract, details: "Created draft contract for AI extraction")
-    redirect_to edit_contract_path(@contract), notice: "Uploading and extracting contract details..."
+    redirect_to contract_review_path(@contract), notice: "Uploading and preparing your contract review..."
   rescue ArgumentError, ActiveRecord::RecordInvalid
     redirect_to new_contract_path, alert: "Could not create draft contract."
   end
@@ -103,15 +103,15 @@ class ContractsController < ApplicationController
 
     if @contract.update(contract_params)
       if was_draft
-        GenerateContractAlertsJob.perform_later(@contract.id)
+        enqueue_alert_regeneration(@contract)
         log_audit("updated", contract: @contract, details: "Finalized draft contract: #{@contract.title}")
-        redirect_to @contract, notice: "Contract was successfully created."
+        redirect_to @contract, notice: update_notice(was_draft)
       else
         if date_fields_changed?
-          GenerateContractAlertsJob.perform_later(@contract.id)
+          enqueue_alert_regeneration(@contract)
         end
         log_audit("updated", contract: @contract, details: "Updated fields: #{@contract.previous_changes.keys.join(', ')}")
-        redirect_to @contract, notice: "Contract was successfully updated."
+        redirect_to @contract, notice: update_notice(was_draft)
       end
     else
       render :edit, status: :unprocessable_entity
@@ -245,5 +245,15 @@ class ContractsController < ApplicationController
         ]
       end
     end
+  end
+
+  def enqueue_alert_regeneration(contract)
+    GenerateContractAlertsJob.perform_later(contract.id) if contract.alert_generation_enabled?
+  end
+
+  def update_notice(was_draft)
+    return "Contract saved and marked In Review." if @contract.saved_change_to_status? && @contract.in_review?
+
+    was_draft ? "Contract was successfully created." : "Contract was successfully updated."
   end
 end

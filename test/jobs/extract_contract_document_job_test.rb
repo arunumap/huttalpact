@@ -151,6 +151,7 @@ class ExtractContractDocumentJobTest < ActiveSupport::TestCase
 
     doc.reload
     assert_equal "completed", doc.extraction_status
+    assert_equal "failed", @contract.reload.extraction_status
 
     # AI job should NOT have been enqueued
     ai_jobs = enqueued_jobs.select { |j| j["job_class"] == "AiExtractContractJob" }
@@ -198,6 +199,18 @@ class ExtractContractDocumentJobTest < ActiveSupport::TestCase
     assert_enqueued_with(job: AiExtractContractJob) do
       ExtractContractDocumentJob.perform_now(doc.id)
     end
+  end
+
+  test "broadcasts review workspace status updates" do
+    @contract.contract_documents.update_all(extraction_status: "completed")
+    doc = create_text_document("Contract agreement between parties.")
+    targets = []
+
+    Turbo::StreamsChannel.stub(:broadcast_replace_to, ->(*_args, **kwargs) { targets << kwargs[:target] }) do
+      ExtractContractDocumentJob.perform_now(doc.id)
+    end
+
+    assert_includes targets, "contract_review_workspace"
   end
 
   private

@@ -47,6 +47,7 @@ Rails.application.routes.draw do
   # Auth
   resource :session, only: %i[new create destroy]
   resource :registration, only: %i[new create]
+  resource :organization_access, only: %i[show destroy], controller: "organization_access"
   resources :passwords, param: :token
   get "invitations/:token/accept", to: "invitation_acceptances#show", as: :accept_invitation
   post "switch_organization/:id", to: "organization_switches#create", as: :switch_organization
@@ -57,6 +58,15 @@ Rails.application.routes.draw do
     resource :extraction, only: %i[create], controller: "contract_extractions" do
       post :redetect
     end
+    resource :review, only: %i[show], controller: "contract_reviews" do
+      patch :save_progress
+      patch :bulk_confirm_safe_items
+      patch :complete
+    end
+    patch "review/fields/:id/confirm", to: "contract_review_fields#confirm", as: :review_field_confirm
+    patch "review/fields/:id", to: "contract_review_fields#update", as: :review_field
+    patch "review/fields/:id/mark_not_found", to: "contract_review_fields#mark_not_found", as: :review_field_mark_not_found
+    patch "review/fields/:id/mark_not_applicable", to: "contract_review_fields#mark_not_applicable", as: :review_field_mark_not_applicable
     resources :extraction_feedbacks, only: %i[create]
     resource :lease_detail, only: %i[edit update]
     resources :rent_escalations, only: %i[new create edit update destroy]

@@ -20,6 +20,16 @@
     </div>
 
     <div class="flex items-center gap-2">
+      <% if @contract.review_workspace.present? %>
+        <%= link_to contract_review_path(@contract),
+            class: "inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500" do %>
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <%= @contract.in_review? ? "Open Review" : "Review Follow-through" %>
+        <% end %>
+      <% end %>
+
       <%= link_to edit_contract_path(@contract),
           class: "inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" do %>
         <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -102,6 +112,22 @@
           </div>
           <div class="px-6 py-5">
             <p class="text-sm text-gray-700 whitespace-pre-wrap"><%= @contract.ai_summary %></p>
+          </div>
+        </div>
+      <% end %>
+
+      <% if @contract.follow_through_pending? %>
+        <% follow_through_count = @contract.review_workspace.standard_priority_open_items_summary[:count] %>
+        <div class="rounded-xl bg-blue-50 shadow-sm ring-1 ring-blue-200">
+          <div class="border-b border-blue-200 px-6 py-4 flex items-center justify-between">
+            <h3 class="text-base font-semibold text-blue-900">Follow-through after activation</h3>
+            <%= link_to "Resume", contract_review_path(@contract), class: "text-sm font-medium text-blue-700 hover:text-blue-600" %>
+          </div>
+          <div class="px-6 py-5">
+            <p class="text-sm text-blue-800"><%= pluralize(follow_through_count, "standard-priority item") %> remain open from the latest completed review.</p>
+            <% if @contract.review_workspace.follow_through_summary[:average_resolution_hours].present? %>
+              <p class="mt-2 text-xs text-blue-700">Average resolution time so far: <%= @contract.review_workspace.follow_through_summary[:average_resolution_hours] %> hours.</p>
+            <% end %>
           </div>
         </div>
       <% end %>

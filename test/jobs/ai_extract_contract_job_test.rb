@@ -19,6 +19,22 @@ class AiExtractContractJobTest < ActiveSupport::TestCase
     assert service_called, "Expected ContractAiExtractorService#call to be invoked"
   end
 
+  test "calls ContractReviewOrchestrationService with extraction results" do
+    orchestrated = false
+    fake_service = Object.new
+    fake_service.define_singleton_method(:call) { { "review_fields" => [] } }
+    fake_orchestrator = Object.new
+    fake_orchestrator.define_singleton_method(:call) { orchestrated = true }
+
+    ContractAiExtractorService.stub(:new, ->(*_args, **_kwargs) { fake_service }) do
+      ContractReviewOrchestrationService.stub(:new, ->(*_args, **_kwargs) { fake_orchestrator }) do
+        AiExtractContractJob.perform_now(@contract.id)
+      end
+    end
+
+    assert orchestrated, "Expected ContractReviewOrchestrationService#call to be invoked"
+  end
+
   test "passes incremental mode when new_document_id provided" do
     received_mode = nil
     fake_service = Object.new
@@ -66,5 +82,23 @@ class AiExtractContractJobTest < ActiveSupport::TestCase
         AiExtractContractJob.perform_now(@contract.id)
       end
     end
+  end
+
+  test "broadcasts review workspace updates" do
+    targets = []
+    fake_service = Object.new
+    fake_service.define_singleton_method(:call) { { "review_fields" => [] } }
+    fake_orchestrator = Object.new
+    fake_orchestrator.define_singleton_method(:call) { true }
+
+    ContractAiExtractorService.stub(:new, ->(*_args, **_kwargs) { fake_service }) do
+      ContractReviewOrchestrationService.stub(:new, ->(*_args, **_kwargs) { fake_orchestrator }) do
+        Turbo::StreamsChannel.stub(:broadcast_replace_to, ->(*_args, **kwargs) { targets << kwargs[:target] }) do
+          AiExtractContractJob.perform_now(@contract.id)
+        end
+      end
+    end
+
+    assert_includes targets, "contract_review_workspace"
   end
 end

@@ -2,8 +2,8 @@ class ContractStatusUpdaterJob < ApplicationJob
   queue_as :default
 
   def perform
-    # Mark expired: active contracts whose end_date has passed
-    expired_contract_ids = Contract.where(status: "active")
+    # Review state should persist until completion, but terminal expiry still wins.
+    expired_contract_ids = Contract.where(status: Contract::AUTO_EXPIRING_STATUSES)
                                    .where(end_date: ..Date.current)
                                    .pluck(:id)
 

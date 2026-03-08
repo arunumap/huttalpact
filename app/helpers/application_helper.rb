@@ -15,6 +15,7 @@ module ApplicationHelper
   def contract_status_badge(status)
     colors = {
       "active"        => "bg-green-50 text-green-700 ring-green-600/20",
+      "in_review"     => "bg-orange-50 text-orange-700 ring-orange-600/20",
       "expiring_soon" => "bg-amber-50 text-amber-700 ring-amber-600/20",
       "expired"       => "bg-red-50 text-red-700 ring-red-600/20",
       "renewed"       => "bg-blue-50 text-blue-700 ring-blue-600/20",
@@ -214,13 +215,22 @@ module ApplicationHelper
       "viewed"     => "bg-gray-50 text-gray-600 ring-gray-500/20",
       "exported"   => "bg-purple-50 text-purple-700 ring-purple-600/20",
       "alert_sent" => "bg-amber-50 text-amber-700 ring-amber-600/20",
+      "review_progress_saved" => "bg-amber-50 text-amber-700 ring-amber-600/20",
+      "review_bulk_confirmed" => "bg-orange-50 text-orange-700 ring-orange-600/20",
+      "review_field_confirmed" => "bg-green-50 text-green-700 ring-green-600/20",
+      "review_field_edited" => "bg-blue-50 text-blue-700 ring-blue-600/20",
+      "review_field_marked_not_found" => "bg-red-50 text-red-700 ring-red-600/20",
+      "review_field_marked_not_applicable" => "bg-purple-50 text-purple-700 ring-purple-600/20",
+      "review_completed" => "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+      "review_alerts_activated" => "bg-teal-50 text-teal-700 ring-teal-600/20",
+      "review_alerts_skipped" => "bg-gray-50 text-gray-600 ring-gray-500/20",
       "member_invited" => "bg-indigo-50 text-indigo-700 ring-indigo-600/20",
       "member_removed" => "bg-rose-50 text-rose-700 ring-rose-600/20",
       "member_role_changed" => "bg-indigo-50 text-indigo-700 ring-indigo-600/20",
       "invitation_revoked" => "bg-rose-50 text-rose-700 ring-rose-600/20"
     }
     color_class = colors[action] || "bg-gray-50 text-gray-600 ring-gray-500/20"
-    label = action == "alert_sent" ? "Alert Sent" : action.titleize
+    label = AuditLog.new(action:).action_label
     tag.span(label, class: "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ring-1 ring-inset #{color_class}")
   end
 
@@ -231,7 +241,16 @@ module ApplicationHelper
       "deleted"    => "bg-red-100",
       "viewed"     => "bg-gray-100",
       "exported"   => "bg-purple-100",
-      "alert_sent" => "bg-amber-100"
+      "alert_sent" => "bg-amber-100",
+      "review_progress_saved" => "bg-amber-100",
+      "review_bulk_confirmed" => "bg-orange-100",
+      "review_field_confirmed" => "bg-green-100",
+      "review_field_edited" => "bg-blue-100",
+      "review_field_marked_not_found" => "bg-red-100",
+      "review_field_marked_not_applicable" => "bg-purple-100",
+      "review_completed" => "bg-emerald-100",
+      "review_alerts_activated" => "bg-teal-100",
+      "review_alerts_skipped" => "bg-gray-100"
     }[action] || "bg-gray-100"
   end
 
@@ -242,7 +261,16 @@ module ApplicationHelper
       "deleted"    => "text-red-600",
       "viewed"     => "text-gray-500",
       "exported"   => "text-purple-600",
-      "alert_sent" => "text-amber-600"
+      "alert_sent" => "text-amber-600",
+      "review_progress_saved" => "text-amber-600",
+      "review_bulk_confirmed" => "text-orange-600",
+      "review_field_confirmed" => "text-green-600",
+      "review_field_edited" => "text-blue-600",
+      "review_field_marked_not_found" => "text-red-600",
+      "review_field_marked_not_applicable" => "text-purple-600",
+      "review_completed" => "text-emerald-600",
+      "review_alerts_activated" => "text-teal-600",
+      "review_alerts_skipped" => "text-gray-500"
     }[action] || "text-gray-500"
 
     paths = {
@@ -251,13 +279,127 @@ module ApplicationHelper
       "deleted"    => "M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0",
       "viewed"     => "M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
       "exported"   => "M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3",
-      "alert_sent" => "M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+      "alert_sent" => "M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0",
+      "review_progress_saved" => "M12 6v6l4 2.25",
+      "review_bulk_confirmed" => "M9 12.75L11.25 15 15 9.75m6 2.25a9 9 0 11-18 0 9 9 0 0118 0z",
+      "review_field_confirmed" => "M9 12.75L11.25 15 15 9.75",
+      "review_field_edited" => "M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z",
+      "review_field_marked_not_found" => "M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z",
+      "review_field_marked_not_applicable" => "M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728",
+      "review_completed" => "M4.5 12.75l6 6 9-13.5",
+      "review_alerts_activated" => "M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0",
+      "review_alerts_skipped" => "M12 6v6m0 4.5h.008v.008H12v-.008z"
     }
     path_d = paths[action] || paths["viewed"]
 
     tag.svg(class: "h-3.5 w-3.5 #{icon_class}", fill: "none", viewBox: "0 0 24 24", stroke_width: "1.5", stroke: "currentColor") do
       tag.path(stroke_linecap: "round", stroke_linejoin: "round", d: path_d)
     end
+  end
+
+  def review_readiness_badge(field)
+    label = case field.readiness_bucket
+    when "blocked" then "Blocked"
+    when "needs_review" then "Needs Review"
+    when "looks_good" then field.review_status == "pending" ? "Looks Good" : "Resolved"
+    else "Pending"
+    end
+
+    color = case field.readiness_bucket
+    when "blocked" then "bg-red-50 text-red-700 ring-red-600/20"
+    when "needs_review" then "bg-amber-50 text-amber-700 ring-amber-600/20"
+    when "looks_good" then "bg-green-50 text-green-700 ring-green-600/20"
+    else "bg-gray-50 text-gray-600 ring-gray-500/20"
+    end
+
+    tag.span(label, class: "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset #{color}")
+  end
+
+  def review_status_badge(review_status)
+    color = {
+      "pending" => "bg-gray-50 text-gray-600 ring-gray-500/20",
+      "confirmed" => "bg-green-50 text-green-700 ring-green-600/20",
+      "edited" => "bg-blue-50 text-blue-700 ring-blue-600/20",
+      "not_found" => "bg-red-50 text-red-700 ring-red-600/20",
+      "not_applicable" => "bg-purple-50 text-purple-700 ring-purple-600/20"
+    }.fetch(review_status, "bg-gray-50 text-gray-600 ring-gray-500/20")
+
+    tag.span(review_status.titleize.gsub("_", " "), class: "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset #{color}")
+  end
+
+  def review_field_label(field)
+    field.field_key.split(".").last.titleize.gsub("_", " ")
+  end
+
+  def review_field_group_context(field, contract)
+    return nil unless field.field_index.present?
+
+    data = JSON.parse(contract.ai_extracted_data || "{}") rescue {}
+
+    case field.field_key
+    when /^rent_escalation\./
+      esc = data["rent_escalations"]&.[](field.field_index)
+      return nil unless esc
+      parts = []
+      parts << Date.parse(esc["effective_date"]).strftime("%b %Y") if esc["effective_date"]
+      parts << number_to_currency(esc["base_rent_monthly"], precision: 0) + "/mo" if esc["base_rent_monthly"]
+      parts.join(" · ").presence
+    when /^lease_option\./
+      opt = data["lease_options"]&.[](field.field_index)
+      return nil unless opt
+      opt["option_type"]&.titleize
+    when /^lease_milestone\./, /^recurring_milestone/
+      ms = data["lease_milestones"]&.[](field.field_index)
+      return nil unless ms
+      parts = []
+      parts << ms["milestone_type"]&.titleize&.tr("_", " ")
+      parts << Date.parse(ms["due_date"]).strftime("%b %d, %Y") if ms["due_date"]
+      parts.join(" · ").presence
+    end
+  rescue Date::Error
+    nil
+  end
+
+  def review_field_description(field)
+    ReviewFieldCatalog.fetch(field.field_key).notes
+  rescue KeyError
+    nil
+  end
+
+  def display_review_value(value)
+    case value
+    when true then "Yes"
+    when false then "No"
+    when String
+      parsed_date = begin
+        Date.iso8601(value)
+      rescue ArgumentError
+        nil
+      end
+      parsed_date ? format_date(parsed_date) : value.presence || "—"
+    when Numeric
+      value % 1 == 0 ? number_with_delimiter(value.to_i) : number_with_precision(value, precision: 2, strip_insignificant_zeros: true)
+    else
+      value.presence || "—"
+    end
+  end
+
+  def review_field_input_kind(field)
+    definition = ReviewFieldCatalog.fetch(field.field_key)
+    return :date if ContractReviewValueResolver::DATE_FIELD_KEYS.include?(field.field_key)
+    return :boolean if definition.field_family == "alert_governing_boolean"
+    return :number if field.field_key.in?(ContractReviewValueResolver::INTEGER_FIELD_KEYS + ContractReviewValueResolver::DECIMAL_FIELD_KEYS)
+
+    :text
+  rescue KeyError
+    :text
+  end
+
+  def review_field_form_value(field)
+    value = field.effective_value
+    return nil if value.nil?
+
+    review_field_input_kind(field) == :boolean ? value.to_s : value
   end
 
   private

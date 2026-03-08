@@ -11,14 +11,15 @@ class AiExtractContractJob < ApplicationJob
     contract = Contract.find(contract_id)
 
     mode = new_document_id.present? ? :incremental : :full
-    ContractAiExtractorService.new(contract, mode: mode, new_document_id: new_document_id).call
+    extraction_result = ContractAiExtractorService.new(contract, mode: mode, new_document_id: new_document_id).call
+    ContractReviewOrchestrationService.new(contract, extraction_result:, mode:).call if extraction_result.present?
 
     # Broadcast updated contract show page
     contract.reload
     broadcast_contract_update(contract)
 
     # After lease extraction, regenerate alerts based on newly extracted lease data
-    if contract.lease? && contract.lease_detail.present?
+    if contract.alert_generation_enabled? && contract.lease? && contract.lease_detail.present?
       GenerateContractAlertsJob.perform_later(contract.id)
     end
   rescue ActiveRecord::RecordNotFound
@@ -73,5 +74,12 @@ class AiExtractContractJob < ApplicationJob
         locals: { contract: contract, show_upload: false, draft_mode: true }
       )
     end
+
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "contract_#{contract.id}",
+      target: "contract_review_workspace",
+      partial: "contract_reviews/workspace",
+      locals: { contract: contract }
+    )
   end
 end
