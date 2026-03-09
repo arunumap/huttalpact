@@ -27,6 +27,35 @@
       </div>
     </div>
   </div>
+<% elsif extraction == "awaiting_type_confirmation" %>
+  <div class="rounded-xl bg-amber-50 ring-1 ring-amber-200 px-6 py-5">
+    <div class="flex items-start gap-3">
+      <svg class="h-6 w-6 text-amber-600 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zm8.25-3.75a8.25 8.25 0 11-16.5 0 8.25 8.25 0 0116.5 0z" />
+      </svg>
+      <div class="flex-1">
+        <p class="text-sm font-semibold text-amber-800">Confirm contract type to continue</p>
+        <p class="text-xs text-amber-700 mt-1">
+          <%= contract.last_changes_summary.presence || "We couldn't confidently determine the type from the document. Please choose it before extraction continues." %>
+        </p>
+
+        <% type_options = Contract::CONTRACT_TYPES.map do |type|
+             label = type == "service_agreement" ? "MSA / Service Agreement" : type.titleize.gsub("_", " ")
+             [ label, type ]
+           end %>
+
+        <%= form_with url: confirm_type_contract_extraction_path(contract), method: :post, class: "mt-4 flex flex-col gap-2 sm:flex-row sm:items-center" do %>
+          <%= select_tag :contract_type,
+              options_for_select([ [ "Select contract type...", "" ] ] + type_options, contract.contract_type),
+              required: true,
+              class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-amber-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+
+          <%= submit_tag "Confirm type & continue extraction",
+              class: "inline-flex items-center justify-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 cursor-pointer" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
 <% elsif extraction == "completed" %>
   <div class="rounded-xl bg-green-50 ring-1 ring-green-200 px-6 py-5">
     <div class="flex items-center gap-3">

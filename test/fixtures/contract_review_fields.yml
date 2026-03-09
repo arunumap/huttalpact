@@ -1,0 +1,96 @@
+title_field:
+  contract_review: pending_review
+  field_name: title
+  field_group: core
+  display_name: Title
+  extracted_value: '"Office Lease Agreement"'
+  confidence: 95
+  source_excerpt: "This Office Lease Agreement..."
+  reasoning: "Title found in document header"
+  needs_review: false
+  status: pending
+  position: 0
+
+monthly_value_field:
+  contract_review: pending_review
+  field_name: monthly_value
+  field_group: financial
+  display_name: Monthly Value
+  extracted_value: "5400.00"
+  confidence: 65
+  source_excerpt: "Base Rent shall be $5,400.00 per month"
+  reasoning: "Initial value found but escalations apply"
+  needs_review: true
+  status: pending
+  position: 1
+
+vendor_name_field:
+  contract_review: in_progress_review
+  field_name: vendor_name
+  field_group: core
+  display_name: Vendor / Landlord
+  extracted_value: '"Acme Properties"'
+  confidence: 92
+  source_excerpt: "Acme Properties LLC..."
+  reasoning: "Landlord name clearly stated"
+  needs_review: false
+  status: confirmed
+  reviewed_at: <%= Time.current %>
+  position: 0
+
+start_date_field:
+  contract_review: in_progress_review
+  field_name: start_date
+  field_group: dates
+  display_name: Start Date
+  extracted_value: '"2025-01-01"'
+  confidence: 70
+  source_excerpt: "Commencing on or about January 1st"
+  reasoning: "Approximate date given"
+  needs_review: true
+  status: edited
+  user_value: '"2025-01-15"'
+  reviewed_at: <%= Time.current %>
+  position: 0
+
+auto_accepted_field:
+  contract_review: completed_review
+  field_name: premises_address
+  field_group: lease_space
+  display_name: Premises Address
+  extracted_value: '"123 Main St"'
+  confidence: 98
+  source_excerpt: "Located at 123 Main Street"
+  reasoning: "Address clearly stated"
+  needs_review: false
+  status: auto_accepted
+  reviewed_at: <%= Time.current %>
+  position: 0
+
+not_found_field:
+  contract_review: completed_review
+  field_name: cam_charges
+  field_group: cam
+  display_name: CAM Charges
+  extracted_value:
+  confidence:
+  source_excerpt:
+  reasoning: "No CAM charges mentioned in the document"
+  needs_review: false
+  status: not_found
+  reviewed_at: <%= Time.current %>
+  position: 1
+
+not_applicable_field:
+  contract_review: completed_review
+  field_name: ti_allowance
+  field_group: ti
+  display_name: TI Allowance
+  extracted_value:
+  confidence:
+  source_excerpt:
+  reasoning: "Not applicable for this contract type"
+  needs_review: false
+  status: not_applicable
+  reviewed_at: <%= Time.current %>
+  position: 2

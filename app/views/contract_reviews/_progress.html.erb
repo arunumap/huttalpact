@@ -1,0 +1,27 @@
+<% percentage = review.progress_percentage %>
+<% needs_review_count = review.fields.needs_review.pending.count %>
+<div class="flex items-center gap-3"
+     data-controller="review-progress"
+     data-review-progress-total-value="<%= review.total_fields %>"
+     data-review-progress-reviewed-value="<%= review.reviewed_fields %>"
+     data-review-progress-needs-review-value="<%= needs_review_count %>">
+  <div class="flex items-center gap-2">
+    <div class="w-28 h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div class="h-full rounded-full transition-all duration-500 ease-out <%= progress_bar_color_class(percentage) %>"
+           data-review-progress-target="bar"
+           style="width: <%= percentage %>%"></div>
+    </div>
+    <span class="text-sm font-semibold text-gray-700 tabular-nums" data-review-progress-target="percentage"><%= percentage %>%</span>
+  </div>
+  <span class="text-xs text-gray-500 hidden sm:inline">
+    <span data-review-progress-target="count"><%= review.reviewed_fields %>/<%= review.total_fields %> reviewed</span>
+    <% if needs_review_count > 0 %>
+      · <span class="text-amber-600 font-medium" data-review-progress-target="needsAttention"><%= needs_review_count %> need<%= needs_review_count == 1 ? "s" : "" %> attention</span>
+    <% else %>
+      · <span class="text-amber-600 font-medium hidden" data-review-progress-target="needsAttention"></span>
+    <% end %>
+  </span>
+  <% if local_assigns[:flash_message] %>
+    <span class="text-xs text-green-600 font-medium animate-pulse"><%= flash_message %></span>
+  <% end %>
+</div>

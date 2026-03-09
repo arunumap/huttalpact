@@ -358,7 +358,7 @@ class ContractTest < ActiveSupport::TestCase
   end
 
   test "accepts valid extraction_statuses" do
-    %w[pending processing completed failed].each do |es|
+    %w[pending processing awaiting_type_confirmation completed failed].each do |es|
       @contract.extraction_status = es
       assert @contract.valid?, "Expected '#{es}' to be valid"
     end
@@ -531,5 +531,47 @@ class ContractTest < ActiveSupport::TestCase
 
   test "ACTIVE_STATUSES excludes draft" do
     assert_not_includes Contract::ACTIVE_STATUSES, "draft"
+  end
+
+  # In-review status tests
+
+  test "in_review is a valid status" do
+    @contract.status = "in_review"
+    assert @contract.valid?
+  end
+
+  test "STATUSES includes in_review" do
+    assert_includes Contract::STATUSES, "in_review"
+  end
+
+  test "in_review? returns true for in_review contracts" do
+    @contract.status = "in_review"
+    assert @contract.in_review?
+  end
+
+  test "in_review? returns false for non-in_review contracts" do
+    assert_not @contract.in_review?
+  end
+
+  test "in_review scope returns only in_review contracts" do
+    @contract.update!(status: "in_review")
+    assert_includes Contract.in_review, @contract
+    assert_not_includes Contract.in_review, contracts(:landscaping)
+  end
+
+  test "contract_reviews association" do
+    assert_respond_to @contract, :contract_reviews
+  end
+
+  test "current_review returns the most recent active review" do
+    contract = contracts(:hvac_maintenance)
+    review = contract_reviews(:pending_review)
+    assert_equal review, contract.current_review
+  end
+
+  test "current_review returns nil when no active reviews exist" do
+    contract = contracts(:commercial_lease)
+    # completed_review is status: completed, not active
+    assert_nil contract.current_review
   end
 end

@@ -34,6 +34,10 @@ production:
     class: CleanStaleDraftsJob
     schedule: at 3am every day
 
+  refresh_review_learning_ops_loop:
+    class: RefreshReviewLearningOpsLoopJob
+    schedule: every day at 2:35am
+
   refresh_sitemap:
     command: "load Rails.root.join('config/sitemap.rb').to_s"
     schedule: at 4am every day

@@ -1,6 +1,9 @@
 class RentEscalationsController < ApplicationController
+  include ReviewGuard
+
   before_action :set_contract
   before_action :set_rent_escalation, only: %i[edit update destroy]
+  before_action :block_if_in_review
 
   def new
     @rent_escalation = @contract.rent_escalations.build

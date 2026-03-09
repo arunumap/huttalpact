@@ -1,6 +1,9 @@
 class LeaseOptionsController < ApplicationController
+  include ReviewGuard
+
   before_action :set_contract
   before_action :set_lease_option, only: %i[edit update destroy]
+  before_action :block_if_in_review
 
   def new
     @lease_option = @contract.lease_options.build

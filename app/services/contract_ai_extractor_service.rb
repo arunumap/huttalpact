@@ -28,7 +28,17 @@ class ContractAiExtractorService
           "source_document": "The exact filename of the document this clause came from"
         }
       ],
-      "summary": "2-3 sentence summary of the contract"
+      "summary": "2-3 sentence summary of the contract",
+      "field_metadata": {
+        "description": "Evidence and confidence for each extracted field",
+        "<field_name>": {
+          "confidence": "integer 0-100",
+          "source_excerpt": "Exact verbatim text from the document supporting this value",
+          "reasoning": "Brief plain-English explanation of interpretation",
+          "page_hint": "Optional page reference",
+          "section_hint": "Optional section reference"
+        }
+      }
     }
   SCHEMA
 
@@ -106,7 +116,11 @@ class ContractAiExtractorService
           "due_date": "YYYY-MM-DD",
           "description": "Description of what is due",
           "recurring": true or false,
-          "recurrence_interval": "One of: monthly, quarterly, annual (or null if not recurring)"
+          "recurrence_interval": "One of: monthly, quarterly, annual (or null if not recurring)",
+          "source_excerpt": "Exact verbatim text for THIS milestone (required whenever possible)",
+          "reasoning": "Brief explanation for why THIS milestone was extracted",
+          "page_hint": "Optional page reference for THIS milestone",
+          "section_hint": "Optional section reference for THIS milestone"
         }
       ],
       "key_clauses": [
@@ -118,7 +132,17 @@ class ContractAiExtractorService
           "source_document": "The exact filename of the document this clause came from"
         }
       ],
-      "summary": "2-3 sentence summary of the lease"
+      "summary": "2-3 sentence summary of the lease",
+      "field_metadata": {
+        "description": "Evidence and confidence for each extracted field. Use dot notation for nested lease detail fields (e.g. lease_details.lease_type, lease_details.rentable_sqft). For rent_escalations, lease_options, and key_clauses provide one metadata entry covering the array. For lease_milestones, provide per-item evidence in each milestone object plus optional array-level metadata.",
+        "<field_name>": {
+          "confidence": "integer 0-100",
+          "source_excerpt": "Exact verbatim text from the document supporting this value",
+          "reasoning": "Brief plain-English explanation of interpretation",
+          "page_hint": "Optional page reference",
+          "section_hint": "Optional section reference"
+        }
+      }
     }
   SCHEMA
 
@@ -141,6 +165,22 @@ class ContractAiExtractorService
     For next_renewal_date: use the specific renewal date if stated. For auto-renewing contracts, use the end_date. If unclear, use null.
     For key clauses, include the most important ones that affect renewals, costs, and obligations.
     For source_document, use the EXACT filename from the document header.
+
+    Additionally, include a "field_metadata" object with evidence for each extracted field.
+    For every field where you provided a non-null value, include an entry keyed by the field name with:
+      - "confidence": integer 0-100 (how confident you are in this extraction)
+      - "source_excerpt": the EXACT verbatim text from the document that supports this value
+      - "reasoning": a brief plain-English explanation of your interpretation
+      - "page_hint": (optional) page or section reference if identifiable
+      - "section_hint": (optional) heading or section name if identifiable
+
+    Use these confidence guidelines:
+      - 90-100: Value explicitly and unambiguously stated in the document
+      - 70-89: Value clearly implied or requires minor interpretation
+      - 50-69: Value requires significant inference or is ambiguous
+      - Below 50: Low confidence, best guess from limited information
+
+    For fields where information conflicts across documents, explain the conflict in reasoning and set confidence accordingly.
 
     CONTRACT DOCUMENTS:
   PROMPT
@@ -166,6 +206,22 @@ class ContractAiExtractorService
     For next_renewal_date: use the specific renewal date if stated. For auto-renewing contracts, use the end_date. If unclear, use null.
     For key clauses, return the COMPLETE updated set of clauses from ALL documents (not just the new one).
     For source_document, use the EXACT filename from the document header.
+
+    Additionally, include a "field_metadata" object with evidence for each extracted field.
+    For every field where you provided a non-null value, include an entry keyed by the field name with:
+      - "confidence": integer 0-100 (how confident you are in this extraction)
+      - "source_excerpt": the EXACT verbatim text from the document that supports this value
+      - "reasoning": a brief plain-English explanation of your interpretation
+      - "page_hint": (optional) page or section reference if identifiable
+      - "section_hint": (optional) heading or section name if identifiable
+
+    Use these confidence guidelines:
+      - 90-100: Value explicitly and unambiguously stated in the document
+      - 70-89: Value clearly implied or requires minor interpretation
+      - 50-69: Value requires significant inference or is ambiguous
+      - Below 50: Low confidence, best guess from limited information
+
+    For fields where information conflicts across documents, explain the conflict in reasoning and set confidence accordingly.
 
     CONTRACT DOCUMENTS:
   PROMPT
@@ -213,6 +269,26 @@ class ContractAiExtractorService
     For key clauses, include all important provisions that affect renewals, costs, tenant rights, and obligations.
     For source_document, use the EXACT filename from the document header.
 
+    Additionally, include a "field_metadata" object with evidence for each extracted field.
+    For every field where you provided a non-null value, include an entry keyed by the field name with:
+      - "confidence": integer 0-100 (how confident you are in this extraction)
+      - "source_excerpt": the EXACT verbatim text from the document that supports this value
+      - "reasoning": a brief plain-English explanation of your interpretation
+      - "page_hint": (optional) page or section reference if identifiable
+      - "section_hint": (optional) heading or section name if identifiable
+
+    Use dot notation for nested lease detail fields (e.g., "lease_details.lease_type", "lease_details.rentable_sqft").
+    For array fields (rent_escalations, lease_options, key_clauses), provide one metadata entry covering the entire array.
+    For lease_milestones, include milestone-level evidence fields (`source_excerpt`, `reasoning`, optional `page_hint`, optional `section_hint`) inside EACH milestone object. You may also include array-level metadata under `field_metadata.lease_milestones`.
+
+    Use these confidence guidelines:
+      - 90-100: Value explicitly and unambiguously stated in the document
+      - 70-89: Value clearly implied or requires minor interpretation
+      - 50-69: Value requires significant inference or is ambiguous
+      - Below 50: Low confidence, best guess from limited information
+
+    For fields where information conflicts across documents, explain the conflict in reasoning and set confidence accordingly.
+
     CONTRACT DOCUMENTS:
   PROMPT
 
@@ -244,12 +320,28 @@ class ContractAiExtractorService
     For key clauses, return the COMPLETE updated set of clauses from ALL documents.
     For source_document, use the EXACT filename from the document header.
 
+    Additionally, include a "field_metadata" object with evidence for each extracted field.
+    For every field where you provided a non-null value, include an entry keyed by the field name with:
+      - "confidence": integer 0-100 (how confident you are in this extraction)
+      - "source_excerpt": the EXACT verbatim text from the document that supports this value
+      - "reasoning": a brief plain-English explanation of your interpretation
+      - "page_hint": (optional) page or section reference if identifiable
+      - "section_hint": (optional) heading or section name if identifiable
+
+    Use dot notation for nested lease detail fields (e.g., "lease_details.lease_type", "lease_details.rentable_sqft").
+    For array fields (rent_escalations, lease_options, key_clauses), provide one metadata entry covering the entire array.
+    For lease_milestones, include milestone-level evidence fields (`source_excerpt`, `reasoning`, optional `page_hint`, optional `section_hint`) inside EACH milestone object. You may also include array-level metadata under `field_metadata.lease_milestones`.
+
+    Use these confidence guidelines:
+      - 90-100: Value explicitly and unambiguously stated in the document
+      - 70-89: Value clearly implied or requires minor interpretation
+      - 50-69: Value requires significant inference or is ambiguous
+      - Below 50: Low confidence, best guess from limited information
+
+    For fields where information conflicts across documents, explain the conflict in reasoning and set confidence accordingly.
+
     CONTRACT DOCUMENTS:
   PROMPT
-
-  # Lease-indicative terms for auto-detection
-  LEASE_INDICATORS = %w[landlord tenant premises lease rent commencement demised leasehold lessee lessor].freeze
-  LEASE_INDICATOR_THRESHOLD = 3
 
   # Raised when the organization has hit its monthly AI extraction limit
   class ExtractionLimitReachedError < StandardError; end
@@ -279,9 +371,6 @@ class ContractAiExtractorService
 
     document_text = build_document_text
     return if document_text.blank?
-
-    # Auto-detect lease type from document text if contract_type isn't set
-    @lease_type_auto_detected = detect_and_set_lease_type!(document_text)
 
     # Atomic reentrance guard: only proceed if we can claim the "processing" status
     rows_updated = Contract.where(id: @contract.id)
@@ -350,12 +439,6 @@ class ContractAiExtractorService
       ai_extracted_data: extracted.except("changes_summary").to_json
     }
     update_attrs[:last_changes_summary] = extracted["changes_summary"] if extracted["changes_summary"].present?
-
-    # Add auto-detect notice to changes summary
-    if @lease_type_auto_detected
-      auto_detect_msg = "Contract type auto-detected as Lease based on document content."
-      update_attrs[:last_changes_summary] = [ auto_detect_msg, update_attrs[:last_changes_summary] ].compact.join(" ")
-    end
 
     @contract.update!(update_attrs)
 
@@ -590,23 +673,6 @@ class ContractAiExtractorService
     end
   end
 
-  def detect_and_set_lease_type!(document_text)
-    # Skip detection only if a specific (non-"other") type was explicitly set by the user
-    return false if @contract.contract_type.present? && @contract.contract_type != "other"
-
-    text_lower = document_text.downcase
-    matches = LEASE_INDICATORS.count { |term| text_lower.include?(term) }
-
-    if matches >= LEASE_INDICATOR_THRESHOLD
-      @contract.update_column(:contract_type, "lease")
-      @contract.reload
-      Rails.logger.info("Auto-detected contract #{@contract.id} as lease (#{matches} indicator terms found)")
-      true
-    else
-      false
-    end
-  end
-
   # Build a lookup from filename -> document id for assigning source_document_id
   def document_id_lookup
     @document_id_lookup ||= @contract.contract_documents.completed.each_with_object({}) do |doc, hash|
@@ -617,6 +683,11 @@ class ContractAiExtractorService
   # Sanitize and coerce AI-returned values so invalid enums/dates/numerics
   # are set to nil rather than causing validation failures.
   def sanitize_extracted_data!(data)
+    # Preserve field_metadata if well-formed, strip if malformed
+    if data.key?("field_metadata")
+      data.delete("field_metadata") unless data["field_metadata"].is_a?(Hash)
+    end
+
     # Coerce contract_type to a valid enum or nil
     if data["contract_type"].present? && !Contract::CONTRACT_TYPES.include?(data["contract_type"])
       Rails.logger.warn("AI returned invalid contract_type '#{data["contract_type"]}' for contract #{@contract.id}, setting to nil")
@@ -694,6 +765,8 @@ class ContractAiExtractorService
   end
 
   def apply_extraction(data)
+    raise "Cannot apply extraction while contract is in review" if @contract.in_review?
+
     ActiveRecord::Base.transaction do
       if @mode == :incremental
         apply_incremental_extraction(data)

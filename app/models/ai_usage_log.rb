@@ -7,6 +7,7 @@ class AiUsageLog < ApplicationRecord
   belongs_to :contract, optional: true
   belongs_to :ai_extraction_config, optional: true
   has_one :extraction_feedback, primary_key: :contract_id, foreign_key: :contract_id
+  has_many :review_learning_events, dependent: :nullify
 
   validates :ai_model, presence: true
   validates :input_tokens, :output_tokens, :total_tokens, numericality: { greater_than_or_equal_to: 0, only_integer: true }

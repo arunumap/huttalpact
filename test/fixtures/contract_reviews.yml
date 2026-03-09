@@ -1,0 +1,28 @@
+pending_review:
+  contract: hvac_maintenance
+  organization: one
+  status: pending
+  review_type: full
+  confidence_threshold: 80
+  total_fields: 5
+  reviewed_fields: 0
+
+in_progress_review:
+  contract: landscaping
+  organization: one
+  status: in_progress
+  review_type: full
+  confidence_threshold: 80
+  total_fields: 10
+  reviewed_fields: 5
+
+completed_review:
+  contract: commercial_lease
+  organization: one
+  status: completed
+  review_type: incremental
+  confidence_threshold: 75
+  total_fields: 3
+  reviewed_fields: 3
+  completed_at: <%= Time.current %>
+  completed_by: one

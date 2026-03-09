@@ -13,14 +13,20 @@ class AiExtractContractJob < ApplicationJob
     mode = new_document_id.present? ? :incremental : :full
     ContractAiExtractorService.new(contract, mode: mode, new_document_id: new_document_id).call
 
-    # Broadcast updated contract show page
     contract.reload
-    broadcast_contract_update(contract)
 
-    # After lease extraction, regenerate alerts based on newly extracted lease data
-    if contract.lease? && contract.lease_detail.present?
-      GenerateContractAlertsJob.perform_later(contract.id)
+    # Create review from extracted data instead of directly applying
+    if contract.extraction_status == "completed" && contract.ai_extracted_data.present?
+      extracted_data = JSON.parse(contract.ai_extracted_data)
+      ContractReviewCreatorService.new(
+        contract: contract,
+        extracted_data: extracted_data,
+        mode: mode
+      ).call
+      contract.reload
     end
+
+    broadcast_contract_update(contract)
   rescue ActiveRecord::RecordNotFound
     Rails.logger.warn("Contract #{contract_id} not found, skipping AI extraction")
   rescue => e
@@ -57,8 +63,22 @@ class AiExtractContractJob < ApplicationJob
       )
     end
 
-    # For draft contracts, also broadcast form and extraction status updates
-    if contract.draft?
+    # For draft contracts that are now in review, signal redirect to review
+    if contract.in_review?
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "contract_#{contract.id}",
+        target: "draft_extraction_status",
+        partial: "contracts/draft_extraction_status",
+        locals: { contract: contract }
+      )
+
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "contract_#{contract.id}",
+        target: "draft_contract_form",
+        partial: "contracts/review_ready_redirect",
+        locals: { contract: contract }
+      )
+    elsif contract.draft?
       Turbo::StreamsChannel.broadcast_replace_to(
         "contract_#{contract.id}",
         target: "draft_extraction_status",

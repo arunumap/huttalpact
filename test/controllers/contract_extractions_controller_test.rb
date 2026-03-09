@@ -72,4 +72,47 @@ class ContractExtractionsControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to contract_path(@contract)
     assert_match "extractions", flash[:alert]
   end
+
+  test "create redirects to edit when contract type is blank" do
+    @contract.update!(contract_type: nil)
+
+    post contract_extraction_path(@contract)
+
+    assert_redirected_to edit_contract_path(@contract)
+    assert_match "choose a contract type", flash[:alert]
+  end
+
+  test "confirm_type sets type and starts extraction" do
+    @contract.update!(contract_type: nil, extraction_status: "awaiting_type_confirmation")
+
+    assert_enqueued_with(job: AiExtractContractJob, args: [ @contract.id ]) do
+      post confirm_type_contract_extraction_path(@contract), params: { contract_type: "lease" }
+    end
+
+    @contract.reload
+    assert_equal "lease", @contract.contract_type
+    assert_equal "pending", @contract.extraction_status
+    assert_redirected_to contract_path(@contract)
+  end
+
+  test "confirm_type rejects invalid type" do
+    @contract.update!(contract_type: nil, extraction_status: "awaiting_type_confirmation")
+
+    assert_no_enqueued_jobs do
+      post confirm_type_contract_extraction_path(@contract), params: { contract_type: "not-a-type" }
+    end
+
+    @contract.reload
+    assert_nil @contract.contract_type
+    assert_equal "awaiting_type_confirmation", @contract.extraction_status
+    assert_redirected_to edit_contract_path(@contract)
+    assert_match "valid contract type", flash[:alert]
+  end
+
+  test "redetect now redirects user to explicit type selection" do
+    post redetect_contract_extraction_path(@contract)
+
+    assert_redirected_to edit_contract_path(@contract)
+    assert_match "Auto-detect has been retired", flash[:alert]
+  end
 end

@@ -1,6 +1,7 @@
 class ContractDocument < ApplicationRecord
   belongs_to :contract
   has_many :key_clauses, foreign_key: :source_document_id, dependent: :destroy
+  has_many :review_learning_events, foreign_key: :source_document_id, dependent: :nullify
 
   has_one_attached :file
 

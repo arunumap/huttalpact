@@ -350,12 +350,13 @@ class SubscriptionManagerServiceTest < ActiveSupport::TestCase
 
   test "destroy_account! destroys organization with correct password" do
     org_id = @org.id
-    # Clear audit logs that reference this org to avoid FK constraint
-    AuditLog.unscoped.where(organization_id: org_id).delete_all
+    assert_operator AuditLog.unscoped.where(organization_id: org_id).count, :>, 0
+
     # No active subscription
     result = @service.destroy_account!("password")
     assert result.success?
     assert_not Organization.exists?(org_id)
+    assert_equal 0, AuditLog.unscoped.where(organization_id: org_id).count
   end
 
   test "destroy_account! cancels subscription before destroying" do
@@ -365,12 +366,11 @@ class SubscriptionManagerServiceTest < ActiveSupport::TestCase
     @org.define_singleton_method(:active_subscription) { fake_sub }
 
     org_id = @org.id
-    # Clear audit logs that reference this org to avoid FK constraint
-    AuditLog.unscoped.where(organization_id: org_id).delete_all
     result = @service.destroy_account!("password")
     assert result.success?
     assert cancel_now_called, "expected cancel_now! to be called"
     assert_not Organization.exists?(org_id)
+    assert_equal 0, AuditLog.unscoped.where(organization_id: org_id).count
   end
 
   # --- Result struct ---

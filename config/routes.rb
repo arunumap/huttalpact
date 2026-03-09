@@ -8,6 +8,7 @@ Rails.application.routes.draw do
     resources :admin_users
     resources :organizations, only: %i[index show]
     resources :ai_usage, only: %i[index], controller: "ai_usage"
+    resource :review_learning_insights, only: %i[show], controller: "review_learning_insights"
     resources :ai_extraction_configs, only: %i[index new create show] do
       member do
         post :activate
@@ -55,6 +56,7 @@ Rails.application.routes.draw do
   resources :contracts do
     resources :documents, only: %i[create destroy], controller: "contract_documents"
     resource :extraction, only: %i[create], controller: "contract_extractions" do
+      post :confirm_type
       post :redetect
     end
     resources :extraction_feedbacks, only: %i[create]
@@ -62,6 +64,16 @@ Rails.application.routes.draw do
     resources :rent_escalations, only: %i[new create edit update destroy]
     resources :lease_options, only: %i[new create edit update destroy]
     resources :lease_milestones, only: %i[new create edit update destroy]
+    resource :contract_review, only: [ :show ] do
+      patch :update_field
+      patch :update_milestone
+      delete :remove_milestone
+      patch :update_key_clause
+      delete :remove_key_clause
+      post :bulk_accept
+      post :complete
+      post :save_draft
+    end
     collection do
       post :create_draft
       post :bulk_delete

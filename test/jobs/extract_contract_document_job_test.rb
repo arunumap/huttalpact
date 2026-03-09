@@ -120,6 +120,56 @@ class ExtractContractDocumentJobTest < ActiveSupport::TestCase
     assert enqueued, "AI extraction job should be enqueued"
   end
 
+  test "auto-detects contract type for unsure drafts when confidence is high" do
+    @contract.update!(contract_type: nil, extraction_status: "pending", ai_extracted_data: nil)
+    @contract.contract_documents.update_all(extraction_status: "completed")
+    doc = create_text_document("Service agreement text")
+    clear_enqueued_jobs
+
+    result = ContractTypeClassifierService::Result.new(
+      suggested_type: "service_agreement",
+      confidence: 87,
+      scores: { "service_agreement" => 6, "lease" => 1 }
+    )
+    classifier = Struct.new(:call).new(result)
+
+    ContractTypeClassifierService.stub(:new, ->(_contract) { classifier }) do
+      assert_enqueued_with(job: AiExtractContractJob) do
+        ExtractContractDocumentJob.perform_now(doc.id)
+      end
+    end
+
+    @contract.reload
+    assert_equal "service_agreement", @contract.contract_type
+    assert_equal "pending", @contract.extraction_status
+  end
+
+  test "pauses extraction for unsure drafts when confidence is low" do
+    @contract.update!(contract_type: nil, extraction_status: "pending", ai_extracted_data: nil, last_changes_summary: nil)
+    @contract.contract_documents.update_all(extraction_status: "completed")
+    doc = create_text_document("Ambiguous contract text")
+    clear_enqueued_jobs
+
+    result = ContractTypeClassifierService::Result.new(
+      suggested_type: "lease",
+      confidence: 52,
+      scores: { "lease" => 3, "service_agreement" => 2 }
+    )
+    classifier = Struct.new(:call).new(result)
+
+    ContractTypeClassifierService.stub(:new, ->(_contract) { classifier }) do
+      ExtractContractDocumentJob.perform_now(doc.id)
+    end
+
+    ai_jobs = enqueued_jobs.select { |j| j["job_class"] == "AiExtractContractJob" }
+    assert_empty ai_jobs, "AI extraction should wait for type confirmation"
+
+    @contract.reload
+    assert_nil @contract.contract_type
+    assert_equal "awaiting_type_confirmation", @contract.extraction_status
+    assert_includes @contract.last_changes_summary, "Best guess"
+  end
+
   # --- Unsupported format handling ---
 
   test "handles unsupported format by marking document as failed" do

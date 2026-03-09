@@ -955,14 +955,25 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
       "Should not set date for non-auto-renewing contracts"
   end
 
-  test "detect_and_set_lease_type overrides other contract_type" do
-    @contract.update_column(:contract_type, "other")
-    lease_text = "This LEASE AGREEMENT between LANDLORD and TENANT for the PREMISES located at 123 Main Street. The RENT shall be payable monthly."
-    service = ContractAiExtractorService.new(@contract)
-    service.send(:detect_and_set_lease_type!, lease_text)
+  test "does not infer lease type from document text when AI omits contract_type" do
+    @contract.update!(contract_type: nil)
+    @contract.contract_documents.update_all(
+      extraction_status: "completed",
+      extracted_text: "This LEASE AGREEMENT between LANDLORD and TENANT for the PREMISES located at 123 Main Street."
+    )
+
+    ai_response = build_ai_response(
+      contract_type: nil,
+      key_clauses: [],
+      summary: "Lease-looking text with no explicit type returned"
+    )
+
+    stub_anthropic_client(ai_response) do
+      ContractAiExtractorService.new(@contract).call
+    end
+
     @contract.reload
-    assert_equal "lease", @contract.contract_type,
-      "Should override 'other' type when lease indicators are detected"
+    assert_nil @contract.contract_type
   end
 
   private
@@ -1082,24 +1093,6 @@ class ContractAiExtractorServiceTest < ActiveSupport::TestCase
   end
 
   # --- Lease-specific extraction tests ---
-
-  test "detects lease type from document text when contract_type is blank" do
-    @contract.update_column(:contract_type, nil)
-    lease_text = "This LEASE AGREEMENT between LANDLORD and TENANT for the PREMISES located at 123 Main Street. The RENT shall be payable monthly."
-    service = ContractAiExtractorService.new(@contract)
-    service.send(:detect_and_set_lease_type!, lease_text)
-    @contract.reload
-    assert_equal "lease", @contract.contract_type
-  end
-
-  test "does not change contract_type when already set" do
-    @contract.update_column(:contract_type, "maintenance")
-    lease_text = "This LEASE AGREEMENT between LANDLORD and TENANT for the PREMISES."
-    service = ContractAiExtractorService.new(@contract)
-    service.send(:detect_and_set_lease_type!, lease_text)
-    @contract.reload
-    assert_equal "maintenance", @contract.contract_type
-  end
 
   test "uses lease prompt when contract_type is lease" do
     lease_contract = contracts(:commercial_lease)

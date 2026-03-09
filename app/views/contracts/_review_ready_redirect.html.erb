@@ -1,0 +1,12 @@
+<%= turbo_frame_tag "draft_contract_form" do %>
+  <div class="text-center py-12" data-controller="redirect" data-redirect-url-value="<%= contract_contract_review_path(contract) %>">
+    <div class="text-amber-600 mb-2">
+      <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+    <h3 class="text-lg font-medium text-gray-900">Extraction Complete</h3>
+    <p class="mt-1 text-sm text-gray-500">Redirecting to review...</p>
+    <%= link_to "Review Now →", contract_contract_review_path(contract), class: "mt-4 inline-flex items-center px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium text-sm" %>
+  </div>
+<% end %>

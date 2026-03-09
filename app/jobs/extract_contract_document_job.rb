@@ -38,6 +38,11 @@ class ExtractContractDocumentJob < ApplicationJob
             end
           end
 
+          unless contract_type_ready_for_extraction?(contract)
+            broadcast_type_confirmation_needed(contract)
+            next
+          end
+
           # If the contract already has AI data and this is a new document,
           # use incremental mode so user edits are preserved
           if contract.ai_extracted_data.present?
@@ -61,6 +66,73 @@ class ExtractContractDocumentJob < ApplicationJob
       target: "contract_document_#{document.id}",
       partial: "contract_documents/contract_document",
       locals: { contract_document: document }
+    )
+  end
+
+  def contract_type_ready_for_extraction?(contract)
+    return false if contract.extraction_status == "awaiting_type_confirmation"
+    return true if contract.contract_type.present?
+
+    classification = ContractTypeClassifierService.new(contract).call
+
+    if classification.confident?
+      detected_type = classification.suggested_type
+      contract.update!(
+        contract_type: detected_type,
+        extraction_status: "pending",
+        last_changes_summary: "Auto-detected contract type as #{human_contract_type_label(detected_type)} (#{classification.confidence}% confidence)."
+      )
+
+      AuditLog.create(
+        organization: contract.organization,
+        contract: contract,
+        action: "updated",
+        details: "Auto-detected contract type as #{detected_type} after user selected unsure."
+      )
+      true
+    else
+      contract.update!(
+        extraction_status: "awaiting_type_confirmation",
+        last_changes_summary: awaiting_type_confirmation_message(classification)
+      )
+
+      AuditLog.create(
+        organization: contract.organization,
+        contract: contract,
+        action: "updated",
+        details: "Paused extraction pending contract type confirmation."
+      )
+      false
+    end
+  end
+
+  def awaiting_type_confirmation_message(classification)
+    return "We couldn't confidently determine the contract type. Please choose a type to continue extraction." if classification.suggested_type.blank?
+
+    "We need your confirmation before extracting. Best guess: #{human_contract_type_label(classification.suggested_type)} (#{classification.confidence}% confidence)."
+  end
+
+  def human_contract_type_label(type)
+    return "MSA / Service Agreement" if type == "service_agreement"
+
+    type.to_s.titleize.gsub("_", " ")
+  end
+
+  def broadcast_type_confirmation_needed(contract)
+    if contract.draft?
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "contract_#{contract.id}",
+        target: "draft_extraction_status",
+        partial: "contracts/draft_extraction_status",
+        locals: { contract: contract }
+      )
+    end
+
+    Turbo::StreamsChannel.broadcast_replace_to(
+      "contract_#{contract.id}",
+      target: "contract_ai_status",
+      partial: "contracts/ai_status",
+      locals: { contract: contract }
     )
   end
 end

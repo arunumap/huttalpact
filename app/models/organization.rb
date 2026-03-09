@@ -6,10 +6,13 @@ class Organization < ApplicationRecord
   has_many :memberships, dependent: :destroy
   has_many :users, through: :memberships
   has_many :contracts, dependent: :destroy
+  has_many :audit_logs, dependent: :destroy
   has_many :alerts, dependent: :destroy
   has_many :alert_preferences, dependent: :destroy
   has_many :invitations, dependent: :destroy
   has_many :ai_usage_logs, dependent: :destroy
+  has_many :review_learning_events, dependent: :destroy
+  has_many :review_learning_aggregates, dependent: :destroy
   has_many :extraction_overage_charges, dependent: :destroy
   has_many :bulk_delete_operations, dependent: :destroy
 

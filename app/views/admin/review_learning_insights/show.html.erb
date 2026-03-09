@@ -1,0 +1,136 @@
+<% content_for :title, "Admin Review Learning Insights" %>
+<% content_for :page_title, "Review Learning Insights" %>
+
+<% contract_type_options = [["All contract types", ""]] + @contract_type_options.map { |value| [value.titleize, value] } %>
+<% field_options = [["All fields", ""]] + @field_options.map { |value| [value.titleize, value] } %>
+
+<div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+  <%= form_with url: admin_review_learning_insights_path, method: :get, class: "grid grid-cols-1 gap-2 sm:grid-cols-5" do |form| %>
+    <%= form.date_field :start_date, value: @insights.start_date, class: "rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-amber-600 focus:ring-amber-600" %>
+    <%= form.date_field :end_date, value: @insights.end_date, class: "rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-amber-600 focus:ring-amber-600" %>
+    <%= form.select :contract_type, options_for_select(contract_type_options, @insights.contract_type), {}, class: "rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-amber-600 focus:ring-amber-600" %>
+    <%= form.select :field_name, options_for_select(field_options, @insights.field_name), {}, class: "rounded-md border-slate-300 text-slate-900 shadow-sm focus:border-amber-600 focus:ring-amber-600" %>
+    <%= form.submit "Apply", class: "rounded-md bg-amber-600 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-500" %>
+  <% end %>
+</div>
+
+<div id="review-learning-ops-loop" class="mt-4 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+  <h3 class="text-sm font-semibold text-slate-900">Operational Improvement Loop</h3>
+  <ol class="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-700">
+    <li>Refresh learning aggregates + threshold recommendations nightly with <span class="font-mono text-xs">RefreshReviewLearningOpsLoopJob</span> or manually via <span class="font-mono text-xs">bin/rails "review_learning:refresh"</span>.</li>
+    <li>Review the correction, calibration, and worst-field insights below for the selected period.</li>
+    <li>Use findings to decide prompt/model config updates or confidence-threshold adjustments through explicit human review.</li>
+  </ol>
+  <p class="mt-3 text-xs text-slate-500">
+    Safety default: recommendations are advisory only; no threshold, model, or prompt changes are auto-applied.
+  </p>
+</div>
+
+<div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+  <div id="learning-overall-volume" class="rounded-md bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <p class="text-sm text-slate-500">Overall Volume</p>
+    <p class="mt-1 text-2xl font-semibold text-slate-900"><%= number_with_delimiter(@overview[:total_volume]) %></p>
+  </div>
+
+  <div id="learning-correction-rate" class="rounded-md bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <p class="text-sm text-slate-500">Correction Rate</p>
+    <p class="mt-1 text-2xl font-semibold text-slate-900">
+      <%= @overview[:correction_rate] ? number_to_percentage(@overview[:correction_rate] * 100, precision: 1) : "N/A" %>
+    </p>
+    <p class="text-xs text-slate-500"><%= number_with_delimiter(@overview[:corrected_count]) %> corrected</p>
+  </div>
+
+  <div id="learning-error-rate" class="rounded-md bg-white p-4 shadow-sm ring-1 ring-slate-200">
+    <p class="text-sm text-slate-500">Error Rate</p>
+    <p class="mt-1 text-2xl font-semibold text-slate-900">
+      <%= @overview[:error_rate] ? number_to_percentage(@overview[:error_rate] * 100, precision: 1) : "N/A" %>
+    </p>
+    <p class="text-xs text-slate-500"><%= number_with_delimiter(@overview[:error_count]) %> errors</p>
+  </div>
+</div>
+
+<div class="mt-4 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200">
+  <h3 class="text-sm font-semibold text-slate-900">Confidence Calibration Summary</h3>
+  <dl class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4 text-sm text-slate-700">
+    <div>
+      <dt class="text-slate-500">Volume</dt>
+      <dd class="mt-1 font-semibold text-slate-900"><%= number_with_delimiter(@calibration_summary[:total_volume]) %></dd>
+    </div>
+    <div id="learning-observed-agreement">
+      <dt class="text-slate-500">Observed Agreement</dt>
+      <dd class="mt-1 font-semibold text-slate-900">
+        <%= @calibration_summary[:observed_agreement_rate] ? number_to_percentage(@calibration_summary[:observed_agreement_rate] * 100, precision: 1) : "N/A" %>
+      </dd>
+    </div>
+    <div id="learning-expected-agreement">
+      <dt class="text-slate-500">Expected Agreement</dt>
+      <dd class="mt-1 font-semibold text-slate-900">
+        <%= @calibration_summary[:expected_agreement_rate] ? number_to_percentage(@calibration_summary[:expected_agreement_rate] * 100, precision: 1) : "N/A" %>
+      </dd>
+    </div>
+    <div id="learning-calibration-gap">
+      <dt class="text-slate-500">Calibration Gap</dt>
+      <dd class="mt-1 font-semibold <%= @calibration_summary[:calibration_gap].to_f.abs <= 0.05 ? "text-green-700" : "text-amber-700" %>">
+        <%= @calibration_summary[:calibration_gap] ? number_to_percentage(@calibration_summary[:calibration_gap] * 100, precision: 1) : "N/A" %>
+      </dd>
+    </div>
+  </dl>
+</div>
+
+<div class="mt-4 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+  <h3 class="mb-3 text-sm font-semibold text-slate-900">Worst-performing Fields</h3>
+  <% if @worst_fields.any? %>
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Field</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Volume</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Correction Rate</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Error Rate</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200 bg-white">
+        <% @worst_fields.each do |field| %>
+          <tr>
+            <td class="px-3 py-2 font-medium text-slate-900"><%= field[:field_name].titleize %></td>
+            <td class="px-3 py-2"><%= number_with_delimiter(field[:total_volume]) %></td>
+            <td class="px-3 py-2"><%= field[:correction_rate] ? number_to_percentage(field[:correction_rate] * 100, precision: 1) : "N/A" %></td>
+            <td class="px-3 py-2"><%= field[:error_rate] ? number_to_percentage(field[:error_rate] * 100, precision: 1) : "N/A" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="text-sm text-slate-500">No field outcome data for the selected filters.</p>
+  <% end %>
+</div>
+
+<div class="mt-4 rounded-lg bg-white p-4 shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+  <h3 class="mb-3 text-sm font-semibold text-slate-900">Confidence Buckets</h3>
+  <% if @calibration_buckets.any? %>
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Bucket</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Volume</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Observed</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Expected</th>
+          <th class="px-3 py-2 text-left font-medium text-slate-600">Gap</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-200 bg-white">
+        <% @calibration_buckets.each do |bucket| %>
+          <tr>
+            <td class="px-3 py-2 font-medium text-slate-900"><%= bucket[:bucket] %></td>
+            <td class="px-3 py-2"><%= number_with_delimiter(bucket[:total_volume]) %></td>
+            <td class="px-3 py-2"><%= bucket[:observed_agreement_rate] ? number_to_percentage(bucket[:observed_agreement_rate] * 100, precision: 1) : "N/A" %></td>
+            <td class="px-3 py-2"><%= bucket[:expected_agreement_rate] ? number_to_percentage(bucket[:expected_agreement_rate] * 100, precision: 1) : "N/A" %></td>
+            <td class="px-3 py-2"><%= bucket[:calibration_gap] ? number_to_percentage(bucket[:calibration_gap] * 100, precision: 1) : "N/A" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="text-sm text-slate-500">No confidence calibration data for the selected filters.</p>
+  <% end %>
+</div>
