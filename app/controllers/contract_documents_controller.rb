@@ -1,5 +1,8 @@
 class ContractDocumentsController < ApplicationController
+  include ReviewGuard
+
   before_action :set_contract
+  before_action :block_if_in_review, only: :create
 
   def create
     @contract_document = @contract.contract_documents.new(

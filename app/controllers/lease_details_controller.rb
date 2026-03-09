@@ -1,6 +1,9 @@
 class LeaseDetailsController < ApplicationController
+  include ReviewGuard
+
   before_action :set_contract
   before_action :set_lease_detail
+  before_action :block_if_in_review, only: %i[edit update]
 
   def edit
   end

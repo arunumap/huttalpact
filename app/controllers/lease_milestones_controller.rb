@@ -1,6 +1,9 @@
 class LeaseMilestonesController < ApplicationController
+  include ReviewGuard
+
   before_action :set_contract
   before_action :set_lease_milestone, only: %i[edit update destroy]
+  before_action :block_if_in_review
 
   def new
     @lease_milestone = @contract.lease_milestones.build

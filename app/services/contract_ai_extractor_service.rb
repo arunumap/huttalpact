@@ -28,7 +28,17 @@ class ContractAiExtractorService
           "source_document": "The exact filename of the document this clause came from"
         }
       ],
-      "summary": "2-3 sentence summary of the contract"
+      "summary": "2-3 sentence summary of the contract",
+      "field_metadata": {
+        "description": "Evidence and confidence for each extracted field",
+        "<field_name>": {
+          "confidence": "integer 0-100",
+          "source_excerpt": "Exact verbatim text from the document supporting this value",
+          "reasoning": "Brief plain-English explanation of interpretation",
+          "page_hint": "Optional page reference",
+          "section_hint": "Optional section reference"
+        }
+      }
     }
   SCHEMA
 
@@ -118,7 +128,17 @@ class ContractAiExtractorService
           "source_document": "The exact filename of the document this clause came from"
         }
       ],
-      "summary": "2-3 sentence summary of the lease"
+      "summary": "2-3 sentence summary of the lease",
+      "field_metadata": {
+        "description": "Evidence and confidence for each extracted field. Use dot notation for nested lease detail fields (e.g. lease_details.lease_type, lease_details.rentable_sqft). For array fields (rent_escalations, lease_options, lease_milestones, key_clauses), provide one metadata entry covering the entire array.",
+        "<field_name>": {
+          "confidence": "integer 0-100",
+          "source_excerpt": "Exact verbatim text from the document supporting this value",
+          "reasoning": "Brief plain-English explanation of interpretation",
+          "page_hint": "Optional page reference",
+          "section_hint": "Optional section reference"
+        }
+      }
     }
   SCHEMA
 
@@ -141,6 +161,22 @@ class ContractAiExtractorService
     For next_renewal_date: use the specific renewal date if stated. For auto-renewing contracts, use the end_date. If unclear, use null.
     For key clauses, include the most important ones that affect renewals, costs, and obligations.
     For source_document, use the EXACT filename from the document header.
+
+    Additionally, include a "field_metadata" object with evidence for each extracted field.
+    For every field where you provided a non-null value, include an entry keyed by the field name with:
+      - "confidence": integer 0-100 (how confident you are in this extraction)
+      - "source_excerpt": the EXACT verbatim text from the document that supports this value
+      - "reasoning": a brief plain-English explanation of your interpretation
+      - "page_hint": (optional) page or section reference if identifiable
+      - "section_hint": (optional) heading or section name if identifiable
+
+    Use these confidence guidelines:
+      - 90-100: Value explicitly and unambiguously stated in the document
+      - 70-89: Value clearly implied or requires minor interpretation
+      - 50-69: Value requires significant inference or is ambiguous
+      - Below 50: Low confidence, best guess from limited information
+
+    For fields where information conflicts across documents, explain the conflict in reasoning and set confidence accordingly.
 
     CONTRACT DOCUMENTS:
   PROMPT
@@ -166,6 +202,22 @@ class ContractAiExtractorService
     For next_renewal_date: use the specific renewal date if stated. For auto-renewing contracts, use the end_date. If unclear, use null.
     For key clauses, return the COMPLETE updated set of clauses from ALL documents (not just the new one).
     For source_document, use the EXACT filename from the document header.
+
+    Additionally, include a "field_metadata" object with evidence for each extracted field.
+    For every field where you provided a non-null value, include an entry keyed by the field name with:
+      - "confidence": integer 0-100 (how confident you are in this extraction)
+      - "source_excerpt": the EXACT verbatim text from the document that supports this value
+      - "reasoning": a brief plain-English explanation of your interpretation
+      - "page_hint": (optional) page or section reference if identifiable
+      - "section_hint": (optional) heading or section name if identifiable
+
+    Use these confidence guidelines:
+      - 90-100: Value explicitly and unambiguously stated in the document
+      - 70-89: Value clearly implied or requires minor interpretation
+      - 50-69: Value requires significant inference or is ambiguous
+      - Below 50: Low confidence, best guess from limited information
+
+    For fields where information conflicts across documents, explain the conflict in reasoning and set confidence accordingly.
 
     CONTRACT DOCUMENTS:
   PROMPT
@@ -213,6 +265,25 @@ class ContractAiExtractorService
     For key clauses, include all important provisions that affect renewals, costs, tenant rights, and obligations.
     For source_document, use the EXACT filename from the document header.
 
+    Additionally, include a "field_metadata" object with evidence for each extracted field.
+    For every field where you provided a non-null value, include an entry keyed by the field name with:
+      - "confidence": integer 0-100 (how confident you are in this extraction)
+      - "source_excerpt": the EXACT verbatim text from the document that supports this value
+      - "reasoning": a brief plain-English explanation of your interpretation
+      - "page_hint": (optional) page or section reference if identifiable
+      - "section_hint": (optional) heading or section name if identifiable
+
+    Use dot notation for nested lease detail fields (e.g., "lease_details.lease_type", "lease_details.rentable_sqft").
+    For array fields (rent_escalations, lease_options, lease_milestones, key_clauses), provide one metadata entry covering the entire array.
+
+    Use these confidence guidelines:
+      - 90-100: Value explicitly and unambiguously stated in the document
+      - 70-89: Value clearly implied or requires minor interpretation
+      - 50-69: Value requires significant inference or is ambiguous
+      - Below 50: Low confidence, best guess from limited information
+
+    For fields where information conflicts across documents, explain the conflict in reasoning and set confidence accordingly.
+
     CONTRACT DOCUMENTS:
   PROMPT
 
@@ -243,6 +314,25 @@ class ContractAiExtractorService
     For next_renewal_date: use the specific renewal date if stated. For auto-renewing leases, use the end_date.
     For key clauses, return the COMPLETE updated set of clauses from ALL documents.
     For source_document, use the EXACT filename from the document header.
+
+    Additionally, include a "field_metadata" object with evidence for each extracted field.
+    For every field where you provided a non-null value, include an entry keyed by the field name with:
+      - "confidence": integer 0-100 (how confident you are in this extraction)
+      - "source_excerpt": the EXACT verbatim text from the document that supports this value
+      - "reasoning": a brief plain-English explanation of your interpretation
+      - "page_hint": (optional) page or section reference if identifiable
+      - "section_hint": (optional) heading or section name if identifiable
+
+    Use dot notation for nested lease detail fields (e.g., "lease_details.lease_type", "lease_details.rentable_sqft").
+    For array fields (rent_escalations, lease_options, lease_milestones, key_clauses), provide one metadata entry covering the entire array.
+
+    Use these confidence guidelines:
+      - 90-100: Value explicitly and unambiguously stated in the document
+      - 70-89: Value clearly implied or requires minor interpretation
+      - 50-69: Value requires significant inference or is ambiguous
+      - Below 50: Low confidence, best guess from limited information
+
+    For fields where information conflicts across documents, explain the conflict in reasoning and set confidence accordingly.
 
     CONTRACT DOCUMENTS:
   PROMPT
@@ -617,6 +707,11 @@ class ContractAiExtractorService
   # Sanitize and coerce AI-returned values so invalid enums/dates/numerics
   # are set to nil rather than causing validation failures.
   def sanitize_extracted_data!(data)
+    # Preserve field_metadata if well-formed, strip if malformed
+    if data.key?("field_metadata")
+      data.delete("field_metadata") unless data["field_metadata"].is_a?(Hash)
+    end
+
     # Coerce contract_type to a valid enum or nil
     if data["contract_type"].present? && !Contract::CONTRACT_TYPES.include?(data["contract_type"])
       Rails.logger.warn("AI returned invalid contract_type '#{data["contract_type"]}' for contract #{@contract.id}, setting to nil")
@@ -694,6 +789,8 @@ class ContractAiExtractorService
   end
 
   def apply_extraction(data)
+    raise "Cannot apply extraction while contract is in review" if @contract.in_review?
+
     ActiveRecord::Base.transaction do
       if @mode == :incremental
         apply_incremental_extraction(data)
