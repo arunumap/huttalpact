@@ -1,8 +1,17 @@
 <% needs_review = review.fields.needs_review.pending.ordered %>
 <% confident = review.fields.confident.pending.ordered %>
 <% reviewed = review.fields.reviewed.ordered %>
+<% milestone_fields = review.fields.where(field_name: "lease_milestones").ordered %>
+<% key_clause_fields = review.fields.where(field_name: "key_clauses").ordered %>
+<% open_milestone_drawer_id = local_assigns[:open_milestone_drawer_id] %>
+<% open_key_clause_drawer_id = local_assigns[:open_key_clause_drawer_id] %>
+<% open_drawer_id = open_milestone_drawer_id.presence || open_key_clause_drawer_id.presence %>
 
-<div id="review_panel" class="w-full lg:w-1/2 flex flex-col min-h-0 bg-gray-50">
+<div id="review_panel"
+  class="w-full lg:w-1/2 flex flex-col min-h-0 bg-gray-50"
+  data-controller="milestone-drawer"
+  data-action="keydown@window->milestone-drawer#closeOnEscape"
+  <% if open_drawer_id.present? %>data-milestone-drawer-open-id-value="<%= open_drawer_id %>"<% end %>>
   <%# Scrollable content area %>
   <div class="flex-1 overflow-y-auto p-6 space-y-8">
     <%# Needs Review section %>
@@ -114,4 +123,12 @@
       <% end %>
     </div>
   </div>
+
+  <% milestone_fields.each do |field| %>
+    <%= render "contract_reviews/milestone_drawer", field: field, contract: contract %>
+  <% end %>
+
+  <% key_clause_fields.each do |field| %>
+    <%= render "contract_reviews/key_clause_drawer", field: field, contract: contract %>
+  <% end %>
 </div>

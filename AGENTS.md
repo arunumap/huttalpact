@@ -79,6 +79,17 @@ Behavior:
 - Alert generation is centralized in `app/services/alert_generator_service.rb`.
 - Recurring delivery/maintenance jobs are scheduled in `config/recurring.yml`.
 
+### Review learning operations loop
+
+- Data ingestion happens when reviews are completed (`ReviewLearningIngestionService`), but production also runs a daily refresh via `RefreshReviewLearningOpsLoopJob` (scheduled in `config/recurring.yml`) to keep aggregate and recommendation snapshots current.
+- Manual backfill/refresh command: `bin/rails "review_learning:refresh"` (optional args: `as_of_date`, `aggregate_lookback_days`, `organization_id`).
+- Review workflow:
+  1. Refresh aggregates/recommendations (automatic nightly or manual command).
+  2. Review `Admin > Review Learning` metrics (volume, correction/error rate, calibration gap, worst fields).
+  3. Decide whether to adjust model/prompt config (`Admin > AI Extraction Configs`) or threshold strategy.
+  4. Apply changes manually and re-check metrics after additional review outcomes.
+- Safety default: recommendation data is advisory; the app does not auto-apply threshold/model/prompt changes.
+
 ### Billing + plan enforcement
 
 - Plan limits: `app/models/concerns/plan_limits.rb`.

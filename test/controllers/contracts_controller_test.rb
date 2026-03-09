@@ -529,7 +529,8 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_difference "Contract.count", 1 do
       assert_difference "ContractDocument.count", 1 do
         post create_draft_contracts_path, params: {
-          contract_documents: [ fixture_file_upload("test.txt", "text/plain") ]
+          contract_documents: [ fixture_file_upload("test.txt", "text/plain") ],
+          contract_type: "maintenance"
         }
       end
     end
@@ -538,6 +539,7 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "draft", draft.status
     assert_equal "Untitled Draft", draft.title
     assert_equal users(:one), draft.uploaded_by
+    assert_equal "maintenance", draft.contract_type
     assert_equal 1, draft.contract_documents.count
     assert_redirected_to edit_contract_path(draft)
   end
@@ -549,22 +551,45 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
           contract_documents: [
             fixture_file_upload("test.txt", "text/plain"),
             fixture_file_upload("test.txt", "text/plain")
-          ]
+          ],
+          contract_type: "software"
         }
       end
     end
 
     draft = Contract.order(created_at: :desc).first
     assert_equal "draft", draft.status
+    assert_equal "software", draft.contract_type
     assert_equal 2, draft.contract_documents.count
+  end
+
+  test "create_draft with unsure type leaves contract_type blank" do
+    post create_draft_contracts_path, params: {
+      contract_documents: [ fixture_file_upload("test.txt", "text/plain") ],
+      contract_type: Contract::UPLOAD_TYPE_UNSURE
+    }
+
+    draft = Contract.order(created_at: :desc).first
+    assert_equal "draft", draft.status
+    assert_nil draft.contract_type
   end
 
   test "create_draft without files redirects back with alert" do
     assert_no_difference "Contract.count" do
-      post create_draft_contracts_path, params: { contract_documents: [] }
+      post create_draft_contracts_path, params: { contract_documents: [], contract_type: "maintenance" }
     end
     assert_redirected_to new_contract_path
     assert_match "upload at least one document", flash[:alert]
+  end
+
+  test "create_draft without contract type redirects back with alert" do
+    assert_no_difference "Contract.count" do
+      post create_draft_contracts_path, params: {
+        contract_documents: [ fixture_file_upload("test.txt", "text/plain") ]
+      }
+    end
+    assert_redirected_to new_contract_path
+    assert_match "choose a contract type", flash[:alert]
   end
 
   test "create_draft without params redirects back with alert" do
@@ -603,7 +628,8 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     # Should still be able to create a draft
     assert_difference "Contract.count", 1 do
       post create_draft_contracts_path, params: {
-        contract_documents: [ fixture_file_upload("test.txt", "text/plain") ]
+        contract_documents: [ fixture_file_upload("test.txt", "text/plain") ],
+        contract_type: "maintenance"
       }
     end
     assert_equal "draft", Contract.order(created_at: :desc).first.status

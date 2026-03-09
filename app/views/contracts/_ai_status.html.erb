@@ -41,6 +41,23 @@
         </div>
       </div>
     </div>
+  <% when "awaiting_type_confirmation" %>
+    <div class="rounded-xl bg-amber-50 ring-1 ring-amber-200 px-6 py-4">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-start gap-3">
+          <svg class="h-5 w-5 mt-0.5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zm8.25-3.75a8.25 8.25 0 11-16.5 0 8.25 8.25 0 0116.5 0z" />
+          </svg>
+          <div>
+            <p class="text-sm font-semibold text-amber-800">Contract type confirmation needed</p>
+            <p class="text-xs text-amber-700"><%= contract.last_changes_summary.presence || "Please choose a contract type before extraction can continue." %></p>
+          </div>
+        </div>
+        <%= link_to "Choose type",
+            edit_contract_path(contract),
+            class: "inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1.5 text-xs font-medium text-amber-700 shadow-sm ring-1 ring-inset ring-amber-300 hover:bg-amber-50" %>
+      </div>
+    </div>
   <% when "completed" %>
     <div class="rounded-xl bg-green-50 ring-1 ring-green-200 px-5 py-4">
       <div class="flex items-start gap-3">
@@ -63,13 +80,13 @@
           </svg>
           Re-extract
         <% end %>
-        <%= button_to redetect_contract_extraction_path(contract), method: :post,
+        <%= link_to edit_contract_path(contract),
             class: "inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-1.5 text-xs font-medium text-amber-700 shadow-sm ring-1 ring-inset ring-amber-300 hover:bg-amber-50" do %>
           <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
           </svg>
-          Re-detect type
+          Change type
         <% end %>
       </div>
       <% if contract.last_changes_summary.present? %>
@@ -115,12 +132,18 @@
               <p class="text-xs text-gray-500">Let AI analyze your documents and auto-fill contract details.</p>
             </div>
           </div>
-          <%= button_to contract_extraction_path(contract), method: :post,
-              class: "inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500" do %>
-            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-            </svg>
-            Extract with AI
+          <% if contract.contract_type.present? %>
+            <%= button_to contract_extraction_path(contract), method: :post,
+                class: "inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500" do %>
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+              </svg>
+              Extract with AI
+            <% end %>
+          <% else %>
+            <%= link_to "Choose type",
+                edit_contract_path(contract),
+                class: "inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500" %>
           <% end %>
         </div>
       </div>

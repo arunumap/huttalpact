@@ -9,6 +9,7 @@ class User < ApplicationRecord
   has_many :audit_logs
   has_many :bulk_delete_operations, dependent: :destroy
   has_many :extraction_feedbacks, dependent: :destroy
+  has_many :review_learning_events, foreign_key: :reviewed_by_id, inverse_of: :reviewed_by, dependent: :nullify
   has_many :sent_invitations, class_name: "Invitation", foreign_key: :inviter_id, dependent: :nullify
 
   attr_accessor :terms_accepted

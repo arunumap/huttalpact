@@ -25,6 +25,7 @@ class ContractReviewCompletionService
 
       compute_next_renewal_date!
       complete_review!
+      ingest_learning_events!
       activate_contract!
       create_audit_log
 
@@ -218,6 +219,10 @@ class ContractReviewCompletionService
   def activate_contract!
     new_status = @contract.draft? || @contract.in_review? ? "active" : @contract.status
     @contract.update!(status: new_status) if @contract.status != new_status
+  end
+
+  def ingest_learning_events!
+    ReviewLearningIngestionService.new(review: @review).call
   end
 
   def compute_next_renewal_date!

@@ -358,7 +358,7 @@ class ContractTest < ActiveSupport::TestCase
   end
 
   test "accepts valid extraction_statuses" do
-    %w[pending processing completed failed].each do |es|
+    %w[pending processing awaiting_type_confirmation completed failed].each do |es|
       @contract.extraction_status = es
       assert @contract.valid?, "Expected '#{es}' to be valid"
     end

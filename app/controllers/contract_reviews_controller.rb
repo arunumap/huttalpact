@@ -59,12 +59,61 @@ class ContractReviewsController < ApplicationController
           turbo_stream.replace(
             "review_panel",
             partial: "contract_reviews/review_panel",
-            locals: { review: @review, contract: @contract }
+            locals: {
+              review: @review,
+              contract: @contract,
+              open_milestone_drawer_id: nil,
+              open_key_clause_drawer_id: nil
+            }
           )
         ]
       end
       format.html { redirect_to contract_contract_review_path(@contract) }
     end
+  end
+
+  def update_milestone
+    field = find_milestone_field!
+    editor = ReviewMilestoneArrayEditor.new(field.final_value)
+    milestones = editor.update(index: milestone_index_param, attrs: milestone_params)
+
+    apply_milestone_update!(field, milestones)
+    render_review_panel_turbo(open_milestone_drawer_id: params[:open_milestone_drawer_id].presence)
+  rescue ReviewMilestoneArrayEditor::InvalidMilestonesError, ReviewMilestoneArrayEditor::InvalidMilestoneIndexError => e
+    redirect_to contract_contract_review_path(@contract), alert: e.message, status: :see_other
+  end
+
+  def remove_milestone
+    field = find_milestone_field!
+    editor = ReviewMilestoneArrayEditor.new(field.final_value)
+    milestones = editor.remove(index: milestone_index_param)
+
+    apply_milestone_update!(field, milestones)
+    render_review_panel_turbo(open_milestone_drawer_id: params[:open_milestone_drawer_id].presence)
+  rescue ReviewMilestoneArrayEditor::InvalidMilestonesError, ReviewMilestoneArrayEditor::InvalidMilestoneIndexError => e
+    redirect_to contract_contract_review_path(@contract), alert: e.message, status: :see_other
+  end
+
+  def update_key_clause
+    field = find_key_clause_field!
+    editor = ReviewKeyClauseArrayEditor.new(field.final_value)
+    clauses = editor.update(index: key_clause_index_param, attrs: key_clause_params)
+
+    apply_key_clause_update!(field, clauses)
+    render_review_panel_turbo(open_key_clause_drawer_id: params[:open_key_clause_drawer_id].presence)
+  rescue ReviewKeyClauseArrayEditor::InvalidKeyClausesError, ReviewKeyClauseArrayEditor::InvalidKeyClauseIndexError => e
+    redirect_to contract_contract_review_path(@contract), alert: e.message, status: :see_other
+  end
+
+  def remove_key_clause
+    field = find_key_clause_field!
+    editor = ReviewKeyClauseArrayEditor.new(field.final_value)
+    clauses = editor.remove(index: key_clause_index_param)
+
+    apply_key_clause_update!(field, clauses)
+    render_review_panel_turbo(open_key_clause_drawer_id: params[:open_key_clause_drawer_id].presence)
+  rescue ReviewKeyClauseArrayEditor::InvalidKeyClausesError, ReviewKeyClauseArrayEditor::InvalidKeyClauseIndexError => e
+    redirect_to contract_contract_review_path(@contract), alert: e.message, status: :see_other
   end
 
   def bulk_accept
@@ -81,7 +130,12 @@ class ContractReviewsController < ApplicationController
         render turbo_stream: turbo_stream.replace(
           "review_panel",
           partial: "contract_reviews/review_panel",
-          locals: { review: @review, contract: @contract }
+          locals: {
+            review: @review,
+            contract: @contract,
+            open_milestone_drawer_id: nil,
+            open_key_clause_drawer_id: nil
+          }
         )
       end
       format.html { redirect_to contract_contract_review_path(@contract), notice: "#{count} confident fields accepted." }
@@ -142,6 +196,98 @@ class ContractReviewsController < ApplicationController
         label: ReviewFieldCatalog::FIELD_GROUP_LABELS[group_key],
         fields: fields
       }
+    end
+  end
+
+  def milestone_params
+    params.require(:milestone).permit(
+      :milestone_type,
+      :due_date,
+      :description,
+      :recurring,
+      :recurrence_interval
+    )
+  end
+
+  def key_clause_params
+    params.require(:key_clause).permit(
+      :clause_type,
+      :content,
+      :page_reference,
+      :confidence_score
+    )
+  end
+
+  def milestone_index_param
+    index = Integer(params[:milestone_index], exception: false)
+    raise ReviewMilestoneArrayEditor::InvalidMilestoneIndexError, "Milestone could not be found." if index.nil? || index.negative?
+
+    index
+  end
+
+  def key_clause_index_param
+    index = Integer(params[:key_clause_index], exception: false)
+    raise ReviewKeyClauseArrayEditor::InvalidKeyClauseIndexError, "Key clause could not be found." if index.nil? || index.negative?
+
+    index
+  end
+
+  def find_milestone_field!
+    field = @review.fields.find(params[:field_id])
+    return field if field.field_name == "lease_milestones"
+
+    raise ReviewMilestoneArrayEditor::InvalidMilestonesError, "Milestone field is invalid."
+  end
+
+  def find_key_clause_field!
+    field = @review.fields.find(params[:field_id])
+    return field if field.field_name == "key_clauses"
+
+    raise ReviewKeyClauseArrayEditor::InvalidKeyClausesError, "Key clause field is invalid."
+  end
+
+  def apply_milestone_update!(field, milestones)
+    field.update!(
+      status: "edited",
+      user_value: milestones.to_json,
+      reviewed_at: Time.current,
+      reviewed_by: Current.user
+    )
+    @review.update!(reviewed_fields: @review.fields.reviewed.count)
+  end
+
+  def apply_key_clause_update!(field, key_clauses)
+    field.update!(
+      status: "edited",
+      user_value: key_clauses.to_json,
+      reviewed_at: Time.current,
+      reviewed_by: Current.user
+    )
+    @review.update!(reviewed_fields: @review.fields.reviewed.count)
+  end
+
+  def render_review_panel_turbo(open_milestone_drawer_id: nil, open_key_clause_drawer_id: nil)
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream: [
+          turbo_stream.replace(
+            "review_progress",
+            partial: "contract_reviews/progress",
+            locals: { review: @review }
+          ),
+          turbo_stream.replace(
+            "review_panel",
+            partial: "contract_reviews/review_panel",
+            locals: {
+              review: @review,
+              contract: @contract,
+              open_milestone_drawer_id:,
+              open_key_clause_drawer_id:
+            }
+          )
+        ]
+      end
+      format.html { redirect_to contract_contract_review_path(@contract) }
     end
   end
 end

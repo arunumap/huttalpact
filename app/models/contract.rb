@@ -5,6 +5,7 @@ class Contract < ApplicationRecord
   belongs_to :uploaded_by, class_name: "User", optional: true
   has_many :contract_documents, dependent: :destroy
   has_many :contract_reviews, dependent: :destroy
+  has_many :review_learning_events, dependent: :destroy
   has_many :key_clauses, dependent: :destroy
   has_many :alerts, dependent: :destroy
   has_many :audit_logs, dependent: :nullify
@@ -17,9 +18,10 @@ class Contract < ApplicationRecord
 
   STATUSES = %w[draft in_review active expiring_soon expired renewed cancelled archived].freeze
   CONTRACT_TYPES = %w[lease service_agreement maintenance insurance software other].freeze
+  UPLOAD_TYPE_UNSURE = "__unsure__".freeze
   RENEWAL_TERMS = %w[month-to-month annual 2-year custom].freeze
   DIRECTIONS = %w[inbound outbound].freeze
-  EXTRACTION_STATUSES = %w[pending processing completed failed].freeze
+  EXTRACTION_STATUSES = %w[pending processing awaiting_type_confirmation completed failed].freeze
 
   INACTIVE_STATUSES = %w[archived cancelled expired].freeze
   DRAFT_STATUSES = %w[draft].freeze

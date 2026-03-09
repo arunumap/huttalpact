@@ -180,6 +180,53 @@ class ContractReviewCompletionServiceTest < ActiveSupport::TestCase
     assert_equal original_title, @contract.reload.title
   end
 
+  test "ingests review learning events for all reviewed completion outcomes" do
+    source_document = contract_documents(:completed_doc)
+
+    create_field(
+      "title",
+      "core",
+      '"Learned Title"',
+      status: "confirmed",
+      confidence: 95,
+      needs_review: false,
+      source_excerpt: "Learned Title",
+      source_locator: {
+        "document_id" => source_document.id,
+        "start_offset" => 12,
+        "end_offset" => 24,
+        "matched_text" => "Learned Title"
+      },
+      source_match_strategy: "exact",
+      source_document: source_document
+    )
+    create_field(
+      "vendor_name",
+      "core",
+      '"Acme Vendor"',
+      status: "edited",
+      confidence: 60,
+      needs_review: true,
+      user_value: '"Acme Vendor LLC"',
+      source_excerpt: "Acme Vendor",
+      source_document: source_document
+    )
+    create_field("total_value", "financial", nil, status: "not_found", confidence: nil, needs_review: false)
+    create_field("renewal_term", "financial", nil, status: "not_applicable", confidence: nil, needs_review: false)
+    finalize_review_fields!
+
+    assert_difference "ReviewLearningEvent.count", 4 do
+      run_completion_service
+    end
+
+    events = ReviewLearningEvent.where(contract_review: @review).index_by(&:field_name)
+    assert_equal %w[confirmed edited not_applicable not_found], events.values.map(&:decision).sort
+    assert_equal "strong", events.fetch("title").evidence_quality
+    assert_equal "moderate", events.fetch("vendor_name").evidence_quality
+    assert_equal "missing", events.fetch("total_value").evidence_quality
+    assert_equal true, events.fetch("vendor_name").corrected
+  end
+
   # --- Transitions contract from in_review to active ---
 
   test "transitions contract from in_review to active" do
@@ -356,7 +403,8 @@ class ContractReviewCompletionServiceTest < ActiveSupport::TestCase
     create_field(field_name, group, value, status: "confirmed", confidence: confidence, needs_review: false)
   end
 
-  def create_field(field_name, group, value, status:, confidence:, needs_review: false, user_value: nil)
+  def create_field(field_name, group, value, status:, confidence:, needs_review: false, user_value: nil,
+    source_excerpt: nil, source_locator: nil, source_match_strategy: nil, source_document: nil)
     catalog = ReviewFieldCatalog.find(field_name) || ReviewFieldCatalog.find(field_name.split(".").last)
     display = catalog&.display_name || field_name.humanize
 
@@ -366,15 +414,21 @@ class ContractReviewCompletionServiceTest < ActiveSupport::TestCase
       display_name: display,
       extracted_value: value,
       confidence: confidence,
+      source_excerpt: source_excerpt,
+      source_locator: source_locator,
+      source_match_strategy: source_match_strategy,
       needs_review: needs_review,
       status: status,
       user_value: user_value,
       reviewed_at: status == "pending" ? nil : Time.current,
+      reviewed_by: status == "pending" ? nil : @user,
+      source_document: source_document,
       position: @review.fields.count
     )
   end
 
-  def create_field_on(review, field_name, group, value, status:, confidence:, needs_review: false, user_value: nil)
+  def create_field_on(review, field_name, group, value, status:, confidence:, needs_review: false, user_value: nil,
+    source_excerpt: nil, source_locator: nil, source_match_strategy: nil, source_document: nil)
     catalog = ReviewFieldCatalog.find(field_name)
     display = catalog&.display_name || field_name.humanize
 
@@ -384,10 +438,15 @@ class ContractReviewCompletionServiceTest < ActiveSupport::TestCase
       display_name: display,
       extracted_value: value,
       confidence: confidence,
+      source_excerpt: source_excerpt,
+      source_locator: source_locator,
+      source_match_strategy: source_match_strategy,
       needs_review: needs_review,
       status: status,
       user_value: user_value,
       reviewed_at: status == "pending" ? nil : Time.current,
+      reviewed_by: status == "pending" ? nil : @user,
+      source_document: source_document,
       position: review.fields.count
     )
   end

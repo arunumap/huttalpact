@@ -4,11 +4,12 @@ export default class extends Controller {
   static targets = ["searchInput", "clearButton", "tab", "documentPanel", "documentText"]
 
   connect() {
-    this.element.addEventListener("highlight-source", this.highlightSource.bind(this))
+    this.boundHighlightSource = this.highlightSource.bind(this)
+    this.element.addEventListener("highlight-source", this.boundHighlightSource)
   }
 
   disconnect() {
-    this.element.removeEventListener("highlight-source", this.highlightSource.bind(this))
+    this.element.removeEventListener("highlight-source", this.boundHighlightSource)
   }
 
   search() {
@@ -50,7 +51,7 @@ export default class extends Controller {
   }
 
   highlightSource(event) {
-    const { documentId, text } = event.detail
+    const { documentId, text, startOffset, endOffset } = event.detail || {}
     this.clearHighlights()
 
     // Switch to the correct document tab if specified
@@ -68,25 +69,77 @@ export default class extends Controller {
     const panel = documentId
       ? this.documentPanelTargets.find(p => p.dataset.documentId === documentId)
       : this.documentPanelTargets.find(p => !p.classList.contains("hidden"))
-    if (!panel || !text) return
+    if (!panel) return
 
-    // Search for the excerpt text in the document lines
-    const normalizedText = text.trim().toLowerCase()
+    // Prefer persisted source offsets when available.
+    if (Number.isInteger(startOffset) && Number.isInteger(endOffset) && endOffset > startOffset) {
+      if (this.highlightByOffsets(panel, startOffset, endOffset)) return
+    }
+
+    if (!text) return
+    this.highlightByText(panel, text)
+  }
+
+  // Private
+
+  highlightByOffsets(panel, startOffset, endOffset) {
     const lines = panel.querySelectorAll("[data-line]")
     let found = false
 
     lines.forEach(line => {
-      if (line.textContent.toLowerCase().includes(normalizedText.substring(0, 60))) {
-        line.classList.add("bg-amber-100", "ring-2", "ring-amber-300", "rounded")
-        if (!found) {
-          line.scrollIntoView({ behavior: "smooth", block: "center" })
-          found = true
-        }
+      const lineStart = Number.parseInt(line.dataset.docOffsetStart, 10)
+      const lineEnd = Number.parseInt(line.dataset.docOffsetEnd, 10)
+      if (Number.isNaN(lineStart) || Number.isNaN(lineEnd)) return
+
+      const overlaps = lineStart <= endOffset && lineEnd >= startOffset
+      if (!overlaps) return
+
+      line.classList.add("bg-amber-100", "ring-2", "ring-amber-300", "rounded")
+      if (!found) {
+        line.scrollIntoView({ behavior: "smooth", block: "center" })
+        found = true
+      }
+    })
+
+    return found
+  }
+
+  highlightByText(panel, text) {
+    const excerpt = this.normalizeForMatch(text)
+    if (!excerpt) return
+
+    const lines = panel.querySelectorAll("[data-line]")
+    let found = false
+
+    lines.forEach(line => {
+      const lineText = this.normalizeForMatch(line.textContent)
+      if (!this.lineMatchesExcerpt(lineText, excerpt)) return
+
+      line.classList.add("bg-amber-100", "ring-2", "ring-amber-300", "rounded")
+      if (!found) {
+        line.scrollIntoView({ behavior: "smooth", block: "center" })
+        found = true
       }
     })
   }
 
-  // Private
+  lineMatchesExcerpt(lineText, excerptText) {
+    if (!lineText || !excerptText) return false
+    if (lineText.includes(excerptText)) return true
+
+    const prefix = excerptText.substring(0, Math.min(excerptText.length, 80))
+    if (prefix.length >= 12 && lineText.includes(prefix)) return true
+
+    const excerptTokens = excerptText.split(" ").filter(token => token.length > 3)
+    if (excerptTokens.length === 0) return false
+
+    const overlapCount = excerptTokens.filter(token => lineText.includes(token)).length
+    return overlapCount / excerptTokens.length >= 0.55
+  }
+
+  normalizeForMatch(text) {
+    return text.toLowerCase().replace(/\s+/g, " ").trim()
+  }
 
   toggleClearButton(show) {
     if (this.hasClearButtonTarget) {

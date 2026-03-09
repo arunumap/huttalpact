@@ -28,7 +28,9 @@ export default class extends Controller {
 
   focusSource(event) {
     const blockquote = event.currentTarget.closest("[data-source-excerpt]") || event.currentTarget
-    const documentId = blockquote.dataset.documentSource
+    const documentId = blockquote.dataset.sourceDocumentId || blockquote.dataset.documentSource
+    const startOffset = Number.parseInt(blockquote.dataset.sourceStart, 10)
+    const endOffset = Number.parseInt(blockquote.dataset.sourceEnd, 10)
     const text = blockquote.dataset.sourceExcerpt
     if (!text) return
 
@@ -36,7 +38,12 @@ export default class extends Controller {
     if (!viewer) return
 
     viewer.dispatchEvent(new CustomEvent("highlight-source", {
-      detail: { documentId, text }
+      detail: {
+        documentId,
+        text,
+        startOffset: Number.isNaN(startOffset) ? null : startOffset,
+        endOffset: Number.isNaN(endOffset) ? null : endOffset
+      }
     }))
   }
 }

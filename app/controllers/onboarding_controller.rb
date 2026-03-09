@@ -40,7 +40,8 @@ class OnboardingController < ApplicationController
     contract = ContractDraftCreatorService.new(
       user: Current.user,
       organization: @organization,
-      files: uploaded_files
+      files: uploaded_files,
+      contract_type: nil
     ).call
 
     log_audit("created", contract: contract, details: "Created draft contract during onboarding")

@@ -20,6 +20,9 @@ class Admin::PortalPagesControllerTest < ActionDispatch::IntegrationTest
     get admin_ai_usage_index_path
     assert_response :success
 
+    get admin_review_learning_insights_path
+    assert_response :success
+
     get admin_billing_path
     assert_response :success
 

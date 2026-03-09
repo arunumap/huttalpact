@@ -54,8 +54,16 @@ class ContractReviewCreatorService
       source_excerpt = metadata["source_excerpt"]
       source_locator = build_source_locator(metadata)
       source_match_strategy = nil
+      case catalog_entry.field_name
+      when "lease_milestones"
+        value = enrich_lease_milestones_with_evidence(value, metadata, locator_service)
+      when "key_clauses"
+        value = enrich_key_clauses_with_evidence(value, metadata, locator_service)
+      end
 
-      if needs_review && source_excerpt.blank?
+      has_item_evidence = milestone_evidence_present?(value) || key_clause_evidence_present?(value)
+
+      if needs_review && source_excerpt.blank? && !has_item_evidence
         inferred_evidence = infer_evidence_from_value(
           value: value,
           locator_service: locator_service,
@@ -67,7 +75,7 @@ class ContractReviewCreatorService
       end
 
       reasoning = metadata["reasoning"]
-      if needs_review && source_excerpt.blank?
+      if needs_review && source_excerpt.blank? && !has_item_evidence
         reasoning = [ reasoning, "Source excerpt unavailable; verify this value manually against the document." ]
           .compact
           .join(" ")
@@ -237,5 +245,37 @@ class ContractReviewCreatorService
 
   def serialize_clause(clause)
     { "clause_type" => clause.clause_type, "content" => clause.content }
+  end
+
+  def enrich_lease_milestones_with_evidence(value, metadata, locator_service)
+    ReviewMilestoneEvidenceBuilder.new(
+      locator_service: locator_service,
+      metadata: metadata
+    ).call(value)
+  end
+
+  def enrich_key_clauses_with_evidence(value, metadata, locator_service)
+    ReviewKeyClauseEvidenceBuilder.new(
+      locator_service: locator_service,
+      metadata: metadata
+    ).call(value)
+  end
+
+  def milestone_evidence_present?(value)
+    return false unless value.is_a?(Array)
+
+    value.any? do |item|
+      item.is_a?(Hash) && item["source_excerpt"].to_s.squish.present?
+    end
+  end
+
+  def key_clause_evidence_present?(value)
+    return false unless value.is_a?(Array)
+
+    value.any? do |item|
+      next false unless item.is_a?(Hash)
+
+      item["source_excerpt"].to_s.squish.present? || item["source_locator"].is_a?(Hash)
+    end
   end
 end

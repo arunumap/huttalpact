@@ -1,6 +1,6 @@
 class ContractExtractionsController < ApplicationController
   before_action :set_contract
-  before_action :enforce_extraction_limit!, only: :create
+  before_action :enforce_extraction_limit!, only: %i[create confirm_type]
 
   def create
     if @contract.in_review?
@@ -11,6 +11,11 @@ class ContractExtractionsController < ApplicationController
 
     if @contract.contract_documents.completed.none?
       redirect_to @contract, alert: "No extracted documents available. Upload a document first."
+      return
+    end
+
+    if @contract.contract_type.blank?
+      redirect_to edit_contract_path(@contract), alert: "Please choose a contract type before running extraction."
       return
     end
 
@@ -33,9 +38,13 @@ class ContractExtractionsController < ApplicationController
   end
 
   def redetect
+    redirect_to edit_contract_path(@contract), alert: "Auto-detect has been retired. Please choose the contract type explicitly and re-extract."
+  end
+
+  def confirm_type
     if @contract.in_review?
       redirect_to contract_contract_review_path(@contract),
-                  alert: "Cannot re-detect contract type while a review is in progress."
+                  alert: "Cannot change contract type while a review is in progress."
       return
     end
 
@@ -44,26 +53,22 @@ class ContractExtractionsController < ApplicationController
       return
     end
 
-    # Build document text and run lease type detection
-    service = ContractAiExtractorService.new(@contract)
-    document_text = service.send(:build_document_text)
-    prior_type = @contract.contract_type
-
-    # Temporarily clear contract_type to allow re-detection
-    @contract.update_column(:contract_type, nil)
-    @contract.reload
-
-    detected = service.send(:detect_and_set_lease_type!, document_text)
-    @contract.reload
-
-    if detected
-      log_audit("updated", contract: @contract, details: "Re-detected contract type as '#{@contract.contract_type}' (was '#{prior_type}')")
-      redirect_to @contract, notice: "Contract type re-detected as \"#{@contract.contract_type.titleize}\" based on document content."
-    else
-      # Restore prior type if detection found nothing
-      @contract.update_column(:contract_type, prior_type)
-      redirect_to @contract, notice: "No specific contract type could be detected from the document content. Type remains \"#{prior_type&.titleize || 'unset'}\"."
+    selected_type = params[:contract_type].to_s
+    unless Contract::CONTRACT_TYPES.include?(selected_type)
+      redirect_to edit_contract_path(@contract), alert: "Please choose a valid contract type."
+      return
     end
+
+    @contract.update!(
+      contract_type: selected_type,
+      extraction_status: "pending"
+    )
+
+    AiExtractContractJob.perform_later(@contract.id)
+    log_audit("updated", contract: @contract, details: "Contract type set to '#{selected_type}' and AI extraction triggered")
+
+    destination = @contract.draft? ? edit_contract_path(@contract) : contract_path(@contract)
+    redirect_to destination, notice: "Contract type set to \"#{selected_type.titleize.gsub('_', ' ')}\". AI extraction started."
   end
 
   private

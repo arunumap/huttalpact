@@ -116,7 +116,11 @@ class ContractAiExtractorService
           "due_date": "YYYY-MM-DD",
           "description": "Description of what is due",
           "recurring": true or false,
-          "recurrence_interval": "One of: monthly, quarterly, annual (or null if not recurring)"
+          "recurrence_interval": "One of: monthly, quarterly, annual (or null if not recurring)",
+          "source_excerpt": "Exact verbatim text for THIS milestone (required whenever possible)",
+          "reasoning": "Brief explanation for why THIS milestone was extracted",
+          "page_hint": "Optional page reference for THIS milestone",
+          "section_hint": "Optional section reference for THIS milestone"
         }
       ],
       "key_clauses": [
@@ -130,7 +134,7 @@ class ContractAiExtractorService
       ],
       "summary": "2-3 sentence summary of the lease",
       "field_metadata": {
-        "description": "Evidence and confidence for each extracted field. Use dot notation for nested lease detail fields (e.g. lease_details.lease_type, lease_details.rentable_sqft). For array fields (rent_escalations, lease_options, lease_milestones, key_clauses), provide one metadata entry covering the entire array.",
+        "description": "Evidence and confidence for each extracted field. Use dot notation for nested lease detail fields (e.g. lease_details.lease_type, lease_details.rentable_sqft). For rent_escalations, lease_options, and key_clauses provide one metadata entry covering the array. For lease_milestones, provide per-item evidence in each milestone object plus optional array-level metadata.",
         "<field_name>": {
           "confidence": "integer 0-100",
           "source_excerpt": "Exact verbatim text from the document supporting this value",
@@ -274,7 +278,8 @@ class ContractAiExtractorService
       - "section_hint": (optional) heading or section name if identifiable
 
     Use dot notation for nested lease detail fields (e.g., "lease_details.lease_type", "lease_details.rentable_sqft").
-    For array fields (rent_escalations, lease_options, lease_milestones, key_clauses), provide one metadata entry covering the entire array.
+    For array fields (rent_escalations, lease_options, key_clauses), provide one metadata entry covering the entire array.
+    For lease_milestones, include milestone-level evidence fields (`source_excerpt`, `reasoning`, optional `page_hint`, optional `section_hint`) inside EACH milestone object. You may also include array-level metadata under `field_metadata.lease_milestones`.
 
     Use these confidence guidelines:
       - 90-100: Value explicitly and unambiguously stated in the document
@@ -324,7 +329,8 @@ class ContractAiExtractorService
       - "section_hint": (optional) heading or section name if identifiable
 
     Use dot notation for nested lease detail fields (e.g., "lease_details.lease_type", "lease_details.rentable_sqft").
-    For array fields (rent_escalations, lease_options, lease_milestones, key_clauses), provide one metadata entry covering the entire array.
+    For array fields (rent_escalations, lease_options, key_clauses), provide one metadata entry covering the entire array.
+    For lease_milestones, include milestone-level evidence fields (`source_excerpt`, `reasoning`, optional `page_hint`, optional `section_hint`) inside EACH milestone object. You may also include array-level metadata under `field_metadata.lease_milestones`.
 
     Use these confidence guidelines:
       - 90-100: Value explicitly and unambiguously stated in the document
@@ -336,10 +342,6 @@ class ContractAiExtractorService
 
     CONTRACT DOCUMENTS:
   PROMPT
-
-  # Lease-indicative terms for auto-detection
-  LEASE_INDICATORS = %w[landlord tenant premises lease rent commencement demised leasehold lessee lessor].freeze
-  LEASE_INDICATOR_THRESHOLD = 3
 
   # Raised when the organization has hit its monthly AI extraction limit
   class ExtractionLimitReachedError < StandardError; end
@@ -369,9 +371,6 @@ class ContractAiExtractorService
 
     document_text = build_document_text
     return if document_text.blank?
-
-    # Auto-detect lease type from document text if contract_type isn't set
-    @lease_type_auto_detected = detect_and_set_lease_type!(document_text)
 
     # Atomic reentrance guard: only proceed if we can claim the "processing" status
     rows_updated = Contract.where(id: @contract.id)
@@ -440,12 +439,6 @@ class ContractAiExtractorService
       ai_extracted_data: extracted.except("changes_summary").to_json
     }
     update_attrs[:last_changes_summary] = extracted["changes_summary"] if extracted["changes_summary"].present?
-
-    # Add auto-detect notice to changes summary
-    if @lease_type_auto_detected
-      auto_detect_msg = "Contract type auto-detected as Lease based on document content."
-      update_attrs[:last_changes_summary] = [ auto_detect_msg, update_attrs[:last_changes_summary] ].compact.join(" ")
-    end
 
     @contract.update!(update_attrs)
 
@@ -677,23 +670,6 @@ class ContractAiExtractorService
                @mode == :incremental ? "generic_incremental" : "generic_full"
       end
       AiExtractionConfig.active_for(type)
-    end
-  end
-
-  def detect_and_set_lease_type!(document_text)
-    # Skip detection only if a specific (non-"other") type was explicitly set by the user
-    return false if @contract.contract_type.present? && @contract.contract_type != "other"
-
-    text_lower = document_text.downcase
-    matches = LEASE_INDICATORS.count { |term| text_lower.include?(term) }
-
-    if matches >= LEASE_INDICATOR_THRESHOLD
-      @contract.update_column(:contract_type, "lease")
-      @contract.reload
-      Rails.logger.info("Auto-detected contract #{@contract.id} as lease (#{matches} indicator terms found)")
-      true
-    else
-      false
     end
   end
 

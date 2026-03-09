@@ -112,6 +112,74 @@ class ContractReviewCreatorServiceTest < ActiveSupport::TestCase
     assert review.fields.find_by(field_name: "lease_milestones").present?
   end
 
+  test "lease milestones include per-item evidence payload for review trust layer" do
+    @contract.update!(contract_type: "lease")
+    extracted = build_lease_extraction.merge(
+      "lease_milestones" => [
+        {
+          "milestone_type" => "custom",
+          "due_date" => "2025-12-01",
+          "description" => "Submit non-renewal notice",
+          "source_excerpt" => "Auto-renews annually unless 30 days written notice is provided.",
+          "reasoning" => "The notice sentence implies a milestone for notice delivery."
+        }
+      ],
+      "field_metadata" => {
+        "lease_milestones" => {
+          "confidence" => 65,
+          "source_excerpt" => "Auto-renews annually unless 30 days written notice is provided.",
+          "reasoning" => "Notice timing is derived from the auto-renew clause."
+        }
+      }
+    )
+
+    review = ActsAsTenant.with_tenant(@organization) do
+      ContractReviewCreatorService.new(contract: @contract, extracted_data: extracted, mode: :full).call
+    end
+
+    field = review.fields.find_by!(field_name: "lease_milestones")
+    parsed = JSON.parse(field.extracted_value)
+    first = parsed.first
+
+    assert_equal "grounded", first["evidence_status"]
+    assert first["source_excerpt"].present?
+    assert_equal "The notice sentence implies a milestone for notice delivery.", first["reasoning"]
+    assert first["source_locator"].is_a?(Hash)
+    assert first["source_locator"]["document_id"].present?
+  end
+
+  test "key clauses include per-item evidence payload for review trust layer" do
+    extracted = build_generic_extraction.merge(
+      "key_clauses" => [
+        {
+          "clause_type" => "termination",
+          "content" => "Either party may terminate with 30 days notice.",
+          "source_excerpt" => "Either party may terminate with 30 days notice.",
+          "reasoning" => "Termination language is explicit."
+        }
+      ],
+      "field_metadata" => {
+        "key_clauses" => {
+          "confidence" => 65,
+          "source_excerpt" => "Either party may terminate with 30 days notice.",
+          "reasoning" => "Termination rights identified."
+        }
+      }
+    )
+
+    review = ActsAsTenant.with_tenant(@organization) do
+      ContractReviewCreatorService.new(contract: @contract, extracted_data: extracted, mode: :full).call
+    end
+
+    field = review.fields.find_by!(field_name: "key_clauses")
+    parsed = JSON.parse(field.extracted_value)
+    first = parsed.first
+
+    assert first["source_excerpt"].present?
+    assert_includes %w[grounded broad unresolved], first["evidence_status"]
+    assert_equal "Termination language is explicit.", first["reasoning"]
+  end
+
   # --- Non-lease contract excludes lease-specific fields ---
 
   test "non-lease contract only creates generic fields" do
@@ -273,6 +341,38 @@ class ContractReviewCreatorServiceTest < ActiveSupport::TestCase
     assert review.fields.find_by(field_name: "title").needs_review, "79 < 80 should need review"
     refute review.fields.find_by(field_name: "vendor_name").needs_review, "80 >= 80 should not need review"
     refute review.fields.find_by(field_name: "start_date").needs_review, "81 >= 80 should not need review"
+  end
+
+  test "learned threshold recommendations do not change review threshold unless explicitly used" do
+    ReviewLearningAggregate.create!(
+      organization: @organization,
+      aggregate_type: ReviewLearningThresholdRecommendationService::AGGREGATE_TYPE,
+      period_start_date: Date.new(2026, 1, 1),
+      period_end_date: Date.new(2026, 6, 30),
+      dimension_key: "contract_type=maintenance|field_name=title|scope=field_contract_type",
+      sample_size: 90,
+      source_version: 1,
+      dimensions: {
+        "field_name" => "title",
+        "contract_type" => "maintenance",
+        "scope" => "field_contract_type"
+      },
+      metrics: {
+        "recommended_threshold" => 70,
+        "reason_code" => "recommended"
+      }
+    )
+
+    extracted = build_generic_extraction.merge("field_metadata" => {
+      "title" => { "confidence" => 75 }
+    })
+
+    review = ActsAsTenant.with_tenant(@organization) do
+      ContractReviewCreatorService.new(contract: @contract, extracted_data: extracted, mode: :full).call
+    end
+
+    assert_equal 80, review.confidence_threshold
+    assert review.fields.find_by(field_name: "title").needs_review
   end
 
   # --- Source locator ---

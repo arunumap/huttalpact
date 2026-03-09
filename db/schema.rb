@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_09_012600) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_10_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -629,6 +629,74 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_09_012600) do
     t.index ["contract_id"], name: "index_rent_escalations_on_contract_id"
   end
 
+  create_table "review_learning_aggregates", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.string "aggregate_type", null: false
+    t.datetime "created_at", null: false
+    t.string "dimension_key", null: false
+    t.jsonb "dimensions", default: {}, null: false
+    t.datetime "last_event_at"
+    t.jsonb "metrics", default: {}, null: false
+    t.uuid "organization_id", null: false
+    t.date "period_end_date", null: false
+    t.date "period_start_date", null: false
+    t.integer "sample_size", default: 0, null: false
+    t.integer "source_version", default: 1, null: false
+    t.datetime "updated_at", null: false
+    t.index ["dimensions"], name: "index_review_learning_aggregates_on_dimensions", using: :gin
+    t.index ["metrics"], name: "index_review_learning_aggregates_on_metrics", using: :gin
+    t.index ["organization_id", "aggregate_type", "period_start_date", "period_end_date", "dimension_key"], name: "idx_review_learning_aggregates_uniqueness", unique: true
+    t.index ["organization_id", "aggregate_type", "period_start_date"], name: "idx_review_learning_aggregates_on_org_type_start"
+    t.index ["organization_id"], name: "index_review_learning_aggregates_on_organization_id"
+  end
+
+  create_table "review_learning_events", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "ai_usage_log_id"
+    t.integer "confidence"
+    t.integer "confidence_threshold", null: false
+    t.uuid "contract_id", null: false
+    t.uuid "contract_review_field_id", null: false
+    t.uuid "contract_review_id", null: false
+    t.string "contract_type", default: "unknown", null: false
+    t.boolean "corrected", default: false, null: false
+    t.datetime "created_at", null: false
+    t.string "decision", null: false
+    t.string "evidence_quality", default: "missing", null: false
+    t.integer "evidence_quality_score"
+    t.text "extracted_value"
+    t.string "field_group", null: false
+    t.jsonb "field_metadata", default: {}, null: false
+    t.string "field_name", null: false
+    t.text "final_value"
+    t.boolean "needs_review", default: true, null: false
+    t.uuid "organization_id", null: false
+    t.jsonb "review_metadata", default: {}, null: false
+    t.string "review_type", null: false
+    t.datetime "reviewed_at", null: false
+    t.uuid "reviewed_by_id"
+    t.uuid "source_document_id"
+    t.text "source_excerpt"
+    t.boolean "source_excerpt_present", default: false, null: false
+    t.jsonb "source_locator", default: {}, null: false
+    t.string "source_match_strategy"
+    t.datetime "updated_at", null: false
+    t.text "user_value"
+    t.index ["ai_usage_log_id"], name: "index_review_learning_events_on_ai_usage_log_id"
+    t.index ["contract_id"], name: "index_review_learning_events_on_contract_id"
+    t.index ["contract_review_field_id"], name: "index_review_learning_events_on_contract_review_field_id", unique: true
+    t.index ["contract_review_id"], name: "index_review_learning_events_on_contract_review_id"
+    t.index ["field_metadata"], name: "index_review_learning_events_on_field_metadata", using: :gin
+    t.index ["organization_id", "confidence", "corrected"], name: "idx_review_learning_events_on_org_confidence_corrected"
+    t.index ["organization_id", "contract_type", "field_name"], name: "idx_review_learning_events_on_org_type_field"
+    t.index ["organization_id", "decision", "reviewed_at"], name: "idx_review_learning_events_on_org_decision_reviewed_at"
+    t.index ["organization_id", "field_group", "reviewed_at"], name: "idx_review_learning_events_on_org_group_reviewed_at"
+    t.index ["organization_id", "reviewed_at"], name: "idx_review_learning_events_on_org_reviewed_at"
+    t.index ["organization_id"], name: "index_review_learning_events_on_organization_id"
+    t.index ["review_metadata"], name: "index_review_learning_events_on_review_metadata", using: :gin
+    t.index ["reviewed_by_id"], name: "index_review_learning_events_on_reviewed_by_id"
+    t.index ["source_document_id"], name: "index_review_learning_events_on_source_document_id"
+    t.index ["source_locator"], name: "index_review_learning_events_on_source_locator", using: :gin
+  end
+
   create_table "sessions", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "ip_address"
@@ -699,5 +767,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_09_012600) do
   add_foreign_key "pay_payment_methods", "pay_customers", column: "customer_id"
   add_foreign_key "pay_subscriptions", "pay_customers", column: "customer_id"
   add_foreign_key "rent_escalations", "contracts", on_delete: :cascade
+  add_foreign_key "review_learning_aggregates", "organizations", on_delete: :cascade
+  add_foreign_key "review_learning_events", "ai_usage_logs", on_delete: :nullify
+  add_foreign_key "review_learning_events", "contract_documents", column: "source_document_id", on_delete: :nullify
+  add_foreign_key "review_learning_events", "contract_review_fields", on_delete: :cascade
+  add_foreign_key "review_learning_events", "contract_reviews", on_delete: :cascade
+  add_foreign_key "review_learning_events", "contracts", on_delete: :cascade
+  add_foreign_key "review_learning_events", "organizations", on_delete: :cascade
+  add_foreign_key "review_learning_events", "users", column: "reviewed_by_id", on_delete: :nullify
   add_foreign_key "sessions", "users"
 end

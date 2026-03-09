@@ -87,10 +87,17 @@ class ContractsController < ApplicationController
       return
     end
 
+    selected_contract_type = normalized_draft_contract_type
+    if selected_contract_type == :invalid
+      redirect_to new_contract_path, alert: "Please choose a contract type before uploading."
+      return
+    end
+
     @contract = ContractDraftCreatorService.new(
       user: Current.user,
       organization: current_organization,
-      files: uploaded_files
+      files: uploaded_files,
+      contract_type: selected_contract_type
     ).call
 
     log_audit("created", contract: @contract, details: "Created draft contract for AI extraction")
@@ -221,6 +228,15 @@ class ContractsController < ApplicationController
       :start_date, :end_date, :next_renewal_date, :notice_period_days,
       :monthly_value, :total_value, :auto_renews, :renewal_term, :notes
     )
+  end
+
+  def normalized_draft_contract_type
+    raw_type = params[:contract_type].to_s
+    return :invalid if raw_type.blank?
+    return nil if raw_type == Contract::UPLOAD_TYPE_UNSURE
+    return raw_type if Contract::CONTRACT_TYPES.include?(raw_type)
+
+    :invalid
   end
 
   def date_fields_changed?

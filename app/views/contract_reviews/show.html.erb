@@ -33,6 +33,10 @@
     </div>
 
     <%# Review panel — right panel %>
-    <%= render "contract_reviews/review_panel", review: @review, contract: @contract %>
+    <%= render "contract_reviews/review_panel",
+      review: @review,
+      contract: @contract,
+      open_milestone_drawer_id: nil,
+      open_key_clause_drawer_id: nil %>
   </div>
 </div>

@@ -192,6 +192,77 @@ class ContractReviewFlowTest < ActionDispatch::IntegrationTest
     assert_not_includes field_names, "vendor_name"
   end
 
+  test "milestone review renders view-all drawer with structured controls" do
+    contract = create_contract_for_review
+    response_with_milestones = sample_ai_response.merge(
+      "lease_milestones" => [
+        {
+          "milestone_type" => "insurance_renewal",
+          "due_date" => "2025-08-01",
+          "description" => "Renew coverage",
+          "recurring" => true,
+          "recurrence_interval" => "annual",
+          "source_excerpt" => "Tenant must renew insurance coverage annually.",
+          "reasoning" => "Annual insurance renewal requirement is explicit."
+        }
+      ],
+      "field_metadata" => sample_ai_response["field_metadata"].merge(
+        "lease_milestones" => {
+          "confidence" => 60,
+          "source_excerpt" => "Tenant shall maintain insurance coverage and renew annually.",
+          "reasoning" => "Insurance renewal obligation is explicit."
+        }
+      )
+    )
+    create_review_for(contract, ai_response: response_with_milestones)
+
+    get contract_contract_review_path(contract)
+
+    assert_response :success
+    assert_includes response.body, "(1) view all"
+    assert_includes response.body, "Review, edit, or remove extracted milestones without touching JSON."
+    assert_includes response.body, 'name="milestone[milestone_type]"'
+    assert_includes response.body, "click->milestone-drawer#focusSource"
+    assert_includes response.body, "Tenant must renew insurance coverage annually."
+    assert_includes response.body, "Why AI extracted this"
+    assert_no_match(/milestone_type:\s/, response.body)
+  end
+
+  test "key clause review renders view-all drawer with structured controls" do
+    contract = create_contract_for_review
+    response_with_key_clauses = sample_ai_response.merge(
+      "key_clauses" => [
+        {
+          "clause_type" => "termination",
+          "content" => "Either party may terminate with 30 days written notice.",
+          "page_reference" => "Section 9",
+          "confidence_score" => 72,
+          "source_excerpt" => "Either party may terminate with 30 days written notice.",
+          "reasoning" => "Termination language is explicit."
+        }
+      ],
+      "field_metadata" => sample_ai_response["field_metadata"].merge(
+        "key_clauses" => {
+          "confidence" => 60,
+          "source_excerpt" => "Either party may terminate with 30 days written notice.",
+          "reasoning" => "Termination rights are stated directly."
+        }
+      )
+    )
+    create_review_for(contract, ai_response: response_with_key_clauses)
+
+    get contract_contract_review_path(contract)
+
+    assert_response :success
+    assert_includes response.body, "(1) view all"
+    assert_includes response.body, "Review, edit, or remove extracted clauses without touching JSON."
+    assert_includes response.body, 'name="key_clause[clause_type]"'
+    assert_includes response.body, 'name="key_clause[content]"'
+    assert_includes response.body, "click->milestone-drawer#focusSource"
+    assert_includes response.body, "Either party may terminate with 30 days written notice."
+    assert_no_match(/clause_type:\s/, response.body)
+  end
+
   # ---------------------------------------------------------------------------
   # Pipeline integration tests
   # ---------------------------------------------------------------------------

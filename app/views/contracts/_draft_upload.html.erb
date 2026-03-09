@@ -14,6 +14,19 @@
         </div>
       </div>
 
+      <div class="mb-5">
+        <label for="contract_type" class="block text-sm font-medium text-gray-700">Contract type</label>
+        <p class="mt-0.5 text-xs text-gray-500">This helps us choose the right extraction strategy.</p>
+        <% upload_contract_type_options = Contract::CONTRACT_TYPES.map do |type|
+             label = type == "service_agreement" ? "MSA / Service Agreement" : type.titleize.gsub("_", " ")
+             [ label, type ]
+           end %>
+        <%= select_tag :contract_type,
+            options_for_select([ [ "Select contract type...", "" ] ] + upload_contract_type_options + [ [ "I'm not sure (auto-detect)", Contract::UPLOAD_TYPE_UNSURE ] ]),
+            required: true,
+            class: "mt-1 block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-amber-600 sm:text-sm" %>
+      </div>
+
       <div data-draft-upload-target="dropzone"
            data-action="click->draft-upload#browse dragenter->draft-upload#dragenter dragleave->draft-upload#dragleave dragover->draft-upload#dragover drop->draft-upload#drop"
            class="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-amber-300 bg-white/60 px-6 py-12 transition hover:border-amber-400 hover:bg-white/80">

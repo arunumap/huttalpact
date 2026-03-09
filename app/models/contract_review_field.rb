@@ -2,6 +2,7 @@ class ContractReviewField < ApplicationRecord
   belongs_to :contract_review
   belongs_to :source_document, class_name: "ContractDocument", optional: true
   belongs_to :reviewed_by, class_name: "User", optional: true
+  has_one :learning_event, class_name: "ReviewLearningEvent", dependent: :destroy
 
   STATUSES = %w[pending confirmed edited not_found not_applicable auto_accepted].freeze
   FIELD_GROUPS = %w[core dates financial lease_space cam ti escalations options milestones clauses].freeze

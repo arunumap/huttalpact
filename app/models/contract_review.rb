@@ -5,6 +5,7 @@ class ContractReview < ApplicationRecord
   belongs_to :organization
   belongs_to :completed_by, class_name: "User", optional: true
   has_many :fields, class_name: "ContractReviewField", dependent: :destroy
+  has_many :learning_events, class_name: "ReviewLearningEvent", dependent: :destroy
 
   STATUSES = %w[pending in_progress completed].freeze
   REVIEW_TYPES = %w[full incremental].freeze
