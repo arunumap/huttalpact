@@ -18,6 +18,7 @@ class ContractsController < ApplicationController
       format.html do
         @pagy, @contracts = pagy(contracts)
         @drafts = Contract.draft.order(updated_at: :desc)
+        @in_review = Contract.in_review.order(updated_at: :desc)
         @active_bulk_delete_operation = BulkDeleteOperation
           .where(organization: current_organization, user: Current.user)
           .in_progress
@@ -34,6 +35,12 @@ class ContractsController < ApplicationController
 
   def show
     @contract = Contract.includes(:contract_documents, :key_clauses).find(params[:id])
+
+    if @contract.in_review? && @contract.current_review.present?
+      redirect_to contract_contract_review_path(@contract)
+      return
+    end
+
     @audit_logs = @contract.audit_logs.includes(:user).recent.limit(10)
     log_audit("viewed", contract: @contract)
   end
@@ -57,7 +64,6 @@ class ContractsController < ApplicationController
         # Text extraction + AI extraction will be chained automatically via after_create_commit
       end
 
-      GenerateContractAlertsJob.perform_later(@contract.id)
       log_audit("created", contract: @contract, details: "Created contract: #{@contract.title}")
       track_analytics_event("contract_created", contract_type: @contract.contract_type)
       redirect_to @contract, notice: "Contract was successfully created."
@@ -67,6 +73,10 @@ class ContractsController < ApplicationController
   end
 
   def edit
+    if @contract.in_review?
+      redirect_to contract_contract_review_path(@contract),
+                  alert: "This contract is currently in review. Complete the review before editing."
+    end
   end
 
   def create_draft
@@ -103,7 +113,6 @@ class ContractsController < ApplicationController
 
     if @contract.update(contract_params)
       if was_draft
-        GenerateContractAlertsJob.perform_later(@contract.id)
         log_audit("updated", contract: @contract, details: "Finalized draft contract: #{@contract.title}")
         redirect_to @contract, notice: "Contract was successfully created."
       else

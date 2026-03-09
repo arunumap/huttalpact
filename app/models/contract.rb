@@ -4,6 +4,7 @@ class Contract < ApplicationRecord
   belongs_to :organization, counter_cache: true
   belongs_to :uploaded_by, class_name: "User", optional: true
   has_many :contract_documents, dependent: :destroy
+  has_many :contract_reviews, dependent: :destroy
   has_many :key_clauses, dependent: :destroy
   has_many :alerts, dependent: :destroy
   has_many :audit_logs, dependent: :nullify
@@ -14,20 +15,30 @@ class Contract < ApplicationRecord
   has_many :lease_options, dependent: :destroy
   has_many :lease_milestones, dependent: :destroy
 
+  STATUSES = %w[draft in_review active expiring_soon expired renewed cancelled archived].freeze
+  CONTRACT_TYPES = %w[lease service_agreement maintenance insurance software other].freeze
+  RENEWAL_TERMS = %w[month-to-month annual 2-year custom].freeze
+  DIRECTIONS = %w[inbound outbound].freeze
+  EXTRACTION_STATUSES = %w[pending processing completed failed].freeze
+
+  INACTIVE_STATUSES = %w[archived cancelled expired].freeze
+  DRAFT_STATUSES = %w[draft].freeze
+  ACTIVE_STATUSES = (STATUSES - INACTIVE_STATUSES - DRAFT_STATUSES).freeze
+
   normalizes :vendor_name, with: ->(v) { v.strip.squeeze(" ") }
   normalizes :premises_address, with: ->(v) { v.strip.squeeze(" ") }
 
   validates :title, presence: true, length: { maximum: 255 }, unless: :draft?
   validates :title, length: { maximum: 255 }, if: :draft?
   validates :vendor_name, length: { maximum: 255 }, allow_nil: true
-  validates :status, inclusion: { in: %w[draft active expiring_soon expired renewed cancelled archived] }
-  validates :contract_type, inclusion: { in: %w[lease service_agreement maintenance insurance software other] }, allow_blank: true
-  validates :direction, inclusion: { in: %w[inbound outbound] }
+  validates :status, inclusion: { in: STATUSES }
+  validates :contract_type, inclusion: { in: CONTRACT_TYPES }, allow_blank: true
+  validates :direction, inclusion: { in: DIRECTIONS }
   validates :monthly_value, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :total_value, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :notice_period_days, numericality: { only_integer: true, greater_than_or_equal_to: 0 }, allow_nil: true
-  validates :renewal_term, inclusion: { in: %w[month-to-month annual 2-year custom] }, allow_blank: true
-  validates :extraction_status, inclusion: { in: %w[pending processing completed failed] }
+  validates :renewal_term, inclusion: { in: RENEWAL_TERMS }, allow_blank: true
+  validates :extraction_status, inclusion: { in: EXTRACTION_STATUSES }
   validates :notes, length: { maximum: 10_000 }, allow_nil: true
   validates :ai_summary, length: { maximum: 10_000 }, allow_nil: true
   validates :premises_address, length: { maximum: 500 }, allow_nil: true
@@ -44,6 +55,7 @@ class Contract < ApplicationRecord
   scope :not_archived, -> { where.not(status: %w[archived draft]) }
   scope :draft, -> { where(status: "draft") }
   scope :not_draft, -> { where.not(status: "draft") }
+  scope :in_review, -> { where(status: "in_review") }
   scope :inbound, -> { where(direction: "inbound") }
   scope :outbound, -> { where(direction: "outbound") }
   scope :by_type, ->(type) { where(contract_type: type) }
@@ -54,16 +66,6 @@ class Contract < ApplicationRecord
   }
   scope :expiring_within, ->(days) { where(end_date: ..days.days.from_now.to_date).where.not(status: %w[expired archived]) }
   scope :renewal_within, ->(days) { where(next_renewal_date: ..days.days.from_now.to_date) }
-
-  STATUSES = %w[draft active expiring_soon expired renewed cancelled archived].freeze
-  CONTRACT_TYPES = %w[lease service_agreement maintenance insurance software other].freeze
-  RENEWAL_TERMS = %w[month-to-month annual 2-year custom].freeze
-  DIRECTIONS = %w[inbound outbound].freeze
-  EXTRACTION_STATUSES = %w[pending processing completed failed].freeze
-
-  INACTIVE_STATUSES = %w[archived cancelled expired].freeze
-  DRAFT_STATUSES = %w[draft].freeze
-  ACTIVE_STATUSES = (STATUSES - INACTIVE_STATUSES - DRAFT_STATUSES).freeze
 
   def status_label
     status.titleize.gsub("_", " ")
@@ -87,6 +89,14 @@ class Contract < ApplicationRecord
 
   def draft?
     status == "draft"
+  end
+
+  def in_review?
+    status == "in_review"
+  end
+
+  def current_review
+    contract_reviews.active.order(created_at: :desc).first
   end
 
   def days_until_expiry

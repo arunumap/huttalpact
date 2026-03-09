@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_06_195000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_09_012600) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -230,6 +230,53 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_06_195000) do
     t.index ["contract_id", "created_at"], name: "index_contract_documents_on_contract_id_and_created_at"
     t.index ["contract_id", "position"], name: "index_contract_documents_on_contract_id_and_position"
     t.index ["contract_id"], name: "index_contract_documents_on_contract_id"
+  end
+
+  create_table "contract_review_fields", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.integer "confidence"
+    t.uuid "contract_review_id", null: false
+    t.datetime "created_at", null: false
+    t.string "display_name", null: false
+    t.text "extracted_value"
+    t.string "field_group", null: false
+    t.string "field_name", null: false
+    t.boolean "needs_review", default: true, null: false
+    t.integer "position", default: 0, null: false
+    t.text "reasoning"
+    t.datetime "reviewed_at"
+    t.uuid "reviewed_by_id"
+    t.uuid "source_document_id"
+    t.text "source_excerpt"
+    t.jsonb "source_locator"
+    t.string "source_match_strategy"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.text "user_value"
+    t.index ["contract_review_id", "field_name"], name: "idx_on_contract_review_id_field_name_ae14d35604", unique: true
+    t.index ["contract_review_id", "status"], name: "index_contract_review_fields_on_contract_review_id_and_status"
+    t.index ["contract_review_id"], name: "index_contract_review_fields_on_contract_review_id"
+    t.index ["reviewed_by_id"], name: "index_contract_review_fields_on_reviewed_by_id"
+    t.index ["source_document_id"], name: "index_contract_review_fields_on_source_document_id"
+    t.index ["source_locator"], name: "index_contract_review_fields_on_source_locator", using: :gin
+  end
+
+  create_table "contract_reviews", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "ai_extraction_snapshot"
+    t.datetime "completed_at"
+    t.uuid "completed_by_id"
+    t.integer "confidence_threshold", default: 80, null: false
+    t.uuid "contract_id", null: false
+    t.datetime "created_at", null: false
+    t.uuid "organization_id", null: false
+    t.string "review_type", null: false
+    t.integer "reviewed_fields", default: 0, null: false
+    t.string "status", default: "pending", null: false
+    t.integer "total_fields", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.index ["completed_by_id"], name: "index_contract_reviews_on_completed_by_id"
+    t.index ["contract_id", "status"], name: "index_contract_reviews_on_contract_id_and_status"
+    t.index ["contract_id"], name: "index_contract_reviews_on_contract_id"
+    t.index ["organization_id"], name: "index_contract_reviews_on_organization_id"
   end
 
   create_table "contracts", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
@@ -623,6 +670,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_06_195000) do
   add_foreign_key "bulk_delete_operations", "organizations"
   add_foreign_key "bulk_delete_operations", "users"
   add_foreign_key "contract_documents", "contracts", on_delete: :cascade
+  add_foreign_key "contract_review_fields", "contract_documents", column: "source_document_id"
+  add_foreign_key "contract_review_fields", "contract_reviews"
+  add_foreign_key "contract_review_fields", "users", column: "reviewed_by_id"
+  add_foreign_key "contract_reviews", "contracts"
+  add_foreign_key "contract_reviews", "organizations"
+  add_foreign_key "contract_reviews", "users", column: "completed_by_id"
   add_foreign_key "contracts", "organizations"
   add_foreign_key "contracts", "users", column: "uploaded_by_id"
   add_foreign_key "extraction_feedbacks", "ai_usage_logs"

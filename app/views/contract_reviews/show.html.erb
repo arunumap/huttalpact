@@ -1,0 +1,38 @@
+<% content_for :page_title, "Review: #{@contract.title}" %>
+
+<%# Break out of the default layout padding %>
+<div class="-m-4 sm:-m-6 flex flex-col h-[calc(100vh-4rem)]">
+  <%# Compact header bar %>
+  <div class="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 shrink-0">
+    <div class="flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3 min-w-0">
+        <%= link_to @contract, class: "shrink-0 inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors" do %>
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+        <% end %>
+        <div class="min-w-0">
+          <h1 class="text-base font-semibold text-gray-900 truncate"><%= @contract.title %></h1>
+          <p class="text-xs text-gray-500">Review AI-extracted data before finalizing</p>
+        </div>
+      </div>
+      <div id="review_progress" class="shrink-0">
+        <%= render "contract_reviews/progress", review: @review %>
+      </div>
+    </div>
+  </div>
+
+  <%# Side-by-side panels — fill remaining viewport %>
+  <div class="flex flex-col lg:flex-row flex-1 min-h-0">
+    <%# Document viewer — left panel %>
+    <div class="w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-gray-200 flex flex-col min-h-0 bg-white"
+         data-controller="document-viewer">
+      <div class="flex-1 overflow-y-auto">
+        <%= render "contract_reviews/document_viewer", documents: @document_text %>
+      </div>
+    </div>
+
+    <%# Review panel — right panel %>
+    <%= render "contract_reviews/review_panel", review: @review, contract: @contract %>
+  </div>
+</div>

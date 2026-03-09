@@ -62,6 +62,12 @@ Rails.application.routes.draw do
     resources :rent_escalations, only: %i[new create edit update destroy]
     resources :lease_options, only: %i[new create edit update destroy]
     resources :lease_milestones, only: %i[new create edit update destroy]
+    resource :contract_review, only: [ :show ] do
+      patch :update_field
+      post :bulk_accept
+      post :complete
+      post :save_draft
+    end
     collection do
       post :create_draft
       post :bulk_delete

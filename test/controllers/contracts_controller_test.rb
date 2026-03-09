@@ -617,15 +617,14 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
       uploaded_by: users(:one)
     )
 
-    assert_enqueued_with(job: GenerateContractAlertsJob) do
-      patch contract_path(draft), params: {
-        contract: {
-          title: "Finalized Contract",
-          status: "active",
-          vendor_name: "Test Vendor"
-        }
+    # Alerts are now generated after review completion, not on draft finalization
+    patch contract_path(draft), params: {
+      contract: {
+        title: "Finalized Contract",
+        status: "active",
+        vendor_name: "Test Vendor"
       }
-    end
+    }
 
     draft.reload
     assert_equal "active", draft.status

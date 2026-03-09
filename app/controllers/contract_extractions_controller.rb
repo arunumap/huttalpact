@@ -3,6 +3,12 @@ class ContractExtractionsController < ApplicationController
   before_action :enforce_extraction_limit!, only: :create
 
   def create
+    if @contract.in_review?
+      redirect_to contract_contract_review_path(@contract),
+                  alert: "Cannot re-extract while a review is in progress. Complete or discard the current review first."
+      return
+    end
+
     if @contract.contract_documents.completed.none?
       redirect_to @contract, alert: "No extracted documents available. Upload a document first."
       return
@@ -27,6 +33,12 @@ class ContractExtractionsController < ApplicationController
   end
 
   def redetect
+    if @contract.in_review?
+      redirect_to contract_contract_review_path(@contract),
+                  alert: "Cannot re-detect contract type while a review is in progress."
+      return
+    end
+
     if @contract.contract_documents.completed.none?
       redirect_to @contract, alert: "No extracted documents available. Upload a document first."
       return
