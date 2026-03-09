@@ -280,7 +280,7 @@ class ReviewFieldCatalog
           alert_families: %w[notice_period_start],
           dependencies: %w[contract.notice_period_days contract.next_renewal_date contract.end_date contract.next_renewal_date_fallback],
           blocks_activation: true,
-          notes: "Derived from notice_period_days plus next_renewal_date or end_date."
+          notes: "The date you need to begin the renewal process, calculated by counting the notice period backward from the renewal or end date."
         ),
         "cam_reconciliation_alert_date" => build_field(
           key: "cam_reconciliation_alert_date",
@@ -291,7 +291,7 @@ class ReviewFieldCatalog
           dependencies: %w[contract.contract_type lease_detail.cam_reconciliation_month],
           blocks_activation: true,
           lease_only: true,
-          notes: "Derived next calendar occurrence for CAM reconciliation."
+          notes: "Reminder date for annual Common Area Maintenance reconciliation."
         ),
         "recurring_milestone_next_occurrence_date" => build_field(
           key: "recurring_milestone_next_occurrence_date",
@@ -303,7 +303,7 @@ class ReviewFieldCatalog
           repeatable: true,
           blocks_activation: true,
           lease_only: true,
-          notes: "Used when a recurring milestone's original due_date is already in the past."
+          notes: "The next date this recurring obligation comes due, rolled forward from the original due date."
         ),
         "contract.next_renewal_date_fallback" => build_field(
           key: "contract.next_renewal_date_fallback",
@@ -313,7 +313,7 @@ class ReviewFieldCatalog
           alert_families: %w[renewal_upcoming notice_period_start],
           dependencies: %w[contract.auto_renews contract.end_date],
           blocks_activation: true,
-          notes: "Only allowed when next_renewal_date is blank and auto_renews is true."
+          notes: "Estimated renewal date when the contract auto-renews but no explicit renewal date was stated."
         ),
         "contract.status" => build_field(
           key: "contract.status",

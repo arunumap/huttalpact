@@ -65,7 +65,7 @@ class ContractReviewCompletionServiceTest < ActiveSupport::TestCase
       end
 
       assert_match(/Cannot complete review/, error.message)
-      assert_match(/End date must be after the start date/, error.message)
+      assert_match(/End date must be after the start date/i, error.message)
     end
   end
 

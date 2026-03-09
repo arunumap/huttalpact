@@ -366,6 +366,218 @@ module ApplicationHelper
     nil
   end
 
+  # Translates machine readiness_reasons into a plain-English explanation
+  # so reviewers understand *why* a field is in its current state.
+  # Cross-references sibling review fields to show the AI's reasoning chain
+  # and names specific unresolved dependencies for derived fields.
+  CLASSIFICATION_LABELS = {
+    "alert_driving" => "alert-driving",
+    "alert_governing" => "alert-governing",
+    "contextual" => "contextual"
+  }.freeze
+
+  CONFIDENCE_THRESHOLD_LABELS = {
+    "alert_driving" => "≥95%",
+    "alert_governing" => "≥90%",
+    "contextual" => "≥85%"
+  }.freeze
+
+  # Maps field_key → sibling field_key whose value/excerpt explain why
+  # this field is relevant. Extend when adding new derived relationships.
+  DEPENDENCY_CONTEXT_MAP = {
+    "lease_milestone.recurrence_interval" => "lease_milestone.recurring"
+  }.freeze
+
+  def readiness_explanation(field, review: nil)
+    reasons = Array(field.readiness_reasons)
+    bucket  = field.readiness_bucket
+
+    parts = []
+
+    case bucket
+    when "blocked"
+      build_blocked_explanation(field, reasons, parts, review)
+    when "needs_review"
+      build_needs_review_explanation(field, reasons, parts, review)
+    when "looks_good"
+      build_looks_good_explanation(field, reasons, parts)
+    end
+
+    parts.presence&.join(" ")
+  end
+
+  private
+
+  def build_blocked_explanation(field, reasons, parts, review)
+    # Derived fields with unresolved dependencies — show reasoning with actual values
+    if reasons.include?("derived_dependency_missing") && field.source_type == "derived"
+      dep_summary = derived_dependency_summary(field, review)
+      if dep_summary.present?
+        parts << dep_summary
+      else
+        parts << "This value depends on other fields that haven't been resolved yet."
+      end
+    end
+
+    # Sibling-field reasoning chain (e.g., recurrence_interval ← recurring)
+    dep_context = dependency_explanation(field, review)
+    parts << dep_context if dep_context.present?
+
+    # Missing value (skip if dependency context already explains it)
+    if reasons.include?("missing_value") && dep_context.blank? && !reasons.include?("derived_dependency_missing")
+      parts << "The AI could not find a value for this field in the contract."
+    end
+
+    # Confidence issues
+    if reasons.include?("no_confidence_score")
+      parts << "The AI did not return a confidence score for this extraction."
+    elsif reasons.include?("confidence_below_review_threshold")
+      threshold_label = CONFIDENCE_THRESHOLD_LABELS[field.classification] || "the required threshold"
+      parts << "The AI has low confidence (#{field.confidence_score}%) — #{CLASSIFICATION_LABELS[field.classification] || field.classification} fields require #{threshold_label} for auto-approval."
+    end
+
+    # Structural issues
+    parts << "Multiple conflicting values were found across documents." if reasons.include?("conflict_unresolved")
+    parts << "An amendment may override this value — document precedence needs verification." if reasons.include?("precedence_unresolved")
+
+    # Source quality
+    parts << "The source document has significant quality issues near this field." if reasons.include?("source_quality_poor")
+
+    # Missing excerpt on high-value fields
+    if reasons.include?("end_date_no_source_excerpt") || reasons.include?("auto_renews_no_source_excerpt")
+      parts << "No supporting excerpt was found in the contract text — this is unusual for a key field."
+    end
+
+    # Action guidance
+    if field.gates_activation?
+      parts << "This field must be resolved before the contract can be activated."
+    end
+  end
+
+  def build_needs_review_explanation(field, reasons, parts, review)
+    dep_context = dependency_explanation(field, review)
+    parts << dep_context if dep_context.present?
+
+    if reasons.include?("no_confidence_score")
+      parts << "The AI did not return a confidence score for this extraction."
+    elsif reasons.include?("confidence_below_high_threshold")
+      threshold_label = CONFIDENCE_THRESHOLD_LABELS[field.classification] || "the required threshold"
+      parts << "The AI is moderately confident (#{field.confidence_score}%) — #{CLASSIFICATION_LABELS[field.classification] || field.classification} fields need #{threshold_label} for auto-approval."
+    elsif reasons.include?("confidence_below_review_threshold")
+      parts << "The AI has low confidence (#{field.confidence_score}%) in this extracted value."
+    end
+
+    parts << "Multiple conflicting values were found across documents." if reasons.include?("conflict_unresolved")
+    parts << "An amendment may override this value — document precedence needs verification." if reasons.include?("precedence_unresolved")
+    parts << "Some quality issues were detected in the source text." if reasons.include?("source_quality_warning")
+    parts << "The source document has significant quality issues near this field." if reasons.include?("source_quality_poor")
+
+    if reasons.include?("end_date_no_source_excerpt") || reasons.include?("auto_renews_no_source_excerpt")
+      parts << "No supporting excerpt was found — please verify against the original document."
+    end
+
+    parts << "Please verify this value is correct." if parts.empty?
+  end
+
+  def build_looks_good_explanation(field, reasons, parts)
+    return if field.review_status != "pending"
+
+    if field.source_type == "derived"
+      if reasons.include?("recurrence_not_applicable") || reasons.include?("fallback_not_applicable") || reasons.include?("cam_not_applicable_for_contract_type")
+        nil # not applicable — no explanation needed, field is hidden or irrelevant
+      else
+        parts << "This value is automatically calculated from its dependencies."
+      end
+    elsif field.source_type != "app_managed" && field.confidence_score.present? && field.confidence_score >= 90
+      parts << "High confidence extraction (#{field.confidence_score}%) — no issues detected."
+    end
+  end
+
+  def unresolved_dependency_names(field, review)
+    dep_keys = Array(field.derived_dependency_keys)
+    return [] if dep_keys.empty? || review.nil?
+
+    dep_keys.filter_map do |dep_key|
+      sibling = review.contract_review_fields.detect do |f|
+        f.field_key == dep_key &&
+          (field.field_index.nil? || f.field_index == field.field_index)
+      end
+      next if sibling && sibling.review_status != "pending"
+
+      dep_key.split(".").last.titleize
+    end
+  end
+
+  # Builds a rich explanation for derived fields showing the actual
+  # dependency values, their confidence, and which need approval.
+  def derived_dependency_summary(field, review)
+    dep_keys = Array(field.derived_dependency_keys)
+    return nil if dep_keys.empty? || review.nil?
+
+    inputs = []
+    pending_labels = []
+
+    dep_keys.each do |dep_key|
+      sibling = review.contract_review_fields.detect do |f|
+        f.field_key == dep_key &&
+          (field.field_index.nil? || f.field_index == field.field_index)
+      end
+      next unless sibling
+
+      label = review_field_label(sibling)
+      value = display_review_value(sibling.extracted_value)
+      conf = sibling.confidence_score
+
+      # Skip dependencies that are not applicable or have no value
+      next if value == "—" && sibling.review_status.in?(%w[confirmed not_applicable])
+
+      input_desc = "#{label}: #{value}"
+      input_desc += " (#{conf}% confidence)" if conf.present?
+      inputs << input_desc
+
+      pending_labels << label if sibling.review_status == "pending"
+    end
+
+    return nil if inputs.empty?
+
+    parts = []
+    parts << "The AI used the following to calculate this value: #{inputs.join("; ")}."
+
+    if pending_labels.any?
+      parts << "Confirm #{pending_labels.to_sentence} in the review below to unlock this field."
+    end
+
+    parts.join(" ")
+  end
+
+  def dependency_explanation(field, review)
+    dep_key = DEPENDENCY_CONTEXT_MAP[field.field_key]
+    return nil unless dep_key && review
+
+    sibling = review.contract_review_fields.detect do |f|
+      f.field_key == dep_key && f.field_index == field.field_index
+    end
+    return nil unless sibling
+
+    label = review_field_label(sibling)
+    value = display_review_value(sibling.extracted_value)
+    excerpt = sibling.source_span&.dig("excerpt")
+    confidence = sibling.confidence_score
+
+    sentence = "The AI set #{label} to #{value}"
+    sentence += " (#{confidence}% confidence)" if confidence.present?
+    sentence += " based on: \"#{excerpt}\"" if excerpt.present?
+    sentence += "."
+
+    if Array(field.readiness_reasons).include?("missing_value")
+      sentence += " However, no #{review_field_label(field).downcase} was extracted."
+    end
+
+    sentence
+  end
+
+  public
+
   def display_review_value(value)
     case value
     when true then "Yes"
@@ -384,8 +596,33 @@ module ApplicationHelper
     end
   end
 
+  # Maps field_key → allowed option values for select inputs.
+  # Sourced from model inclusion validators to keep form and DB in sync.
+  FIELD_SELECT_OPTIONS = {
+    "contract.contract_type" => %w[lease service_agreement maintenance insurance software other],
+    "lease_milestone.recurrence_interval" => LeaseMilestone::RECURRENCE_INTERVALS,
+    "lease_detail.cam_reconciliation_month" => (1..12).map { |m| [ Date::MONTHNAMES[m], m ] }
+  }.freeze
+
+  # Integer fields that need min/max constraints beyond just step=1
+  FIELD_NUMBER_CONSTRAINTS = {
+    "contract.notice_period_days" => { min: 0, step: 1 },
+    "lease_detail.cam_reconciliation_month" => { min: 1, max: 12, step: 1 },
+    "lease_detail.free_rent_months" => { min: 0, step: 1 },
+    "contract.monthly_value" => { min: 0, step: "0.01" },
+    "contract.total_value" => { min: 0, step: "0.01" },
+    "lease_detail.rentable_sqft" => { min: 0, step: "0.01" },
+    "lease_detail.usable_sqft" => { min: 0, step: "0.01" },
+    "lease_detail.security_deposit" => { min: 0, step: "0.01" },
+    "lease_detail.cam_base_amount" => { min: 0, step: "0.01" },
+    "lease_detail.cam_cap_percentage" => { min: 0, max: 100, step: "0.01" },
+    "lease_detail.ti_total_amount" => { min: 0, step: "0.01" },
+    "rent_escalation.base_rent_monthly" => { min: 0, step: "0.01" }
+  }.freeze
+
   def review_field_input_kind(field)
     definition = ReviewFieldCatalog.fetch(field.field_key)
+    return :select if FIELD_SELECT_OPTIONS.key?(field.field_key)
     return :date if ContractReviewValueResolver::DATE_FIELD_KEYS.include?(field.field_key)
     return :boolean if definition.field_family == "alert_governing_boolean"
     return :number if field.field_key.in?(ContractReviewValueResolver::INTEGER_FIELD_KEYS + ContractReviewValueResolver::DECIMAL_FIELD_KEYS)
@@ -395,11 +632,30 @@ module ApplicationHelper
     :text
   end
 
+  def review_field_select_options(field)
+    raw_options = FIELD_SELECT_OPTIONS[field.field_key]
+    return [] unless raw_options
+
+    # Already [label, value] pairs (e.g., month selector)
+    return raw_options if raw_options.first.is_a?(Array)
+
+    # Convert string values to [human label, value] pairs
+    raw_options.map { |v| [ v.titleize.tr("_", " "), v ] }
+  end
+
+  def review_field_number_constraints(field)
+    FIELD_NUMBER_CONSTRAINTS[field.field_key] || { step: "any" }
+  end
+
   def review_field_form_value(field)
     value = field.effective_value
     return nil if value.nil?
 
-    review_field_input_kind(field) == :boolean ? value.to_s : value
+    case review_field_input_kind(field)
+    when :boolean then value.to_s
+    when :select then value
+    else value
+    end
   end
 
   private

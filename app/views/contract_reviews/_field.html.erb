@@ -23,6 +23,13 @@
         <p class="text-sm text-gray-500"><%= review_field_description(field) %></p>
       <% end %>
 
+      <% explanation = readiness_explanation(field, review: review) %>
+      <% if explanation.present? %>
+        <div class="rounded-lg bg-amber-50 px-4 py-3 ring-1 ring-amber-200">
+          <p class="text-sm text-amber-800"><%= explanation %></p>
+        </div>
+      <% end %>
+
       <div class="grid gap-3 sm:grid-cols-3">
         <div class="rounded-lg bg-gray-50 px-3 py-3 ring-1 ring-gray-200">
           <p class="text-xs font-medium uppercase tracking-wide text-gray-500">Extracted</p>
@@ -68,9 +75,10 @@
         </div>
       <% end %>
 
-      <% if field.contract_review_conflicts.open.any? %>
+      <% non_redundant_conflicts = field.contract_review_conflicts.open.reject { |c| c.conflict_type == "derived_dependency_missing" } %>
+      <% if non_redundant_conflicts.any? %>
         <div class="space-y-2 rounded-lg bg-red-50 px-4 py-3 ring-1 ring-red-200">
-          <% field.contract_review_conflicts.open.each do |conflict| %>
+          <% non_redundant_conflicts.each do |conflict| %>
             <div>
               <p class="text-sm font-medium text-red-800"><%= conflict.summary %></p>
               <% if conflict.details.present? %>
@@ -93,9 +101,13 @@
       <% editable = !field.source_type.in?(["app_managed"]) && (!field.gates_activation? || review.open?) %>
       <% if editable %>
         <div class="flex flex-wrap gap-2">
-          <%= button_to contract_review_field_confirm_path(contract, field), method: :patch,
-              class: "inline-flex items-center justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500" do %>
-            Confirm
+          <% has_extracted_value = !(field.extracted_value.nil? || (field.extracted_value.is_a?(String) && field.extracted_value.blank?)) %>
+          <% can_confirm = has_extracted_value && !(field.source_type == "derived" && Array(field.readiness_reasons).include?("derived_dependency_missing")) %>
+          <% if can_confirm %>
+            <%= button_to contract_review_field_confirm_path(contract, field), method: :patch,
+                class: "inline-flex items-center justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-500" do %>
+              Confirm
+            <% end %>
           <% end %>
           <%= button_to contract_review_field_mark_not_found_path(contract, field), method: :patch,
               class: "inline-flex items-center justify-center rounded-md bg-white px-3 py-2 text-sm font-medium text-red-600 ring-1 ring-inset ring-red-200 hover:bg-red-50" do %>
@@ -116,8 +128,11 @@
                 <%= form.date_field :approved_value, value: review_field_form_value(field), class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
               <% when :boolean %>
                 <%= form.select :approved_value, options_for_select([["Yes", "true"], ["No", "false"]], review_field_form_value(field)), {}, class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
+              <% when :select %>
+                <%= form.select :approved_value, options_for_select(review_field_select_options(field), review_field_form_value(field)), { include_blank: "— Select —" }, class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
               <% when :number %>
-                <%= form.number_field :approved_value, value: review_field_form_value(field), step: "any", class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
+                <% constraints = review_field_number_constraints(field) %>
+                <%= form.number_field :approved_value, value: review_field_form_value(field), **constraints, class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
               <% else %>
                 <%= form.text_field :approved_value, value: review_field_form_value(field), class: "block w-full rounded-lg border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-amber-600 sm:text-sm" %>
               <% end %>

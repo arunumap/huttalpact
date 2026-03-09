@@ -27,7 +27,23 @@ class ContractReviewCompletionService
 
     self
   rescue ActiveRecord::RecordInvalid => e
-    raise CompletionError, "Cannot complete review: #{e.record.errors.full_messages.to_sentence}"
+    friendly_errors = e.record.errors.map do |error|
+      attribute = error.attribute.to_s.titleize.tr("_", " ")
+      case error.type
+      when :inclusion
+        options = e.record.class.validators_on(error.attribute)
+                    .find { |v| v.is_a?(ActiveModel::Validations::InclusionValidator) }
+                    &.options&.dig(:in)
+        if options.present?
+          "#{attribute} must be one of: #{Array(options).map { |o| o.to_s.titleize.tr('_', ' ') }.join(', ')}"
+        else
+          "#{attribute} has an invalid value"
+        end
+      else
+        "#{attribute} #{error.message}"
+      end
+    end
+    raise CompletionError, "Cannot complete review: #{friendly_errors.to_sentence}"
   end
 
   private
