@@ -67,7 +67,7 @@ class ContractExtractionsController < ApplicationController
     AiExtractContractJob.perform_later(@contract.id)
     log_audit("updated", contract: @contract, details: "Contract type set to '#{selected_type}' and AI extraction triggered")
 
-    destination = @contract.draft? ? edit_contract_path(@contract) : contract_path(@contract)
+    destination = @contract.draft? ? contract_contract_review_path(@contract) : contract_path(@contract)
     redirect_to destination, notice: "Contract type set to \"#{selected_type.titleize.gsub('_', ' ')}\". AI extraction started."
   end
 

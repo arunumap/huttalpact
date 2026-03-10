@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_10_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_10_015051) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pgcrypto"
@@ -711,6 +711,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_10_000000) do
     t.string "email_address", null: false
     t.string "first_name"
     t.string "last_name"
+    t.datetime "orphaned_at"
     t.string "password_digest", null: false
     t.datetime "terms_accepted_at"
     t.datetime "updated_at", null: false

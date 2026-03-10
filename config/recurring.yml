@@ -41,3 +41,7 @@ production:
   refresh_sitemap:
     command: "load Rails.root.join('config/sitemap.rb').to_s"
     schedule: at 4am every day
+
+  cleanup_orphaned_users:
+    class: CleanupOrphanedUsersJob
+    schedule: at 3:30am every day

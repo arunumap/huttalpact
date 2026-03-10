@@ -541,7 +541,7 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_equal users(:one), draft.uploaded_by
     assert_equal "maintenance", draft.contract_type
     assert_equal 1, draft.contract_documents.count
-    assert_redirected_to edit_contract_path(draft)
+    assert_redirected_to contract_contract_review_path(draft)
   end
 
   test "create_draft with multiple files creates multiple documents" do

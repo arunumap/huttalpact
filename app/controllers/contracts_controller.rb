@@ -101,7 +101,7 @@ class ContractsController < ApplicationController
     ).call
 
     log_audit("created", contract: @contract, details: "Created draft contract for AI extraction")
-    redirect_to edit_contract_path(@contract), notice: "Uploading and extracting contract details..."
+    redirect_to contract_contract_review_path(@contract), notice: "Uploading and extracting contract details..."
   rescue ArgumentError, ActiveRecord::RecordInvalid
     redirect_to new_contract_path, alert: "Could not create draft contract."
   end

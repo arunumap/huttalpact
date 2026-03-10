@@ -48,6 +48,7 @@ Rails.application.routes.draw do
   # Auth
   resource :session, only: %i[new create destroy]
   resource :registration, only: %i[new create]
+  resource :orphaned_account, only: %i[show]
   resources :passwords, param: :token
   get "invitations/:token/accept", to: "invitation_acceptances#show", as: :accept_invitation
   post "switch_organization/:id", to: "organization_switches#create", as: :switch_organization

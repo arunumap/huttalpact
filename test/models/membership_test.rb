@@ -103,4 +103,42 @@ class MembershipTest < ActiveSupport::TestCase
     ordered = org.memberships.ordered
     assert_equal Membership::OWNER_ROLE, ordered.first.role
   end
+
+  # Orphan tracking callbacks
+  test "sets orphaned_at when last membership is destroyed" do
+    user = User.create!(
+      email_address: "solo@example.com",
+      password: "password123",
+      first_name: "Solo",
+      terms_accepted: "1"
+    )
+    org = organizations(:one)
+    membership = Membership.create!(user: user, organization: org, role: Membership::MEMBER_ROLE)
+
+    assert_nil user.reload.orphaned_at
+    membership.destroy!
+    assert_not_nil user.reload.orphaned_at
+  end
+
+  test "does not set orphaned_at when user still has other memberships" do
+    user = users(:one)
+    org = organizations(:two)
+    extra = Membership.create!(user: user, organization: org, role: Membership::MEMBER_ROLE)
+
+    extra.destroy!
+    assert_nil user.reload.orphaned_at
+  end
+
+  test "clears orphaned_at when new membership is created" do
+    user = User.create!(
+      email_address: "returning@example.com",
+      password: "password123",
+      first_name: "Return",
+      terms_accepted: "1"
+    )
+    user.update_column(:orphaned_at, 1.day.ago)
+
+    Membership.create!(user: user, organization: organizations(:one), role: Membership::MEMBER_ROLE)
+    assert_nil user.reload.orphaned_at
+  end
 end

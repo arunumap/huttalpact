@@ -67,6 +67,17 @@ class ExtractContractDocumentJob < ApplicationJob
       partial: "contract_documents/contract_document",
       locals: { contract_document: document }
     )
+
+    # Broadcast progress update to review processing page (if user is already there)
+    contract = document.contract
+    if contract.draft?
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "contract_#{contract.id}",
+        target: "review_extraction_processing",
+        partial: "contract_reviews/extraction_status",
+        locals: { contract: contract }
+      )
+    end
   end
 
   def contract_type_ready_for_extraction?(contract)
@@ -124,6 +135,14 @@ class ExtractContractDocumentJob < ApplicationJob
         "contract_#{contract.id}",
         target: "draft_extraction_status",
         partial: "contracts/draft_extraction_status",
+        locals: { contract: contract }
+      )
+
+      # Broadcast to review processing page (if user is already there)
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "contract_#{contract.id}",
+        target: "review_extraction_processing",
+        partial: "contract_reviews/extraction_status",
         locals: { contract: contract }
       )
     end

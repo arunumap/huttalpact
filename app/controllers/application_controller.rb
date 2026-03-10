@@ -34,7 +34,7 @@ class ApplicationController < ActionController::Base
     organization = find_current_organization
 
     if organization.nil?
-      redirect_to new_registration_path, alert: "Please create an organization to continue."
+      redirect_to orphaned_account_path
       return
     end
 

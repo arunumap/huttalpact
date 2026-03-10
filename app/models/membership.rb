@@ -10,6 +10,9 @@ class Membership < ApplicationRecord
   validates :role, inclusion: { in: ROLES }
   validates :user_id, uniqueness: { scope: :organization_id, message: "is already a member of this organization" }
 
+  after_destroy :mark_user_orphaned_if_no_memberships
+  after_create :clear_user_orphaned_status
+
   scope :owners, -> { where(role: OWNER_ROLE) }
   scope :admins, -> { where(role: [ OWNER_ROLE, ADMIN_ROLE ]) }
   scope :ordered, -> { joins(:user).order(Arel.sql("CASE memberships.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END"), "users.first_name ASC", "users.last_name ASC") }
@@ -36,5 +39,17 @@ class Membership < ApplicationRecord
     return false unless actor_membership.admin_or_owner? # only admins+ can manage
     return true if actor_membership.owner?         # owner can manage anyone (except owner, handled above)
     member?                                        # admins can only manage members
+  end
+
+  private
+
+  def mark_user_orphaned_if_no_memberships
+    return if user.memberships.exists?
+
+    user.update_column(:orphaned_at, Time.current)
+  end
+
+  def clear_user_orphaned_status
+    user.update_column(:orphaned_at, nil) if user.orphaned_at.present?
   end
 end

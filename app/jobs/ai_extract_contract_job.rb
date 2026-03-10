@@ -78,6 +78,14 @@ class AiExtractContractJob < ApplicationJob
         partial: "contracts/review_ready_redirect",
         locals: { contract: contract }
       )
+
+      # Broadcast to review processing page (if user is already there)
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "contract_#{contract.id}",
+        target: "review_extraction_processing",
+        partial: "contract_reviews/extraction_complete_redirect",
+        locals: { contract: contract }
+      )
     elsif contract.draft?
       Turbo::StreamsChannel.broadcast_replace_to(
         "contract_#{contract.id}",
@@ -91,6 +99,14 @@ class AiExtractContractJob < ApplicationJob
         target: "draft_contract_form",
         partial: "contracts/form",
         locals: { contract: contract, show_upload: false, draft_mode: true }
+      )
+
+      # Broadcast to review processing page (if user is already there)
+      Turbo::StreamsChannel.broadcast_replace_to(
+        "contract_#{contract.id}",
+        target: "review_extraction_processing",
+        partial: "contract_reviews/extraction_status",
+        locals: { contract: contract }
       )
     end
   end

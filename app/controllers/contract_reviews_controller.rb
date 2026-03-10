@@ -5,6 +5,11 @@ class ContractReviewsController < ApplicationController
   before_action :set_review
 
   def show
+    if @extraction_processing
+      render :processing
+      return
+    end
+
     @document_text = build_document_text
     @grouped_fields = build_grouped_fields
     @needs_review_fields = @review.fields.needs_review.pending.ordered
@@ -173,9 +178,19 @@ class ContractReviewsController < ApplicationController
 
   def set_review
     @review = @contract.current_review
-    unless @review
-      redirect_to @contract, alert: "No active review found for this contract."
+    return if @review
+
+    if action_name == "show" && extraction_processing?
+      @extraction_processing = true
+      return
     end
+
+    redirect_to @contract, alert: "No active review found for this contract."
+  end
+
+  def extraction_processing?
+    @contract.draft? &&
+      @contract.extraction_status.in?(%w[pending processing awaiting_type_confirmation failed])
   end
 
   def build_document_text
