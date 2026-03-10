@@ -5,6 +5,7 @@ class AlertsController < ApplicationController
   BUCKETS = %w[active overdue today upcoming scheduled].freeze
 
   before_action :set_alert, only: %i[acknowledge snooze]
+  before_action :ensure_actionable_alert!, only: %i[acknowledge snooze]
 
   def index
     alerts = Alert.visible_to(Current.user)
@@ -87,5 +88,11 @@ class AlertsController < ApplicationController
 
   def set_alert
     @alert = Alert.for_user(Current.user).find(params[:id])
+  end
+
+  def ensure_actionable_alert!
+    return if @alert.actionable_for_preference?(AlertPreference.for(Current.user, Current.organization))
+
+    redirect_to alerts_path, alert: "Only active, overdue, or due today alerts can be acknowledged or snoozed."
   end
 end

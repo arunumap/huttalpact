@@ -90,6 +90,12 @@ class Alert < ApplicationRecord
     today == window_end_for(alert_preference)
   end
 
+  def actionable_for_preference?(alert_preference, today: Date.current)
+    active_for_preference?(alert_preference, today: today) ||
+      overdue_for_preference?(alert_preference, today: today) ||
+      due_today_for_preference?(alert_preference, today: today)
+  end
+
   def lead_days_for(alert_preference = nil)
     case alert_type
     when "renewal_upcoming"

@@ -40,6 +40,8 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
     assert_select alert_frame_selector(:renewal_upcoming), count: 1
     assert_select alert_frame_selector(:expiry_warning), count: 0
     assert_select alert_frame_selector(:scheduled_far_future), count: 0
+    assert_select "button", text: "Acknowledge", count: 0
+    assert_select "button", text: "Snooze", count: 0
   end
 
   test "index filters scheduled alerts" do
@@ -49,6 +51,8 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
     assert_select alert_frame_selector(:scheduled_far_future), count: 1
     assert_select alert_frame_selector(:renewal_upcoming), count: 0
     assert_select alert_frame_selector(:expiry_warning), count: 0
+    assert_select "button", text: "Acknowledge", count: 0
+    assert_select "button", text: "Snooze", count: 0
   end
 
   test "index filters overdue alerts" do
@@ -193,6 +197,16 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
     assert_equal "acknowledged", alert.reload.status
   end
 
+  test "cannot acknowledge upcoming alert" do
+    alert = alerts(:renewal_upcoming)
+
+    patch acknowledge_alert_path(alert)
+
+    assert_redirected_to alerts_path
+    assert_equal "Only active, overdue, or due today alerts can be acknowledged or snoozed.", flash[:alert]
+    assert_not_equal "acknowledged", alert.reload.status
+  end
+
   test "acknowledge only marks current user's recipient as read" do
     alert = alerts(:expiry_warning)
     user_two = users(:two)
@@ -237,6 +251,16 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
     assert_equal Date.current + 7.days, recipient.snoozed_until
     # Alert-level trigger_date should not change
     assert_equal alerts(:expiry_warning).trigger_date, alert.reload.trigger_date
+  end
+
+  test "cannot snooze scheduled alert" do
+    alert = alerts(:scheduled_far_future)
+
+    patch snooze_alert_path(alert, days: 7)
+
+    assert_redirected_to alerts_path
+    assert_equal "Only active, overdue, or due today alerts can be acknowledged or snoozed.", flash[:alert]
+    assert_nil alert.alert_recipients.find_by(user: users(:one))&.snoozed_until
   end
 
   test "snooze creates audit log" do
