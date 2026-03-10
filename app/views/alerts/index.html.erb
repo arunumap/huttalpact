@@ -8,7 +8,14 @@
     { key: "upcoming", label: "Upcoming", description: "Notification start date is in the next #{Alert::UPCOMING_HORIZON_DAYS} days." },
     { key: "scheduled", label: "Scheduled", description: "Notification start date is more than #{Alert::UPCOMING_HORIZON_DAYS} days out." }
   ] %>
-  <% selected_option = bucket_options.find { |option| option[:key] == @selected_bucket } || bucket_options.first %>
+  <% selected_bucket_options = bucket_options.select { |option| @selected_buckets.include?(option[:key]) } %>
+  <% selected_bucket_labels = selected_bucket_options.map { |option| option[:label] } %>
+  <% selected_contract_options = @contract_filter_options.select { |(_title, id)| @selected_contract_ids.include?(id.to_s) } %>
+  <% visible_bucket_options = selected_bucket_options.first(3) %>
+  <% hidden_bucket_count = [selected_bucket_options.size - visible_bucket_options.size, 0].max %>
+  <% visible_contract_options = selected_contract_options.first(3) %>
+  <% hidden_contract_count = [selected_contract_options.size - visible_contract_options.size, 0].max %>
+  <% alerts_heading = selected_bucket_labels.one? ? "#{selected_bucket_labels.first} Alerts" : "Filtered Alerts" %>
 
   <%# Header %>
   <div class="flex items-center justify-between">
@@ -25,31 +32,117 @@
     <% end %>
   </div>
 
-  <%# Interactive filter buckets %>
-  <div class="rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-900/5">
-    <div class="flex flex-wrap gap-2">
-      <% bucket_options.each do |option| %>
-        <% selected = option[:key] == @selected_bucket %>
-        <%= link_to alerts_path(bucket: option[:key]),
-            class: "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold transition #{selected ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}",
-            data: { alerts_filter: option[:key], alerts_selected: selected.to_s } do %>
-          <span><%= option[:label] %></span>
-          <span class="rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-gray-700"><%= @bucket_counts.fetch(option[:key], 0) %></span>
-        <% end %>
+  <%= form_with url: alerts_path, method: :get, class: "flex flex-wrap items-end gap-4 rounded-lg bg-white p-4 shadow-sm ring-1 ring-gray-900/5" do |form| %>
+    <%= hidden_field_tag :buckets_filter_present, "1" %>
+
+    <div class="w-full lg:w-[28rem]">
+      <span class="block text-sm font-medium text-gray-700">Alert Buckets</span>
+      <div class="relative mt-1" data-controller="multiselect-summary" data-multiselect-summary-placeholder-value="All alert buckets" data-multiselect-summary-visible-count-value="3" data-alerts-bucket-multiselect="true">
+        <div
+          role="button"
+          tabindex="0"
+          class="flex h-14 cursor-pointer items-center justify-between gap-3 rounded-lg bg-white px-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300"
+          data-action="click->multiselect-summary#toggle keydown.enter->multiselect-summary#toggle keydown.space->multiselect-summary#toggle"
+        >
+          <div class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap" data-multiselect-summary-target="pillContainer">
+            <% visible_bucket_options.each do |option| %>
+              <button
+                type="button"
+                class="inline-flex max-w-40 shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-300"
+                data-action="click->multiselect-summary#remove"
+                data-multiselect-summary-value-param="<%= option[:key] %>"
+              >
+                <span class="truncate"><%= option[:label] %></span>
+                <span aria-hidden="true" class="text-amber-700">&times;</span>
+              </button>
+            <% end %>
+            <% if hidden_bucket_count.positive? %>
+              <span class="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200">+ <%= hidden_bucket_count %> more</span>
+            <% end %>
+          </div>
+          <span class="<%= "hidden" if selected_bucket_options.any? %> min-w-0 flex-1 truncate text-gray-500" data-multiselect-summary-target="placeholder">All alert buckets</span>
+          <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </div>
+        <div class="absolute z-10 mt-2 hidden w-full rounded-lg bg-white p-3 shadow-lg ring-1 ring-black/5" data-multiselect-summary-target="menu">
+          <div class="space-y-2">
+            <% bucket_options.each do |option| %>
+              <label class="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 hover:bg-gray-50">
+                <span class="flex items-center gap-2">
+                  <%= check_box_tag "buckets[]", option[:key], @selected_buckets.include?(option[:key]), id: "alerts_bucket_#{option[:key]}", class: "rounded border-gray-300 text-amber-600 focus:ring-amber-600", data: { multiselect_summary_target: "checkbox", action: "change->multiselect-summary#sync", label: option[:label] } %>
+                  <span class="text-sm text-gray-700"><%= option[:label] %></span>
+                </span>
+                <span class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-bold text-gray-700"><%= @bucket_counts.fetch(option[:key], 0) %></span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="w-full lg:w-[32rem]">
+      <span class="block text-sm font-medium text-gray-700">Contracts</span>
+      <div class="relative mt-1" data-controller="multiselect-summary" data-multiselect-summary-placeholder-value="All uploaded contracts" data-multiselect-summary-visible-count-value="3" data-alerts-contract-multiselect="true">
+        <div
+          role="button"
+          tabindex="0"
+          class="flex h-14 cursor-pointer items-center justify-between gap-3 rounded-lg bg-white px-3 text-sm text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300"
+          data-action="click->multiselect-summary#toggle keydown.enter->multiselect-summary#toggle keydown.space->multiselect-summary#toggle"
+        >
+          <div class="flex min-w-0 flex-1 items-center gap-2 overflow-hidden whitespace-nowrap" data-multiselect-summary-target="pillContainer">
+            <% visible_contract_options.each do |title, contract_id| %>
+              <button
+                type="button"
+                class="inline-flex max-w-44 shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-300"
+                data-action="click->multiselect-summary#remove"
+                data-multiselect-summary-value-param="<%= contract_id %>"
+              >
+                <span class="truncate"><%= title %></span>
+                <span aria-hidden="true" class="text-amber-700">&times;</span>
+              </button>
+            <% end %>
+            <% if hidden_contract_count.positive? %>
+              <span class="inline-flex shrink-0 items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200">+ <%= hidden_contract_count %> more</span>
+            <% end %>
+          </div>
+          <span class="<%= "hidden" if selected_contract_options.any? %> min-w-0 flex-1 truncate text-gray-500" data-multiselect-summary-target="placeholder">All uploaded contracts</span>
+          <svg class="h-4 w-4 shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+          </svg>
+        </div>
+        <div class="absolute z-10 mt-2 hidden max-h-72 w-full overflow-y-auto rounded-lg bg-white p-3 shadow-lg ring-1 ring-black/5" data-multiselect-summary-target="menu">
+          <% if @contract_filter_options.any? %>
+            <div class="space-y-2">
+              <% @contract_filter_options.each do |title, contract_id| %>
+                <label class="flex items-start gap-2 rounded-md px-2 py-1.5 hover:bg-gray-50">
+                  <%= check_box_tag "contract_ids[]", contract_id, @selected_contract_ids.include?(contract_id.to_s), id: "alerts_contract_#{contract_id}", class: "mt-0.5 rounded border-gray-300 text-amber-600 focus:ring-amber-600", data: { multiselect_summary_target: "checkbox", action: "change->multiselect-summary#sync", label: title } %>
+                  <span class="text-sm text-gray-700"><%= title %></span>
+                </label>
+              <% end %>
+            </div>
+          <% else %>
+            <p class="px-2 py-1 text-sm text-gray-500">No uploaded contracts yet.</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <%= form.submit "Filter", class: "rounded-lg bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 cursor-pointer" %>
+      <% if @selected_buckets != ["active"] || @selected_contract_ids.any? %>
+        <%= link_to "Clear", alerts_path, class: "rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900" %>
       <% end %>
     </div>
-    <p class="mt-3 text-xs text-gray-500"><%= selected_option[:description] %></p>
-  </div>
+  <% end %>
 
   <%# Filtered list %>
   <% if @filtered_alerts.any? %>
     <div>
-      <h3 class="mb-3 text-sm font-semibold text-gray-700"><%= selected_option[:label] %> Alerts (<%= @filtered_alerts.size %>)</h3>
-      <div class="space-y-3">
-        <% @filtered_alerts.each do |alert| %>
-          <% urgency = if @selected_bucket == "scheduled"
-            :scheduled
-          elsif alert.overdue_for_preference?(@alert_preference)
+        <h3 class="mb-3 text-sm font-semibold text-gray-700"><%= alerts_heading %> (<%= @filtered_alerts.size %>)</h3>
+        <div class="space-y-3">
+          <% @filtered_alerts.each do |alert| %>
+          <% urgency = if alert.overdue_for_preference?(@alert_preference)
             :overdue
           elsif alert.due_today_for_preference?(@alert_preference)
             :today
@@ -67,8 +160,8 @@
       <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
       </svg>
-      <h3 class="mt-4 text-sm font-semibold text-gray-900">No <%= selected_option[:label].downcase %> alerts</h3>
-      <p class="mt-2 text-sm text-gray-500">Try a different filter to review alerts in another timeframe.</p>
+      <h3 class="mt-4 text-sm font-semibold text-gray-900">No matching alerts</h3>
+      <p class="mt-2 text-sm text-gray-500">Try a different filter to review alerts in another timeframe or contract set.</p>
     </div>
   <% end %>
 

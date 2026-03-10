@@ -14,10 +14,16 @@ class AlertsController < ApplicationController
     alerts = alerts.where(status: params[:status]) if params[:status].present?
 
     @alert_preference = AlertPreference.for(Current.user, Current.organization)
-    @selected_bucket = params[:bucket].presence_in(BUCKETS) || "active"
+    @contract_filter_options = Current.organization.contracts
+                                               .where.not(uploaded_by_id: nil)
+                                               .order(:title)
+                                               .pluck(:title, :id)
+    @selected_buckets = selected_buckets
+    @selected_contract_ids = selected_contract_ids
+    alerts = apply_contract_filter(alerts)
     alerts_by_bucket = partition_alerts_by_bucket(alerts.to_a, @alert_preference)
     @bucket_counts = alerts_by_bucket.transform_values(&:size)
-    @filtered_alerts = alerts_by_bucket.fetch(@selected_bucket, [])
+    @filtered_alerts = @selected_buckets.flat_map { |bucket| alerts_by_bucket.fetch(bucket, []) }
     @acknowledged_alerts_count = AlertRecipient.where(user_id: Current.user.id)
                                               .where.not(read_at: nil)
                                               .count
@@ -58,6 +64,25 @@ class AlertsController < ApplicationController
       "upcoming" => alerts.select { |alert| alert.trigger_date > Date.current && alert.trigger_date <= Date.current + Alert::UPCOMING_HORIZON_DAYS },
       "scheduled" => alerts.select { |alert| alert.trigger_date > Date.current + Alert::UPCOMING_HORIZON_DAYS }
     }
+  end
+
+  def selected_buckets
+    selected = Array(params[:buckets]).filter_map { |bucket| bucket.presence_in(BUCKETS) }
+    return selected if selected.present?
+    return BUCKETS if params[:buckets_filter_present].present?
+
+    [ "active" ]
+  end
+
+  def selected_contract_ids
+    valid_contract_ids = Current.organization.contracts.where.not(uploaded_by_id: nil).pluck(:id).map(&:to_s)
+    Array(params[:contract_ids]).reject(&:blank?).select { |contract_id| valid_contract_ids.include?(contract_id) }
+  end
+
+  def apply_contract_filter(alerts)
+    return alerts if @selected_contract_ids.empty?
+
+    alerts.joins(:contract).where(contracts: { id: @selected_contract_ids })
   end
 
   def set_alert

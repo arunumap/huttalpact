@@ -24,7 +24,8 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
   test "index defaults to active alerts filter" do
     get alerts_path
     assert_response :success
-    assert_select '[data-alerts-filter="active"][data-alerts-selected="true"]', count: 1
+    assert_select '[data-alerts-bucket-multiselect="true"] input[name="buckets[]"][value="active"][checked="checked"]', count: 1
+    assert_select '[data-controller="multiselect-summary"] button[data-multiselect-summary-value-param="active"]', count: 1
     assert_select alert_frame_selector(:expiry_warning), count: 1
     assert_select alert_frame_selector(:overdue_alert), count: 1
     assert_select alert_frame_selector(:sent_alert), count: 1
@@ -33,18 +34,18 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "index filters upcoming alerts" do
-    get alerts_path, params: { bucket: "upcoming" }
+    get alerts_path, params: { buckets: [ "upcoming" ] }
     assert_response :success
-    assert_select '[data-alerts-filter="upcoming"][data-alerts-selected="true"]', count: 1
+    assert_select 'input[name="buckets[]"][value="upcoming"][checked="checked"]', count: 1
     assert_select alert_frame_selector(:renewal_upcoming), count: 1
     assert_select alert_frame_selector(:expiry_warning), count: 0
     assert_select alert_frame_selector(:scheduled_far_future), count: 0
   end
 
   test "index filters scheduled alerts" do
-    get alerts_path, params: { bucket: "scheduled" }
+    get alerts_path, params: { buckets: [ "scheduled" ] }
     assert_response :success
-    assert_select '[data-alerts-filter="scheduled"][data-alerts-selected="true"]', count: 1
+    assert_select 'input[name="buckets[]"][value="scheduled"][checked="checked"]', count: 1
     assert_select alert_frame_selector(:scheduled_far_future), count: 1
     assert_select alert_frame_selector(:renewal_upcoming), count: 0
     assert_select alert_frame_selector(:expiry_warning), count: 0
@@ -53,9 +54,9 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
   test "index filters overdue alerts" do
     stale_alert = create_alert_for_current_user(trigger_date: 20.days.ago.to_date, alert_type: "expiry_warning")
 
-    get alerts_path, params: { bucket: "overdue" }
+    get alerts_path, params: { buckets: [ "overdue" ] }
     assert_response :success
-    assert_select '[data-alerts-filter="overdue"][data-alerts-selected="true"]', count: 1
+    assert_select 'input[name="buckets[]"][value="overdue"][checked="checked"]', count: 1
     assert_select alert_frame_selector(stale_alert), count: 1
     assert_select alert_frame_selector(:overdue_alert), count: 0
     assert_select alert_frame_selector(:sent_alert), count: 0
@@ -65,9 +66,9 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
   test "index filters due today alerts by alert window end date" do
     due_today_alert = create_alert_for_current_user(trigger_date: 14.days.ago.to_date, alert_type: "expiry_warning")
 
-    get alerts_path, params: { bucket: "today" }
+    get alerts_path, params: { buckets: [ "today" ] }
     assert_response :success
-    assert_select '[data-alerts-filter="today"][data-alerts-selected="true"]', count: 1
+    assert_select 'input[name="buckets[]"][value="today"][checked="checked"]', count: 1
     assert_select alert_frame_selector(due_today_alert), count: 1
     assert_select alert_frame_selector(:expiry_warning), count: 0
   end
@@ -81,7 +82,7 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
       message: "Custom — milestone reminder"
     )
 
-    get alerts_path, params: { bucket: "active" }
+    get alerts_path, params: { buckets: [ "active" ] }
     assert_response :success
     assert_select alert_frame_selector(milestone_alert), count: 1
     assert_match "in 12 days", response.body
@@ -89,9 +90,99 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "index falls back to active filter for invalid bucket" do
-    get alerts_path, params: { bucket: "invalid" }
+    get alerts_path, params: { buckets: [ "invalid" ] }
     assert_response :success
-    assert_select '[data-alerts-filter="active"][data-alerts-selected="true"]', count: 1
+    assert_select 'input[name="buckets[]"][value="active"][checked="checked"]', count: 1
+  end
+
+  test "index supports selecting multiple buckets" do
+    get alerts_path, params: { buckets: [ "active", "upcoming" ] }
+
+    assert_response :success
+    assert_select 'input[name="buckets[]"][value="active"][checked="checked"]', count: 1
+    assert_select 'input[name="buckets[]"][value="upcoming"][checked="checked"]', count: 1
+    assert_select alert_frame_selector(:expiry_warning), count: 1
+    assert_select alert_frame_selector(:renewal_upcoming), count: 1
+  end
+
+  test "bucket summary collapses additional selections into a more pill" do
+    get alerts_path, params: { buckets: [ "active", "overdue", "today", "upcoming" ] }
+
+    assert_response :success
+    assert_select '[data-alerts-bucket-multiselect="true"] button[data-multiselect-summary-value-param]', count: 3
+    assert_select '[data-alerts-bucket-multiselect="true"] span', text: /\+ 1 more/
+  end
+
+  test "index filters alerts by selected contracts" do
+    Membership.find_or_create_by!(user: users(:two), organization: organizations(:one)) do |membership|
+      membership.role = Membership::MEMBER_ROLE
+    end
+
+    other_user_contract = Contract.create!(
+      organization: organizations(:one),
+      title: "Vendor Contract Uploaded by Another User",
+      vendor_name: "Shared Vendor",
+      status: "active",
+      contract_type: "service_agreement",
+      direction: "inbound",
+      start_date: Date.current,
+      end_date: 1.year.from_now.to_date,
+      extraction_status: "pending",
+      uploaded_by: users(:two)
+    )
+    other_uploader_alert = Alert.create!(
+      organization: organizations(:one),
+      contract: other_user_contract,
+      alert_type: "expiry_warning",
+      trigger_date: Date.current,
+      status: "pending",
+      message: "Shared vendor expires soon"
+    )
+    AlertRecipient.create!(alert: other_uploader_alert, user: users(:one), channel: "in_app")
+
+    get alerts_path, params: { contract_ids: [ contracts(:landscaping).id.to_s ] }
+
+    assert_response :success
+    assert_select alert_frame_selector(:expiry_warning), count: 1
+    assert_select alert_frame_selector(other_uploader_alert), count: 0
+    assert_select 'input[name="contract_ids[]"][value=?][checked="checked"]', contracts(:landscaping).id.to_s, count: 1
+    assert_select "button[data-multiselect-summary-value-param='#{contracts(:landscaping).id}']", text: /Landscaping Services/
+  end
+
+  test "index shows all buckets when filter is present but no buckets are selected" do
+    get alerts_path, params: { buckets_filter_present: "1" }
+
+    assert_response :success
+    assert_select alert_frame_selector(:expiry_warning), count: 1
+    assert_select alert_frame_selector(:renewal_upcoming), count: 1
+    assert_select alert_frame_selector(:scheduled_far_future), count: 1
+  end
+
+  test "index supports selecting multiple contracts" do
+    other_alert = create_alert_for_current_user(
+      trigger_date: Date.current,
+      alert_type: "expiry_warning",
+      contract: contracts(:hvac_maintenance)
+    )
+
+    get alerts_path, params: { contract_ids: [ contracts(:landscaping).id.to_s, contracts(:hvac_maintenance).id.to_s ] }
+
+    assert_response :success
+    assert_select alert_frame_selector(:expiry_warning), count: 1
+    assert_select alert_frame_selector(other_alert), count: 1
+  end
+
+  test "contract summary collapses additional selections into a more pill" do
+    get alerts_path, params: { contract_ids: [
+      contracts(:hvac_maintenance).id.to_s,
+      contracts(:landscaping).id.to_s,
+      contracts(:expired_insurance).id.to_s,
+      contracts(:commercial_lease).id.to_s
+    ] }
+
+    assert_response :success
+    assert_select '[data-alerts-contract-multiselect="true"] button[data-multiselect-summary-value-param]', count: 3
+    assert_select '[data-alerts-contract-multiselect="true"] span', text: /\+ 1 more/
   end
 
   test "acknowledge marks alert as acknowledged" do
@@ -226,10 +317,10 @@ class AlertsControllerTest < ActionDispatch::IntegrationTest
     "turbo-frame#alert_#{alert.id}"
   end
 
-  def create_alert_for_current_user(trigger_date:, alert_type:, message: nil, status: "pending")
+  def create_alert_for_current_user(trigger_date:, alert_type:, message: nil, status: "pending", contract: contracts(:hvac_maintenance))
     alert = Alert.create!(
       organization: organizations(:one),
-      contract: contracts(:hvac_maintenance),
+      contract: contract,
       alert_type: alert_type,
       trigger_date: trigger_date,
       status: status,
