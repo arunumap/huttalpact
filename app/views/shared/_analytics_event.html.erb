@@ -1,0 +1,6 @@
+<% if Rails.env.production? %>
+  <div data-controller="analytics-event"
+       data-analytics-event-name-value="<%= event_name %>"
+       data-analytics-event-params-value="<%= event_params.to_json %>"
+       hidden></div>
+<% end %>

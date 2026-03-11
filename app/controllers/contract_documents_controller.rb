@@ -15,16 +15,18 @@ class ContractDocumentsController < ApplicationController
 
     if @contract_document.save
       log_audit("updated", contract: @contract, details: "Uploaded document: #{@contract_document.file.filename}")
-      track_analytics_event("document_uploaded", document_type: @contract_document.document_type)
       respond_to do |format|
         format.turbo_stream do
           render turbo_stream: turbo_stream.append(
             "contract_documents",
             partial: "contract_documents/contract_document",
             locals: { contract_document: @contract_document }
-          ) + turbo_stream.update("document_upload_flash", partial: "contract_documents/upload_flash", locals: { message: "#{@contract_document.filename} uploaded successfully. Extracting text...", type: "success" }) + turbo_stream.update("empty_documents_state", "")
+          ) + turbo_stream.update("document_upload_flash", partial: "contract_documents/upload_flash", locals: { message: "#{@contract_document.filename} uploaded successfully. Extracting text...", type: "success" }) + turbo_stream.update("empty_documents_state", "") + turbo_stream.append("analytics_events", partial: "shared/analytics_event", locals: { event_name: "document_uploaded", event_params: { document_type: @contract_document.document_type } })
         end
-        format.html { redirect_to @contract, notice: "Document uploaded successfully." }
+        format.html do
+          track_analytics_event("document_uploaded", document_type: @contract_document.document_type)
+          redirect_to @contract, notice: "Document uploaded successfully."
+        end
       end
     else
       respond_to do |format|

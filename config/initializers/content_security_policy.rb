@@ -10,9 +10,9 @@ Rails.application.configure do
     policy.font_src    :self, :data
     policy.img_src     :self, :data, :https
     policy.object_src  :none
-    policy.script_src  :self
+    policy.script_src  :self, "https://www.googletagmanager.com"
     policy.style_src   :self, "'unsafe-inline'"
-    policy.connect_src :self
+    policy.connect_src :self, "https://www.google-analytics.com", "https://region1.google-analytics.com", "https://www.googleadservices.com"
     policy.frame_ancestors :none
     policy.base_uri    :self
     policy.form_action :self
