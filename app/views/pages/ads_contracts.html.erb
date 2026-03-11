@@ -3,6 +3,26 @@
 <% content_for :meta_robots, "noindex, nofollow" %>
 <% content_for :canonical_url, ads_contracts_landing_url %>
 
+<% content_for :head do %>
+  <% if Rails.env.production? %>
+    <!-- Google Ads conversion event - fires on signup form submit -->
+    <script>
+      function gtagSendEvent(url) {
+        var callback = function () {
+          if (typeof url === 'string') {
+            window.location = url;
+          }
+        };
+        gtag('event', 'conversion_event_signup', {
+          'event_callback': callback,
+          'event_timeout': 2000,
+        });
+        return false;
+      }
+    </script>
+  <% end %>
+<% end %>
+
 <% signup_params = @ads_signup_params || {} %>
 <% dmm_term = @dmm_term %>
 <% hero_headline = dmm_term.present? ? "Never miss critical #{dmm_term.downcase} deadlines again" : "Never miss a lease or vendor contract deadline again" %>
@@ -54,7 +74,8 @@ end %>
         <h2 class="text-2xl font-bold tracking-tight text-gray-900">Create your free account</h2>
         <p class="mt-2 text-sm text-gray-600">Start managing leases and contract deadlines in minutes.</p>
 
-        <%= form_with model: @user, url: registration_path, class: "mt-6 space-y-4" do |form| %>
+        <%= form_with model: @user, url: registration_path, class: "mt-6 space-y-4",
+              html: { onsubmit: "if (typeof gtag === 'function') { gtag('event', 'conversion_event_signup'); }" } do |form| %>
           <% signup_params.each do |key, value| %>
             <%= hidden_field_tag key, value %>
           <% end %>
