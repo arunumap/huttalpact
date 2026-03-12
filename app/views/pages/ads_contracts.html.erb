@@ -72,7 +72,7 @@ end %>
         <p class="mt-2 text-sm text-gray-600">Start managing contract deadlines in minutes. No credit card required.</p>
 
         <%= form_with model: @user, url: registration_path, class: "mt-6 space-y-4",
-              html: { onsubmit: "if (typeof gtag === 'function') { gtag('event', 'conversion_event_signup'); }" } do |form| %>
+              html: {} do |form| %>
           <% signup_params.each do |key, value| %>
             <%= hidden_field_tag key, value %>
           <% end %>

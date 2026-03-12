@@ -60,6 +60,7 @@ class RegistrationsController < ApplicationController
     UserMailer.welcome(@user).deliver_later
     start_new_session_for @user
     track_analytics_event("sign_up", method: "email", source: params[:source].presence)
+    track_conversion_event_signup
     destination = if @invitation&.organization&.onboarding_complete?
       root_path
     else
@@ -107,5 +108,9 @@ class RegistrationsController < ApplicationController
     else
       render :new, status: status
     end
+  end
+
+  def track_conversion_event_signup
+    flash[:ga_conversion_event] = { event: "conversion_event_signup", params: { source: params[:source].presence || "organic" } }.to_json
   end
 end

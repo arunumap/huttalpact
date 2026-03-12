@@ -22,4 +22,19 @@
       })();
     </script>
   <% end %>
+
+  <% if flash[:ga_conversion_event].present? %>
+    <script>
+      (function() {
+        try {
+          var data = <%= raw flash[:ga_conversion_event] %>;
+          if (typeof gtag === 'function' && data.event) {
+            gtag('event', data.event, data.params || {});
+          }
+        } catch(e) {
+          console.warn('GA conversion event error:', e);
+        }
+      })();
+    </script>
+  <% end %>
 <% end %>
