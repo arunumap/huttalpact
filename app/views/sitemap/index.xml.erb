@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <% @static_pages.each do |page| %>
+  <url>
+    <loc><%= page[:url] %></loc>
+    <changefreq><%= page[:changefreq] %></changefreq>
+    <priority><%= page[:priority] %></priority>
+  </url>
+  <% end %>
+
+  <% @blog_posts.each do |post| %>
+  <url>
+    <loc><%= blog_post_url(post.slug) %></loc>
+    <lastmod><%= post.updated_at.iso8601 %></lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <% end %>
+</urlset>

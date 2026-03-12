@@ -124,6 +124,9 @@ Rails.application.routes.draw do
   # Billing (legacy redirects)
   get "billing", to: redirect("/settings/billing")
 
+  # Sitemap
+  get "sitemap", to: "sitemap#index", as: :sitemap, defaults: { format: :xml }
+
   # Pricing
   resource :pricing, only: %i[show], controller: "pricing"
 

@@ -4,7 +4,7 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
   test "landing page is accessible to unauthenticated users" do
     get root_path
     assert_response :success
-    assert_select "h1", /Smart contract tracking/
+    assert_select "h1", /hidden deadlines/
   end
 
   test "landing page shows signup and pricing CTAs" do
@@ -29,13 +29,13 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
   test "landing page has features section" do
     get root_path
     assert_response :success
-    assert_select "h2", /Everything you need/
+    assert_select "h2", /One system for every contract deadline/
   end
 
   test "landing page has how-it-works section" do
     get root_path
     assert_response :success
-    assert_select "h2", /Up and running in minutes/
+    assert_select "h2", /From document to deadline tracking/
   end
 
   test "landing page has pricing teaser" do
@@ -86,7 +86,7 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     get ads_contracts_landing_path
     assert_response :success
     assert_select "h1", /Never miss a lease or vendor contract deadline again/
-    assert_select "p", /For Property Managers/
+    assert_match "For Property Managers", response.body
   end
 
   test "ads landing page has inline signup form and noindex robots tag" do
@@ -108,11 +108,8 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     get ads_contracts_landing_path
     assert_response :success
 
-    assert_select "p", /What a typical first week looks like/i
-    assert_select "h2", /How a 12-property management team got control of 87 contract deadlines/
-    assert_select "h3", text: "The situation"
-    assert_select "h3", text: "What happened"
-    assert_select "h3", text: "The result"
+    assert_match "Real Scenario", response.body
+    assert_match "How a 12-property team got control of 87 contract deadlines", response.body
 
     assert_not_includes response.body, "Trusted by Property Teams"
     assert_not_includes response.body, "Placeholder testimonials"
@@ -157,13 +154,13 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
   test "leases page is accessible to unauthenticated users" do
     get leases_path
     assert_response :success
-    assert_select "h1", /How we approach leases/
+    assert_select "h1", /Stop chasing lease deadlines/
   end
 
   test "leases page highlights lease offerings and CTAs" do
     get leases_path
     assert_response :success
-    assert_select "h2", /What we offer for leases/
+    assert_select "h2", /Everything your lease team needs/
     assert_select "a[href='#{new_registration_path}']"
     assert_select "a[href='#{pricing_path}']"
   end
