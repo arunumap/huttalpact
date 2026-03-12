@@ -1,37 +1,49 @@
-<footer class="border-t border-gray-200 bg-white">
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-    <div class="md:flex md:items-start md:justify-between">
-      <div class="mb-8 md:mb-0">
+<footer class="border-t border-gray-200/50 bg-gray-950">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">
+    <div class="grid grid-cols-2 gap-8 lg:grid-cols-5">
+      <%# Brand column %>
+      <div class="col-span-2">
         <div class="flex items-center">
-          <%= image_tag "pact_badger_log.svg", alt: "PactBadger", class: "h-12 w-auto" %>
+          <%= image_tag "pact_badger_log_light.svg", alt: "PactBadger", class: "h-10 w-auto" %>
         </div>
-        <p class="mt-3 max-w-xs text-sm text-gray-500">Smart contract tracking that won't let you forget.</p>
+        <p class="mt-4 max-w-xs text-sm leading-6 text-gray-400">
+          The contract intelligence platform — AI-powered extraction, review, and deadline tracking for teams managing complex agreements.
+        </p>
       </div>
 
-      <div class="grid grid-cols-2 gap-12 sm:gap-16">
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900">Product</h3>
-          <ul class="mt-4 space-y-3">
-            <li><%= link_to "Leases", leases_path, class: "text-sm text-gray-500 hover:text-gray-900" %></li>
-            <li><%= link_to "Pricing", pricing_path, class: "text-sm text-gray-500 hover:text-gray-900" %></li>
-            <li><%= link_to "Blog", blog_path, class: "text-sm text-gray-500 hover:text-gray-900" %></li>
-            <li><%= link_to "Sign Up", new_registration_path, class: "text-sm text-gray-500 hover:text-gray-900" %></li>
-            <li><%= link_to "Sign In", new_session_path, class: "text-sm text-gray-500 hover:text-gray-900" %></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="text-sm font-semibold text-gray-900">Company</h3>
-          <ul class="mt-4 space-y-3">
-            <li><span class="text-sm text-gray-500">About</span></li>
-            <li><%= link_to "Privacy", privacy_path, class: "text-sm text-gray-500 hover:text-gray-900" %></li>
-            <li><%= link_to "Terms", terms_path, class: "text-sm text-gray-500 hover:text-gray-900" %></li>
-          </ul>
-        </div>
+      <%# Product %>
+      <div>
+        <h3 class="text-sm font-semibold text-white">Product</h3>
+        <ul class="mt-4 space-y-3">
+          <li><%= link_to "Home", root_path, class: "text-sm text-gray-400 hover:text-white transition-colors" %></li>
+          <li><%= link_to "Solutions", solutions_path, class: "text-sm text-gray-400 hover:text-white transition-colors" %></li>
+          <li><%= link_to "Pricing", pricing_path, class: "text-sm text-gray-400 hover:text-white transition-colors" %></li>
+          <li><%= link_to "Blog", blog_path, class: "text-sm text-gray-400 hover:text-white transition-colors" %></li>
+        </ul>
+      </div>
+
+      <%# Resources %>
+      <div>
+        <h3 class="text-sm font-semibold text-white">Resources</h3>
+        <ul class="mt-4 space-y-3">
+          <li><%= link_to "Get Started", new_registration_path, class: "text-sm text-gray-400 hover:text-white transition-colors" %></li>
+          <li><%= link_to "Sign In", new_session_path, class: "text-sm text-gray-400 hover:text-white transition-colors" %></li>
+        </ul>
+      </div>
+
+      <%# Company %>
+      <div>
+        <h3 class="text-sm font-semibold text-white">Company</h3>
+        <ul class="mt-4 space-y-3">
+          <li><%= link_to "Privacy", privacy_path, class: "text-sm text-gray-400 hover:text-white transition-colors" %></li>
+          <li><%= link_to "Terms", terms_path, class: "text-sm text-gray-400 hover:text-white transition-colors" %></li>
+        </ul>
       </div>
     </div>
 
-    <div class="mt-12 border-t border-gray-200 pt-8">
-      <p class="text-xs text-gray-400">&copy; <%= Date.current.year %> PactBadger. All rights reserved.</p>
+    <div class="mt-12 border-t border-gray-800 pt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <p class="text-xs text-gray-500">&copy; <%= Date.current.year %> SageFoundry LLC, d/b/a PactBadger. All rights reserved.</p>
+      <p class="text-xs text-gray-600">Contract intelligence for teams who never miss a deadline.</p>
     </div>
   </div>
 </footer>

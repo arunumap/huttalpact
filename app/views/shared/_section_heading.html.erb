@@ -1,0 +1,32 @@
+<%# Section heading with optional eyebrow badge and subtitle.
+     Locals:
+       eyebrow:   (String, optional)  — small label above heading
+       title:     (String, required)  — main heading text
+       subtitle:  (String, optional)  — paragraph below heading
+       dark:      (Boolean, optional) — light-on-dark variant
+       align:     (String, optional)  — "center" (default) or "left"
+       size:      (String, optional)  — "lg" (default) or "xl"
+%>
+<% dark = local_assigns.fetch(:dark, false) %>
+<% align = local_assigns.fetch(:align, "center") %>
+<% size = local_assigns.fetch(:size, "lg") %>
+<% align_class = align == "center" ? "text-center mx-auto max-w-2xl" : "" %>
+<% heading_size = size == "xl" ? "text-4xl sm:text-5xl" : "text-3xl sm:text-4xl" %>
+
+<div class="<%= align_class %>">
+  <% if local_assigns[:eyebrow].present? %>
+    <p class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider
+              <%= dark ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100 text-amber-700' %>">
+      <%= eyebrow %>
+    </p>
+  <% end %>
+  <h2 class="<%= 'mt-4' if local_assigns[:eyebrow].present? %> <%= heading_size %> font-bold tracking-tight
+             <%= dark ? 'text-white' : 'text-gray-900' %>">
+    <%= title %>
+  </h2>
+  <% if local_assigns[:subtitle].present? %>
+    <p class="mt-4 text-lg leading-8 <%= dark ? 'text-gray-400' : 'text-gray-600' %>">
+      <%= subtitle %>
+    </p>
+  <% end %>
+</div>

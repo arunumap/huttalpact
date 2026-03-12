@@ -9,14 +9,17 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
   test "show renders pricing page when logged in" do
     get pricing_path
     assert_response :success
-    assert_select "h2", text: /Simple, transparent pricing/
+    assert_select "h1", text: /Simple, transparent pricing/
   end
 
   test "show renders pricing page when logged out" do
     sign_out
     get pricing_path
     assert_response :success
-    assert_select "h2", text: /Simple, transparent pricing/
+    assert_select "h1", text: /Simple, transparent pricing/
+    assert_select "a[href='#{pricing_path}']", text: "Pricing"
+    assert_select "a[href='#{solutions_path}']", text: "Solutions"
+    assert_select "a[href='#{blog_path}']", text: "Blog"
   end
 
   test "show displays a card for each visible pricing tier" do
@@ -90,7 +93,7 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     tiers = PlanCatalogService.active_tiers_for_pricing
     annual_priced_tier_count = tiers.count { |tier| tier.annual_price_cents.to_i.positive? }
 
-    assert_select "div[data-controller='pricing-toggle']", 1
+    assert_select "div[data-controller~='pricing-toggle']", 1
     assert_select "button[data-action='click->pricing-toggle#selectMonthly'][data-pricing-toggle-target='monthlyBtn']", 1
     assert_select "button[data-action='click->pricing-toggle#selectAnnual'][data-pricing-toggle-target='annualBtn']", 1
     assert_select "div[data-pricing-toggle-target='planCard'][data-pricing-toggle-monthly-price][data-pricing-toggle-annual-price]", tiers.size
@@ -100,7 +103,7 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
   test "pricing page shows FAQ section" do
     get pricing_path
     assert_response :success
-    assert_match "Frequently Asked Questions", response.body
+    assert_match "Frequently asked questions", response.body
     assert_match "Can I change plans later?", response.body
   end
 
@@ -110,7 +113,7 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     get pricing_path
     assert_response :success
     assert_match "After included extractions:", response.body
-    assert_match "$1.25 per additional extraction", response.body
+    assert_match "$1.25/extraction", response.body
   end
 
   test "guest sees sign up links instead of upgrade buttons" do
@@ -119,7 +122,7 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_match "Get Started", response.body
     assert_match "Sign In", response.body
-    assert_match "Sign Up", response.body
+    assert_match "Start Free", response.body
   end
 
   test "guest free tier uses non-highlight card style" do

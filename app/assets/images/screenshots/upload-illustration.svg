@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 580" width="660" height="580" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fffbeb;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#fef9e7;stop-opacity:1"/>
+    </linearGradient>
+    <filter id="outerShadow" x="-6%" y="-4%" width="112%" height="114%">
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#000933" flood-opacity="0.10"/>
+    </filter>
+    <filter id="tileShadow" x="-6%" y="-8%" width="115%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="#000933" flood-opacity="0.07"/>
+    </filter>
+  </defs>
+
+  <!--
+    LAYOUT (centered card):
+    Title block:   y=28
+    Main card:     x=80, y=80, w=500, h=420
+      Upload header: y=100
+      Drop zone:     y=148, h=140
+      File row:      y=300, h=50
+      CTA button:    y=362, h=36
+      Sub-text:      y=412
+    Skip link:     y=460
+  -->
+
+  <!-- Page title -->
+  <text x="330" y="44" font-size="20" font-weight="700" fill="#000933" text-anchor="middle" letter-spacing="-0.5">New Contract</text>
+  <text x="330" y="62" font-size="10" fill="#000933" opacity="0.38" text-anchor="middle">Upload a contract document and let AI fill in the details, or enter them manually.</text>
+
+  <!-- Main card -->
+  <rect x="80" y="80" width="500" height="420" rx="14" fill="url(#cardGrad)" filter="url(#outerShadow)"/>
+
+  <!-- ── UPLOAD HEADER ── -->
+  <!-- Sparkle icon box -->
+  <rect x="104" y="104" width="36" height="36" rx="8" fill="#fef3c7"/>
+  <!-- sparkle paths -->
+  <text x="122" y="127" font-size="16" fill="#f59e0b" text-anchor="middle">✦</text>
+
+  <text x="150" y="122" font-size="14" font-weight="700" fill="#000933">Upload your contract</text>
+  <text x="150" y="137" font-size="9.5" fill="#000933" opacity="0.4">AI will automatically extract all the details for you</text>
+
+  <!-- ── DROP ZONE ── dashed border -->
+  <rect x="104" y="152" width="432" height="140" rx="10" fill="white" fill-opacity="0.6"
+        stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,4"/>
+
+  <!-- Cloud upload icon -->
+  <!-- cloud body -->
+  <path d="M306,220 Q294,220 294,210 Q294,200 304,200 Q305,192 314,192 Q322,192 324,200 Q332,200 332,210 Q332,220 320,220 Z"
+        fill="none" stroke="#f59e0b" stroke-width="2" stroke-linejoin="round"/>
+  <!-- arrow up -->
+  <line x1="313" y1="218" x2="313" y2="208" stroke="#f59e0b" stroke-width="2"/>
+  <polyline points="309,212 313,207 317,212" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linejoin="round"/>
+
+  <text x="320" y="248" font-size="10" font-weight="700" fill="#000933" opacity="0.7" text-anchor="middle">1 file selected — drop more or click to add</text>
+  <text x="320" y="264" font-size="9" fill="#000933" opacity="0.35" text-anchor="middle">PDF, DOCX, or TXT up to 25MB each</text>
+
+  <!-- ── FILE ROW ── -->
+  <rect x="104" y="304" width="432" height="50" rx="8" fill="white" filter="url(#tileShadow)" stroke="#000933" stroke-opacity="0.08" stroke-width="1"/>
+  <!-- doc icon -->
+  <rect x="118" y="316" width="16" height="20" rx="2" fill="none" stroke="#000933" stroke-opacity="0.3" stroke-width="1.2"/>
+  <line x1="122" y1="321" x2="130" y2="321" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
+  <line x1="122" y1="325" x2="130" y2="325" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
+  <line x1="122" y1="329" x2="128" y2="329" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
+  <!-- filename -->
+  <text x="142" y="325" font-size="9.5" font-weight="700" fill="#000933">SaaS_Agreement_Sage_Foundry_CTP-SAAS-2026-00218.docx</text>
+  <text x="142" y="340" font-size="8.5" fill="#000933" opacity="0.35">30.2 KB</text>
+  <!-- X button -->
+  <text x="522" y="333" font-size="13" fill="#000933" opacity="0.25" text-anchor="middle">×</text>
+
+  <!-- ── CTA BUTTON ── -->
+  <rect x="104" y="366" width="432" height="38" rx="8" fill="#f59e0b"/>
+  <text x="320" y="390" font-size="11" font-weight="700" fill="white" text-anchor="middle">Upload 1 file &amp; Extract with AI</text>
+
+  <!-- Sub-text -->
+  <text x="320" y="420" font-size="9" fill="#000933" opacity="0.35" text-anchor="middle">A draft contract will be created and AI will extract all details automatically</text>
+
+  <!-- ── SKIP LINK ── -->
+  <!-- pencil icon -->
+  <line x1="268" y1="462" x2="274" y2="456" stroke="#000933" stroke-opacity="0.3" stroke-width="1.2"/>
+  <line x1="268" y1="462" x2="274" y2="462" stroke="#000933" stroke-opacity="0.3" stroke-width="1.2"/>
+  <text x="282" y="463" font-size="10" fill="#000933" opacity="0.4">Skip upload, enter manually</text>
+
+</svg>

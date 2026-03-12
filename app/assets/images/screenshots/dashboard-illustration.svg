@@ -1,0 +1,160 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 620" width="860" height="620" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#f7f9ff;stop-opacity:1"/>
+    </linearGradient>
+    <filter id="outerShadow" x="-6%" y="-4%" width="112%" height="114%">
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#000933" flood-opacity="0.10"/>
+    </filter>
+    <filter id="tileShadow" x="-6%" y="-8%" width="115%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="5" flood-color="#000933" flood-opacity="0.07"/>
+    </filter>
+    <filter id="rowShadow" x="-4%" y="-10%" width="108%" height="130%">
+      <feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#000933" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <!--
+    LAYOUT:
+    Main card: x=28, y=20, w=804, h=580
+    Header: y=20–90
+    Stat tiles: y=98, h=90, 4 tiles
+    Upcoming Renewals panel: y=204, h=150
+    Expiring Contracts panel: y=368, h=220
+  -->
+
+  <!-- Main card -->
+  <rect x="28" y="20" width="804" height="580" rx="14" fill="url(#cardGrad)" filter="url(#outerShadow)"/>
+  <rect x="28" y="20" width="804" height="5" rx="3" fill="#000933" opacity="0.07"/>
+
+  <!-- ── HEADER ── -->
+  <text x="56" y="62" font-size="20" font-weight="700" fill="#000933" letter-spacing="-0.5">Welcome back, Joe!</text>
+  <text x="56" y="80" font-size="10" fill="#000933" opacity="0.38">Here's an overview of your contracts and upcoming deadlines.</text>
+
+  <!-- Add Contract button -->
+  <rect x="668" y="48" width="136" height="30" rx="7" fill="#f59e0b"/>
+  <text x="685" y="67" font-size="11" font-weight="700" fill="white">+ Add Contract</text>
+
+  <!-- ── STAT TILES  y=98, h=90, gap=10 ── -->
+  <!-- tile widths: (804-56-56 - 3*10) / 4 = (692-30)/4 = 165.5 → use 162 each -->
+  <!-- x positions: 56, 228, 400, 572, 744 — but card ends at 832, so: -->
+  <!-- 4 tiles, total width = 804-56-28=720, each = (720-30)/4 = 172.5 → 172 -->
+  <!-- x: 56, 238, 420, 602 -->
+
+  <!-- Tile 1: Total Contracts -->
+  <rect x="44" y="98" width="186" height="90" rx="10" fill="white" filter="url(#tileShadow)" stroke="#000933" stroke-opacity="0.07" stroke-width="1"/>
+  <text x="60" y="122" font-size="9.5" fill="#000933" opacity="0.45">Total Contracts</text>
+  <text x="60" y="152" font-size="28" font-weight="700" fill="#2563eb">3</text>
+  <text x="91" y="152" font-size="9" fill="#000933" opacity="0.4">of 10 on Free plan</text>
+
+  <!-- Tile 2: Active -->
+  <rect x="238" y="98" width="186" height="90" rx="10" fill="white" filter="url(#tileShadow)" stroke="#000933" stroke-opacity="0.07" stroke-width="1"/>
+  <text x="254" y="122" font-size="9.5" fill="#000933" opacity="0.45">Active</text>
+  <text x="254" y="152" font-size="28" font-weight="700" fill="#5bb21e">3</text>
+  <text x="285" y="152" font-size="9" fill="#000933" opacity="0.4">$43,950.00/mo total</text>
+
+  <!-- Tile 3: Monthly Revenue -->
+  <rect x="432" y="98" width="186" height="90" rx="10" fill="white" filter="url(#tileShadow)" stroke="#000933" stroke-opacity="0.07" stroke-width="1"/>
+  <text x="448" y="122" font-size="9.5" fill="#000933" opacity="0.45">Monthly Revenue</text>
+  <text x="448" y="152" font-size="22" font-weight="700" fill="#5bb21e">$32,500.00</text>
+  <text x="448" y="168" font-size="8.5" fill="#000933" opacity="0.35">1 inbound contracts</text>
+
+  <!-- Tile 4: Monthly Spend -->
+  <rect x="626" y="98" width="186" height="90" rx="10" fill="white" filter="url(#tileShadow)" stroke="#000933" stroke-opacity="0.07" stroke-width="1"/>
+  <text x="642" y="122" font-size="9.5" fill="#000933" opacity="0.45">Monthly Spend</text>
+  <text x="642" y="152" font-size="22" font-weight="700" fill="#7c3aed">$11,450.00</text>
+  <text x="642" y="168" font-size="8.5" fill="#000933" opacity="0.35">2 outbound contracts</text>
+
+  <!-- ── UPCOMING RENEWALS PANEL  y=206, h=148 ── -->
+  <rect x="44" y="206" width="768" height="148" rx="10" fill="white" filter="url(#rowShadow)" stroke="#000933" stroke-opacity="0.07" stroke-width="1"/>
+
+  <!-- Panel header -->
+  <text x="64" y="232" font-size="13" font-weight="700" fill="#000933">Upcoming Renewals</text>
+
+  <!-- Day filter tabs -->
+  <rect x="604" y="220" width="68" height="22" rx="6" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="638" y="234" font-size="8.5" font-weight="700" fill="#f59e0b" text-anchor="middle">30 days  0</text>
+  <text x="692" y="234" font-size="8.5" fill="#000933" opacity="0.4">60 days  0</text>
+  <text x="746" y="234" font-size="8.5" fill="#000933" opacity="0.4">90 days  0</text>
+
+  <!-- Divider -->
+  <line x1="44" y1="246" x2="812" y2="246" stroke="#000933" stroke-opacity="0.07" stroke-width="1"/>
+
+  <!-- Empty state -->
+  <!-- Calendar icon -->
+  <rect x="410" y="268" width="20" height="18" rx="3" fill="none" stroke="#000933" stroke-opacity="0.2" stroke-width="1.5"/>
+  <line x1="416" y1="265" x2="416" y2="271" stroke="#000933" stroke-opacity="0.2" stroke-width="1.5"/>
+  <line x1="424" y1="265" x2="424" y2="271" stroke="#000933" stroke-opacity="0.2" stroke-width="1.5"/>
+  <line x1="410" y1="275" x2="430" y2="275" stroke="#000933" stroke-opacity="0.15" stroke-width="1"/>
+  <text x="420" y="308" font-size="10" fill="#000933" opacity="0.3" text-anchor="middle">No renewals in the next 30 days.</text>
+
+  <!-- ── EXPIRING CONTRACTS PANEL  y=368, h=216 ── -->
+  <rect x="44" y="368" width="768" height="216" rx="10" fill="white" filter="url(#rowShadow)" stroke="#000933" stroke-opacity="0.07" stroke-width="1"/>
+
+  <!-- Panel header -->
+  <text x="64" y="396" font-size="13" font-weight="700" fill="#000933">Expiring Contracts</text>
+  <text x="796" y="396" font-size="9.5" font-weight="700" fill="#f59e0b" text-anchor="end">View all</text>
+
+  <!-- Divider -->
+  <line x1="44" y1="406" x2="812" y2="406" stroke="#000933" stroke-opacity="0.07" stroke-width="1"/>
+
+  <!-- Column headers -->
+  <text x="64"  y="424" font-size="8" font-weight="700" fill="#000933" opacity="0.35" letter-spacing="0.5">CONTRACT</text>
+  <text x="270" y="424" font-size="8" font-weight="700" fill="#000933" opacity="0.35" letter-spacing="0.5">VENDOR</text>
+  <text x="410" y="424" font-size="8" font-weight="700" fill="#000933" opacity="0.35" letter-spacing="0.5">STATUS</text>
+  <text x="510" y="424" font-size="8" font-weight="700" fill="#000933" opacity="0.35" letter-spacing="0.5">DIRECTION</text>
+  <text x="650" y="424" font-size="8" font-weight="700" fill="#000933" opacity="0.35" letter-spacing="0.5">END DATE</text>
+  <text x="780" y="424" font-size="8" font-weight="700" fill="#000933" opacity="0.35" letter-spacing="0.5" text-anchor="end">DAYS LEFT</text>
+
+  <!-- Row divider -->
+  <line x1="44" y1="432" x2="812" y2="432" stroke="#000933" stroke-opacity="0.06" stroke-width="1"/>
+
+  <!-- Contract row 1 -->
+  <text x="64"  y="460" font-size="10" font-weight="700" fill="#f59e0b">Consulting Agreement</text>
+  <text x="270" y="460" font-size="10" fill="#000933" opacity="0.65">Sage Foundry</text>
+
+  <!-- Active badge -->
+  <rect x="406" y="448" width="48" height="18" rx="9" fill="none" stroke="#5bb21e" stroke-width="1.2"/>
+  <text x="430" y="460.5" font-size="8.5" font-weight="700" fill="#5bb21e" text-anchor="middle">Active</text>
+
+  <!-- Revenue badge -->
+  <rect x="504" y="448" width="56" height="18" rx="9" fill="none" stroke="#5bb21e" stroke-width="1.2"/>
+  <text x="532" y="460.5" font-size="8.5" font-weight="700" fill="#5bb21e" text-anchor="middle">Revenue</text>
+
+  <text x="650" y="460" font-size="10" fill="#000933" opacity="0.7">Mar 12, 2026</text>
+  <text x="780" y="460" font-size="10" font-weight="700" fill="#f59e0b" text-anchor="end">30 days</text>
+
+  <!-- Row divider -->
+  <line x1="64" y1="474" x2="796" y2="474" stroke="#000933" stroke-opacity="0.06" stroke-width="1"/>
+
+  <!-- Contract row 2 (faint placeholder) -->
+  <text x="64"  y="500" font-size="10" font-weight="700" fill="#2563eb">SaaS Agreement</text>
+  <text x="270" y="500" font-size="10" fill="#000933" opacity="0.65">Crestline Technology Partners</text>
+
+  <rect x="406" y="488" width="48" height="18" rx="9" fill="none" stroke="#5bb21e" stroke-width="1.2"/>
+  <text x="430" y="500.5" font-size="8.5" font-weight="700" fill="#5bb21e" text-anchor="middle">Active</text>
+
+  <rect x="504" y="488" width="56" height="18" rx="9" fill="none" stroke="#7c3aed" stroke-width="1.2"/>
+  <text x="532" y="500.5" font-size="8.5" font-weight="700" fill="#7c3aed" text-anchor="middle">Expense</text>
+
+  <text x="650" y="500" font-size="10" fill="#000933" opacity="0.7">Feb 9, 2027</text>
+  <text x="780" y="500" font-size="10" font-weight="700" fill="#000933" opacity="0.4" text-anchor="end">335 days</text>
+
+  <!-- Row divider -->
+  <line x1="64" y1="514" x2="796" y2="514" stroke="#000933" stroke-opacity="0.06" stroke-width="1"/>
+
+  <!-- Contract row 3 -->
+  <text x="64"  y="540" font-size="10" font-weight="700" fill="#2563eb">Lease Agreement</text>
+  <text x="270" y="540" font-size="10" fill="#000933" opacity="0.65">Sage Foundry</text>
+
+  <rect x="406" y="528" width="48" height="18" rx="9" fill="none" stroke="#5bb21e" stroke-width="1.2"/>
+  <text x="430" y="540.5" font-size="8.5" font-weight="700" fill="#5bb21e" text-anchor="middle">Active</text>
+
+  <rect x="504" y="528" width="56" height="18" rx="9" fill="none" stroke="#7c3aed" stroke-width="1.2"/>
+  <text x="532" y="540.5" font-size="8.5" font-weight="700" fill="#7c3aed" text-anchor="middle">Expense</text>
+
+  <text x="650" y="540" font-size="10" fill="#000933" opacity="0.7">Dec 31, 2026</text>
+  <text x="780" y="540" font-size="10" font-weight="700" fill="#000933" opacity="0.4" text-anchor="end">295 days</text>
+
+</svg>

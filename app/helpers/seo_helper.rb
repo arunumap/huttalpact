@@ -2,7 +2,7 @@
 
 module SeoHelper
   DEFAULT_SITE_NAME = "PactBadger"
-  DEFAULT_DESCRIPTION = "AI-powered contract tracking for SMBs. Upload contracts, auto-extract key dates and clauses, and never miss a renewal deadline again."
+  DEFAULT_DESCRIPTION = "PactBadger is the contract intelligence platform that extracts key terms with AI, surfaces hidden obligations, and alerts your team before deadlines slip."
   DEFAULT_OG_IMAGE = "og-image.png"
 
   # Renders all SEO meta tags in the <head>. Call from layouts.
@@ -37,6 +37,8 @@ module SeoHelper
       software_application_schema
     when :faq
       faq_schema(options[:items] || [])
+    when :how_to
+      how_to_schema(options[:name], options[:steps] || [])
     when :breadcrumb
       breadcrumb_schema(options[:items] || [])
     when :blog_posting
@@ -180,6 +182,24 @@ module SeoHelper
           "position" => index + 1,
           "name" => item[:name],
           "item" => item[:url]
+        }
+      end
+    }
+  end
+
+  def how_to_schema(name, steps)
+    return nil if steps.empty?
+
+    {
+      "@context" => "https://schema.org",
+      "@type" => "HowTo",
+      "name" => name,
+      "step" => steps.each_with_index.map do |step, index|
+        {
+          "@type" => "HowToStep",
+          "position" => index + 1,
+          "name" => step[:name],
+          "text" => step[:text]
         }
       end
     }

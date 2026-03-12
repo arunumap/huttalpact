@@ -2,221 +2,198 @@
 title: "Introducing AI-Powered Contract Review"
 category: "Product Updates"
 slug: "contract-review-rollout"
-excerpt: "PactBadger's new contract review workflow helps teams validate AI-extracted contract data faster with confidence scores, source excerpts, and structured editing for milestones and clauses."
-meta_description: "PactBadger's AI contract review helps teams validate extracted contract data with confidence scores and source excerpts."
+excerpt: "PactBadger’s new contract review workflow helps property management teams validate AI-extracted contract data faster with source excerpts, confidence-based triage, and structured editing for milestones and clauses."
+meta_description: "PactBadger’s AI contract review helps property management teams validate extracted contract data with source excerpts, confidence signals, and faster review workflows."
 ---
 
 # Introducing AI-Powered Contract Review
 
-If your team manages contracts with important dates, obligations, and renewal clauses, you know the problem: AI can pull data out of a document fast, but you still need a clear way to check it, correct it, and move on.
+If you manage leases, vendor agreements, and renewal deadlines, you already know the problem: extracting data is only half the job. The real work is reviewing what the AI found, fixing what matters, and moving on without slowing your team down.
 
-That is why we just rolled out **contract review** in PactBadger — a structured workflow for validating AI-extracted contract data before it goes live. It is built for operations, legal, and contract teams who need automated document extraction they can actually verify.
+That is why we rolled out **AI-powered contract review** in PactBadger.
 
-This release is directly shaped by what we kept hearing from users: if AI contract extraction is going to save time, it also needs to be **transparent**, **easy to validate**, and **easy to correct**.
+This new workflow gives property management teams a clearer way to validate AI-extracted contract data before it becomes part of the live contract record. Instead of treating AI output like a black box, PactBadger now shows reviewers what was found, why it was found, and where it came from in the document.
 
-That is exactly what this release is built to do.
+## The problem we wanted to solve
 
-## Why AI contract extraction needs a review workflow
+Most AI extraction tools are fast on the front end and messy on the back end.
 
-AI contract extraction is powerful, but the real bottleneck is not just pulling fields out of a document.
+They can pull dates, clauses, and values out of a document quickly, but then the reviewer gets stuck with questions like:
 
-The hard part is what comes next:
+- Which fields actually need my attention?
+- Where did this value come from?
+- Can I verify it without digging through the whole document?
+- What happens when the extracted data is complex, like milestones or clauses?
 
-- Can someone quickly tell which fields need attention?
-- Can they see the source text behind the extraction?
-- Can they correct a mistake without wrestling with messy data structures?
-- Can they move fast on the obvious fields without losing confidence in the rest?
+That gap matters. If review is slow, unclear, or frustrating, teams do not trust the output enough to use it confidently.
 
-That is the gap we wanted to close.
+We kept hearing the same thing from users: **do not just extract the data — help us verify it fast.**
 
-Our users were clear: they do not want a black box. They want contract automation that helps them move faster **without** taking away control. They want to understand what the system found, why it found it, and how to step in when human judgment is needed.
+## What is new in contract review
 
-So we built a review flow that feels more like reviewing with a sharp assistant and less like cleaning up a machine dump.
+The new review experience is built around one goal: make it easier to move from uploaded document to trusted contract record.
 
-## How the contract review workflow works
+Here is what the workflow looks like:
 
-The new contract review experience gives you a focused workspace for validating extracted contract data before it becomes part of your live contract record.
+1. **Upload** a contract document
+2. **Extract** contract data automatically with AI
+3. **Review** fields in a split view with the document on one side and extracted data on the other
+4. **Confirm or correct** what matters
+5. **Complete review** and move forward with confidence
 
-At a high level, here is what happens:
+That sounds simple, but the value comes from the details.
 
-1. **Upload** your contract documents (PDF, DOCX, or TXT).
-2. **Extract** — PactBadger pulls the text and runs AI contract analysis automatically.
-3. **Review** — a split view opens with the document on one side and extracted fields on the other.
-4. **Decide** — confirm, edit, mark as not found, or mark as not applicable for each field.
-5. **Complete** — once everything important is reviewed, activate the contract and move forward.
+## Review the right fields first
 
-That sounds simple on paper, but the magic is in the details.
+One of the biggest improvements is that review is no longer just a flat list of extracted fields.
 
-## Smart triage: see which extracted fields need attention first
+The interface now helps teams triage immediately:
 
-One of the biggest upgrades in this release is that review is no longer a flat list of fields.
+- **Needs Your Review** surfaces lower-confidence fields first
+- **Confident Extractions** makes easy approvals faster
+- **Reviewed** gives a clear record of what has already been handled
 
-Instead, the interface helps you triage immediately:
+That means your team can spend less time scanning everything with equal suspicion and more time focusing on the fields that actually need human judgment.
 
-- **Needs Your Review** — fields the AI is less certain about, highlighted so you can focus here first.
-- **Confident Extractions** — fields with high confidence scores, ready for quick confirmation.
-- **Reviewed** — a clear record of what has already been handled.
+For property managers reviewing rent dates, notice windows, obligations, and financial terms, knowing where to start saves real time.
 
-That means your team can focus energy where it matters instead of burning time scanning every single value with the same level of scrutiny.
+## Confidence that changes the workflow
 
-When you are reviewing a contract with dozens of structured details — dates, parties, obligations, financial terms — knowing where to start matters. A lot.
+Every vendor says their AI has confidence scores. That only matters if confidence changes what the user can do next.
 
-## Confidence-scored AI extraction with bulk accept
+In PactBadger, confidence is built into the review flow:
 
-Every AI-assisted workflow says it has "confidence," but confidence only helps if it changes what the user can do next.
+- High-confidence fields can be confirmed quickly
+- Straightforward batches can be approved with **Accept All**
+- Lower-confidence items are grouped where reviewers can see them immediately
 
-In our new review flow, each field comes with a confidence score, and that score organizes the work:
+This is not about reckless automation. It is about helping teams move quickly on obvious fields while staying careful where they need to be careful.
 
-- **Higher-confidence fields** can move quickly — confirm them individually or use the **Accept All** button to approve the batch in one click.
-- **Lower-confidence fields** surface in the "Needs Your Review" section so they are easier to spot and evaluate.
+## Source-backed review, not guesswork
 
-That is the kind of speed boost users asked us for: not reckless automation, but smart prioritization that lets teams breeze through straightforward documents and spend their time on the clauses, dates, and edge cases that actually need human attention.
+The most important part of this release is simple:
 
-## Source-backed contract validation, not guesswork
+**PactBadger shows the source excerpt behind the extraction.**
 
-This is the part we are most excited about.
+When the system extracts a date, clause, or value, reviewers can see the supporting text directly in the workflow. They do not just get the answer. They get the evidence.
 
-When PactBadger extracts a field, the review experience shows you the **source excerpt** behind it. You do not just get the answer — you get the supporting text too.
+That makes it much easier to:
 
-That means reviewers can:
+- validate a field quickly
+- understand the surrounding context
+- jump back to the relevant passage in the document
+- review with more confidence and less second-guessing
 
-- **See the exact text** the extraction was based on
-- **Understand the context** behind the value
-- **Click the excerpt** to jump back to that passage in the document
-- **Make decisions** with confidence instead of guesswork
+For dense contracts, that is a major usability improvement. Review should not feel like a scavenger hunt.
 
-When a system says, "Here is the contract start date, and here is the text I used to find it," you can validate it instantly instead of hunting through pages of contract language.
+## A tighter connection to the document
 
-### AI reasoning for deeper context
+We also wanted review to stay connected to the source material.
 
-We also surface AI reasoning where it is helpful. So the workflow shows not just *what* was extracted, but *why* the system believes it belongs there. That makes AI contract analysis much easier to verify in the moment — especially for complex or ambiguous provisions.
+So excerpts are not just decorative. They are part of the workflow:
 
-## Document-linked review for contract text
+- Click an excerpt to jump to the matching area in the document viewer
+- Review in context instead of flipping between screens
+- Reduce manual searching through pages of contract text
 
-We also wanted review to feel connected to the source material, not disconnected from it.
+That makes the experience feel less like cleaning up AI output and more like reviewing with a sharp assistant that shows its work.
 
-So when you see a source excerpt, it is not just decorative — it is part of the workflow:
+## Better handling for milestones and key clauses
 
-- **Click any excerpt** to jump to the matching passage in the document viewer.
-- **Validate fields** without manually hunting through pages of contract text.
-- **Reduce context-switching** — less scrolling, less second-guessing, fewer "wait, where did this come from?" moments.
+Structured contract data is where many review tools start to break down.
 
-For teams reviewing dense contract language or multi-page agreements, that is a very real quality-of-life improvement.
+Simple text fields are easy. But real contracts also include:
 
-## Structured editing for milestones and key clauses
+- recurring milestones
+- notice and renewal provisions
+- escalation triggers
+- clause-specific obligations
 
-A lot of review tools break down the moment the data gets more complex.
-
-Simple fields are one thing. But contracts are full of structured information — milestone schedules, recurring obligations, termination provisions, escalation triggers. Those details are valuable, and they can also become a UX nightmare if the only way to fix them is by editing raw data.
-
-Contract review solves this with **dedicated slide-out panels** for complex extracted data:
+Instead of forcing users to edit raw structured blobs, PactBadger now gives complex extracted data its own review UI.
 
 ### Milestones
 
-- Review each milestone as a standalone card: type, due date, recurrence, description.
-- Edit inline or remove milestones you do not need.
-- See the source excerpt and evidence status for each one.
+Milestones can now be reviewed as individual cards with clear fields for type, due date, recurrence, and description. Reviewers can edit or remove milestones directly and see the supporting evidence behind each one.
 
 ### Key clauses
 
-- Review extracted clauses individually: clause type, content, page reference, confidence.
-- Edit or remove clauses with a single click.
-- See why the AI flagged each clause with supporting document context.
+Key clauses can also be reviewed one at a time, with clause type, content, reference details, and supporting context surfaced in a more usable format.
 
-Instead of forcing users to edit blobs of structured text, PactBadger lets them work with meaningful labels, supporting details, and inline actions. That is a much better experience for real-world contracts, where the value is often hiding in notice requirements, escalation triggers, and buried clause language.
+That is a much better fit for real-world review work, where the most important information is often buried in notices, timelines, and exceptions.
 
-## Human-in-the-loop contract review, without the friction
+## Human-in-the-loop, without the friction
 
-We designed this feature around a pretty simple principle:
+We built this release around a simple principle:
 
 **AI should do the first draft. Humans should stay in control.**
 
 That is why the review actions are explicit and fast:
 
-- **Confirm** a value when it is right
-- **Edit** it when it is close but not quite there
-- **Not Found** when a field does not exist in the document
-- **Not Applicable** when a field does not belong for that contract type
+- **Confirm**
+- **Edit**
+- **Not Found**
+- **Not Applicable**
 
-This gives operations, legal, and contract teams a clean way to turn AI output into usable contract data without awkward workarounds.
+Those actions give teams a practical way to turn AI output into reliable contract data without awkward workarounds.
 
-Users are not forced into a yes/no decision. They have the tools to say, "This is right," "This needs a tweak," or "This does not belong here," and the system responds accordingly. That flexibility matters when you are dealing with real contracts instead of idealized sample data.
+## Why this matters
 
-## Faster contract data validation without cutting corners
+This release is not just about making the UI look better. It changes how quickly teams can get from document upload to a usable, trusted contract record.
 
-The big value of this feature is not just that it looks nicer. It changes how quickly teams can go from document upload to validated contract record.
+Contract review helps teams move faster by:
 
-Contract review removes the tradeoff between speed and accuracy by:
+- showing which fields need attention first
+- making easy approvals faster
+- bringing source evidence into the workflow
+- making corrections easier on complex data
 
-- **Organizing the work** — so reviewers know where to focus
-- **Surfacing confidence** — so obvious fields move fast
-- **Showing source evidence** — so verification happens in context
-- **Making corrections painless** — so edits do not slow down the workflow
+The result is a review experience that feels faster, clearer, and more trustworthy.
 
-The result is that teams spend less time on fields the AI got right and more time on the ones that actually need human judgment. That is a practical improvement for any team managing a portfolio of contracts.
+## Built from user feedback
 
-## This release is also about listening to users
+This release came directly from what users asked us for.
 
-We want to be clear about something: this feature did not come from us sitting in a room trying to make the UI look fancier.
+The message was consistent:
 
-It came from listening.
+- Show me why the AI extracted this
+- Help me focus on what actually needs review
+- Do not make me fight with complex data just to fix one thing
+- Let me move fast on the easy stuff
 
-The message from users was consistent:
+That feedback shaped this feature from top to bottom.
 
-- "Show me why the AI extracted this."
-- "Help me focus on what actually needs review."
-- "Do not make me fight with complex data just to fix one thing."
-- "Let me move fast on the easy stuff."
+## Getting better over time
 
-That feedback shaped this release from top to bottom.
+Another important part of this rollout happens behind the scenes.
 
-The result is a review experience that is not just more powerful, but more respectful of how people actually work. It recognizes that speed matters and great AI products need to support human judgment rather than hide behind automation.
+When teams confirm, edit, or correct extracted fields, those outcomes help us understand where the system is strong and where it needs improvement. That gives PactBadger a better foundation for improving extraction quality over time.
 
-We love building features like this because they are moments where the product gets closer to the real day-to-day needs of the people using it.
+So this feature is not just a one-time UI improvement. It is part of a larger loop:
 
-## Smarter AI contract extraction over time
+1. **Extract**
+2. **Review**
+3. **Learn**
+4. **Improve**
 
-Another exciting part of this rollout is what happens behind the scenes.
+That is the kind of feedback cycle we want throughout the product.
 
-When users review extracted fields — confirming, editing, or correcting — those outcomes feed back into our understanding of where the AI contract analysis is strong and where it can improve. That gives us a better foundation for tuning extraction behavior over time.
+## A better path from AI output to trusted data
 
-So this is not just a one-time UI improvement. It is part of a larger loop:
+If your team manages contracts with deadlines, obligations, renewals, or milestone dates, you do not just need AI to find the information. You need a workflow that helps you trust it.
 
-1. **Extract** — AI reads the document and pulls structured contract data
-2. **Review** — your team validates and corrects
-3. **Learn** — outcomes inform where the system is accurate and where it is not
-4. **Improve** — future extractions get better based on real usage
+That is what contract review is designed to do.
 
-That is exactly the kind of product cycle we want PactBadger to have.
+It gives teams:
 
-## Why this matters for contract teams
+- a faster path from extraction to validated data
+- clearer visibility into why AI made a recommendation
+- better handling for milestones and clauses
+- more control without giving up the speed of automation
 
-At the end of the day, this feature is about helping teams review contract data faster, with more clarity and less friction.
+We are excited about this launch because it improves both **speed** and **clarity** at the same time.
 
-If you manage contracts with deadlines, obligations, and renewal terms, you do not just need AI to *find* information. You need a workflow that helps your team verify it, clean it up, and move forward.
-
-That is what contract review delivers:
-
-- A clearer path from AI extraction to validated contract data
-- Better visibility into how AI reached its conclusions
-- Faster review of straightforward contracts
-- Cleaner handling of complex milestones, clauses, and obligations
-- More control without giving up the benefits of contract automation
-
-That combination is where the value really shows up.
-
-## We are excited about this launch
-
-This is one of those releases that feels especially important because it improves both **clarity** and **speed** at the same time.
-
-AI contract extraction is only as useful as the workflow around it. Contract review makes that workflow faster, clearer, and easier to validate.
-
-If you have been waiting for a review experience that feels more transparent, more structured, and more usable in the real world — it is here.
-
-And if you are one of the users who pushed us in this direction: thank you. Seriously. Your feedback made this better.
-
-We listened — and we think you are going to feel that in every part of this release.
+AI extraction is only useful if review is usable. This release makes that much better.
 
 ---
 
-Want to see the new AI contract review in action? [Upload a contract](/) and review the extracted fields — see how much faster it feels when the AI shows its work.
+Want to see the new review workflow in action? [Upload a contract](/) and see how much faster review feels when the AI shows its work.

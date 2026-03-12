@@ -124,6 +124,9 @@ Rails.application.routes.draw do
   # Billing (legacy redirects)
   get "billing", to: redirect("/settings/billing")
 
+  # Sitemap
+  get "sitemap", to: "sitemap#index", as: :sitemap, defaults: { format: :xml }
+
   # Pricing
   resource :pricing, only: %i[show], controller: "pricing"
 
@@ -140,7 +143,9 @@ Rails.application.routes.draw do
   # Static pages
   get "lp/contracts", to: "pages#ads_contracts", as: :ads_contracts_landing
   get "privacy", to: "pages#privacy", as: :privacy
-  get "leases", to: "pages#leases", as: :leases
+  get "solutions", to: "pages#solutions", as: :solutions
+  get "solutions/:slug", to: "pages#solution", as: :solution
+  get "leases", to: redirect("/solutions/leases")
 
   # Landing page (context-sensitive root)
   root "pages#home"
