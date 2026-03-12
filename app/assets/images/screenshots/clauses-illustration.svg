@@ -1,111 +1,122 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 600" width="660" height="600" font-family="Georgia, 'Times New Roman', serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 640" width="720" height="640" font-family="Georgia, 'Times New Roman', serif">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#f4f6ff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#eaedf8;stop-opacity:1" />
-    </linearGradient>
     <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#f7f9ff;stop-opacity:1" />
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#f7f9ff;stop-opacity:1"/>
     </linearGradient>
     <filter id="outerShadow" x="-6%" y="-4%" width="112%" height="114%">
-      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#000933" flood-opacity="0.10" />
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#000933" flood-opacity="0.10"/>
     </filter>
     <filter id="rowShadow" x="-4%" y="-10%" width="108%" height="130%">
-      <feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#000933" flood-opacity="0.07" />
+      <feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="#000933" flood-opacity="0.07"/>
     </filter>
-    <pattern id="dots" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="2" cy="2" r="1" fill="#000933" opacity="0.035"/>
-    </pattern>
   </defs>
 
-  <!-- Background -->
-  <rect width="660" height="600" rx="18" fill="url(#bgGrad)"/>
-  <rect width="660" height="600" rx="18" fill="url(#dots)"/>
+  <!--
+    LAYOUT:
+    Card: x=36, y=28, w=648, h=584
+    Header area: y=28–100
+    Divider: y=100
 
-  <!-- Decorative blobs -->
-  <circle cx="608" cy="68" r="80" fill="#5bb21e" opacity="0.055"/>
-  <circle cx="52" cy="540" r="100" fill="#ff7201" opacity="0.055"/>
+    6 rows, each h=82, gap=8
+    Row 1: y=108
+    Row 2: y=198
+    Row 3: y=288
+    Row 4: y=378
+    Row 5: y=468
+    Row 6: y=558
+    Card bottom: 558+82=640 → fits in 28+584=612... use h=596 → 28+596=624 ✓
+
+    Within each row (h=82):
+      Tag rect top:       R+12,  h=18, text baseline R+24
+      Main text line 1:   baseline R+48
+      Main text line 2:   baseline R+63
+  -->
 
   <!-- Main card -->
-  <rect x="36" y="28" width="588" height="544" rx="14" fill="url(#cardGrad)" filter="url(#outerShadow)"/>
-  <rect x="36" y="28" width="588" height="5" rx="3" fill="#000933" opacity="0.07"/>
+  <rect x="36" y="28" width="648" height="596" rx="14" fill="url(#cardGrad)" filter="url(#outerShadow)"/>
+  <rect x="36" y="28" width="648" height="5" rx="3" fill="#000933" opacity="0.07"/>
 
   <!-- HEADER -->
   <text x="64" y="70" font-size="18" font-weight="700" fill="#000933" letter-spacing="-0.4">Key Clauses</text>
-  <text x="608" y="70" font-size="11" fill="#000933" opacity="0.38" text-anchor="end">6 clauses identified</text>
-  <line x1="64" y1="82" x2="596" y2="82" stroke="#000933" stroke-opacity="0.09" stroke-width="1"/>
+  <text x="658" y="70" font-size="11" fill="#000933" opacity="0.38" text-anchor="end">6 clauses identified</text>
+  <line x1="64" y1="82" x2="660" y2="82" stroke="#000933" stroke-opacity="0.09" stroke-width="1"/>
 
-  <!-- ROW 1: Insurance Requirement  y=92 -->
-  <rect x="50" y="92" width="560" height="72" rx="9" fill="white" filter="url(#rowShadow)"/>
-  <rect x="64" y="105" width="138" height="20" rx="10" fill="none" stroke="#5bb21e" stroke-width="1.5"/>
-  <text x="133" y="119" font-size="9.5" font-weight="700" fill="#5bb21e" text-anchor="middle" letter-spacing="0.3">Insurance Requirement</text>
-  <text x="212" y="119" font-size="9" fill="#000933" opacity="0.4">Section 6.2</text>
-  <rect x="258" y="111" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
-  <line x1="260.5" y1="114.5" x2="263.5" y2="114.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <line x1="260.5" y1="117" x2="263.5" y2="117" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <text x="592" y="119" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">100%</text>
-  <rect x="64" y="135" width="350" height="7" rx="3.5" fill="#000933" opacity="0.11"/>
-  <rect x="64" y="148" width="220" height="7" rx="3.5" fill="#000933" opacity="0.07"/>
+  <!-- ══ ROW 1: Insurance Requirement  y=90 ══ -->
+  <rect x="50" y="90" width="624" height="82" rx="9" fill="white" filter="url(#rowShadow)"/>
+  <!-- tag -->
+  <rect x="64" y="102" width="138" height="18" rx="9" fill="none" stroke="#5bb21e" stroke-width="1.5"/>
+  <text x="133" y="114.5" font-size="9" font-weight="700" fill="#5bb21e" text-anchor="middle" letter-spacing="0.3">Insurance Requirement</text>
+  <!-- section -->
+  <text x="210" y="114.5" font-size="8.5" fill="#000933" opacity="0.4">Section 6.2</text>
+  <!-- doc icon -->
+  <rect x="256" y="106" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
+  <line x1="258.5" y1="109.5" x2="261.5" y2="109.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <line x1="258.5" y1="112" x2="261.5" y2="112" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <!-- confidence -->
+  <text x="658" y="114.5" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">100%</text>
+  <!-- body text -->
+  <text x="64" y="138" font-size="9.5" fill="#000933" opacity="0.75">Lessee must maintain all-risk property insurance covering full replacement value of equipment,</text>
+  <text x="64" y="153" font-size="9.5" fill="#000933" opacity="0.75">commercial general liability insurance with $1M/$2M limits, naming Lessor as loss payee.</text>
 
-  <!-- ROW 2: Liability  y=172 -->
-  <rect x="50" y="172" width="560" height="72" rx="9" fill="white" filter="url(#rowShadow)"/>
-  <rect x="64" y="185" width="62" height="20" rx="10" fill="none" stroke="#e05050" stroke-width="1.5"/>
-  <text x="95" y="199" font-size="9.5" font-weight="700" fill="#e05050" text-anchor="middle" letter-spacing="0.3">Liability</text>
-  <text x="136" y="199" font-size="9" fill="#000933" opacity="0.4">Sections 11.1–11.2</text>
-  <rect x="232" y="191" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
-  <line x1="234.5" y1="194.5" x2="237.5" y2="194.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <line x1="234.5" y1="197" x2="237.5" y2="197" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <text x="592" y="199" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">100%</text>
-  <rect x="64" y="215" width="370" height="7" rx="3.5" fill="#000933" opacity="0.11"/>
-  <rect x="64" y="228" width="180" height="7" rx="3.5" fill="#000933" opacity="0.07"/>
+  <!-- ══ ROW 2: Liability  y=180 ══ -->
+  <rect x="50" y="180" width="624" height="82" rx="9" fill="white" filter="url(#rowShadow)"/>
+  <rect x="64" y="192" width="62" height="18" rx="9" fill="none" stroke="#e05050" stroke-width="1.5"/>
+  <text x="95" y="204.5" font-size="9" font-weight="700" fill="#e05050" text-anchor="middle" letter-spacing="0.3">Liability</text>
+  <text x="134" y="204.5" font-size="8.5" fill="#000933" opacity="0.4">Sections 11.1–11.2</text>
+  <rect x="236" y="196" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
+  <line x1="238.5" y1="199.5" x2="241.5" y2="199.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <line x1="238.5" y1="202" x2="241.5" y2="202" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <text x="658" y="204.5" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">100%</text>
+  <text x="64" y="228" font-size="9.5" fill="#000933" opacity="0.75">Total aggregate liability capped at 12 months of lease payments, except for confidentiality</text>
+  <text x="64" y="243" font-size="9.5" fill="#000933" opacity="0.75">breaches. No consequential damages liability for either party.</text>
 
-  <!-- ROW 3: Penalty  y=252 -->
-  <rect x="50" y="252" width="560" height="72" rx="9" fill="white" filter="url(#rowShadow)"/>
-  <rect x="64" y="265" width="58" height="20" rx="10" fill="none" stroke="#ff7201" stroke-width="1.5"/>
-  <text x="93" y="279" font-size="9.5" font-weight="700" fill="#ff7201" text-anchor="middle" letter-spacing="0.3">Penalty</text>
-  <text x="132" y="279" font-size="9" fill="#000933" opacity="0.4">Sections 4.3, 9.6</text>
-  <rect x="221" y="271" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
-  <line x1="223.5" y1="274.5" x2="226.5" y2="274.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <line x1="223.5" y1="277" x2="226.5" y2="277" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <text x="592" y="279" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">100%</text>
-  <rect x="64" y="295" width="320" height="7" rx="3.5" fill="#000933" opacity="0.11"/>
-  <rect x="64" y="308" width="250" height="7" rx="3.5" fill="#000933" opacity="0.07"/>
+  <!-- ══ ROW 3: Penalty  y=270 ══ -->
+  <rect x="50" y="270" width="624" height="82" rx="9" fill="white" filter="url(#rowShadow)"/>
+  <rect x="64" y="282" width="58" height="18" rx="9" fill="none" stroke="#ff7201" stroke-width="1.5"/>
+  <text x="93" y="294.5" font-size="9" font-weight="700" fill="#ff7201" text-anchor="middle" letter-spacing="0.3">Penalty</text>
+  <text x="130" y="294.5" font-size="8.5" fill="#000933" opacity="0.4">Sections 4.3, 9.6</text>
+  <rect x="224" y="286" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
+  <line x1="226.5" y1="289.5" x2="229.5" y2="289.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <line x1="226.5" y1="292" x2="229.5" y2="292" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <text x="658" y="294.5" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">100%</text>
+  <text x="64" y="318" font-size="9.5" fill="#000933" opacity="0.75">Late payment fee of 1.5% per month on outstanding balance. Holdover equipment</text>
+  <text x="64" y="333" font-size="9.5" fill="#000933" opacity="0.75">incurs 150% of current lease rate per month.</text>
 
-  <!-- ROW 4: Price Escalation  y=332 -->
-  <rect x="50" y="332" width="560" height="72" rx="9" fill="white" filter="url(#rowShadow)"/>
-  <rect x="64" y="345" width="94" height="20" rx="10" fill="none" stroke="#ff7201" stroke-width="1.5"/>
-  <text x="111" y="359" font-size="9.5" font-weight="700" fill="#ff7201" text-anchor="middle" letter-spacing="0.3">Price Escalation</text>
-  <text x="168" y="359" font-size="9" fill="#000933" opacity="0.4">Section 3.3</text>
-  <rect x="218" y="351" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
-  <line x1="220.5" y1="354.5" x2="223.5" y2="354.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <line x1="220.5" y1="357" x2="223.5" y2="357" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <text x="592" y="359" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">100%</text>
-  <rect x="64" y="375" width="390" height="7" rx="3.5" fill="#000933" opacity="0.11"/>
-  <rect x="64" y="388" width="200" height="7" rx="3.5" fill="#000933" opacity="0.07"/>
+  <!-- ══ ROW 4: Price Escalation  y=360 ══ -->
+  <rect x="50" y="360" width="624" height="82" rx="9" fill="white" filter="url(#rowShadow)"/>
+  <rect x="64" y="372" width="94" height="18" rx="9" fill="none" stroke="#ff7201" stroke-width="1.5"/>
+  <text x="111" y="384.5" font-size="9" font-weight="700" fill="#ff7201" text-anchor="middle" letter-spacing="0.3">Price Escalation</text>
+  <text x="166" y="384.5" font-size="8.5" fill="#000933" opacity="0.4">Section 3.3</text>
+  <rect x="210" y="376" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
+  <line x1="212.5" y1="379.5" x2="215.5" y2="379.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <line x1="212.5" y1="382" x2="215.5" y2="382" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <text x="658" y="384.5" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">100%</text>
+  <text x="64" y="408" font-size="9.5" fill="#000933" opacity="0.75">Lessor may increase lease payment by up to 3% annually on each 12-month anniversary</text>
+  <text x="64" y="423" font-size="9.5" fill="#000933" opacity="0.75">with 45 days notice. Increases above 3% require written consent.</text>
 
-  <!-- ROW 5: Renewal  y=412 -->
-  <rect x="50" y="412" width="560" height="72" rx="9" fill="white" filter="url(#rowShadow)"/>
-  <rect x="64" y="425" width="62" height="20" rx="10" fill="none" stroke="#5bb21e" stroke-width="1.5"/>
-  <text x="95" y="439" font-size="9.5" font-weight="700" fill="#5bb21e" text-anchor="middle" letter-spacing="0.3">Renewal</text>
-  <text x="136" y="439" font-size="9" fill="#000933" opacity="0.4">Section 3.2</text>
-  <rect x="183" y="431" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
-  <line x1="185.5" y1="434.5" x2="188.5" y2="434.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <line x1="185.5" y1="437" x2="188.5" y2="437" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <text x="592" y="439" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">95%</text>
-  <rect x="64" y="455" width="340" height="7" rx="3.5" fill="#000933" opacity="0.11"/>
-  <rect x="64" y="468" width="270" height="7" rx="3.5" fill="#000933" opacity="0.07"/>
+  <!-- ══ ROW 5: Renewal  y=450 ══ -->
+  <rect x="50" y="450" width="624" height="82" rx="9" fill="white" filter="url(#rowShadow)"/>
+  <rect x="64" y="462" width="62" height="18" rx="9" fill="none" stroke="#5bb21e" stroke-width="1.5"/>
+  <text x="95" y="474.5" font-size="9" font-weight="700" fill="#5bb21e" text-anchor="middle" letter-spacing="0.3">Renewal</text>
+  <text x="134" y="474.5" font-size="8.5" fill="#000933" opacity="0.4">Section 3.2</text>
+  <rect x="185" y="466" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
+  <line x1="187.5" y1="469.5" x2="190.5" y2="469.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <line x1="187.5" y1="472" x2="190.5" y2="472" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <text x="658" y="474.5" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">95%</text>
+  <text x="64" y="498" font-size="9.5" fill="#000933" opacity="0.75">Agreement automatically renews for successive one month terms after initial 60-day term,</text>
+  <text x="64" y="513" font-size="9.5" fill="#000933" opacity="0.75">unless 30 days written notice given. Maximum total term is 48 months.</text>
 
-  <!-- ROW 6: Termination  y=492 -->
-  <rect x="50" y="492" width="560" height="72" rx="9" fill="white" filter="url(#rowShadow)"/>
-  <rect x="64" y="505" width="78" height="20" rx="10" fill="none" stroke="#e05050" stroke-width="1.5"/>
-  <text x="103" y="519" font-size="9.5" font-weight="700" fill="#e05050" text-anchor="middle" letter-spacing="0.3">Termination</text>
-  <text x="152" y="519" font-size="9" fill="#000933" opacity="0.4">Sections 9.1–9.2</text>
-  <rect x="238" y="511" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
-  <line x1="240.5" y1="514.5" x2="243.5" y2="514.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <line x1="240.5" y1="517" x2="243.5" y2="517" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
-  <text x="592" y="519" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">95%</text>
-  <rect x="64" y="535" width="360" height="7" rx="3.5" fill="#000933" opacity="0.11"/>
-  <rect x="64" y="548" width="230" height="7" rx="3.5" fill="#000933" opacity="0.07"/>
+  <!-- ══ ROW 6: Termination  y=540 ══ -->
+  <rect x="50" y="540" width="624" height="82" rx="9" fill="white" filter="url(#rowShadow)"/>
+  <rect x="64" y="552" width="78" height="18" rx="9" fill="none" stroke="#e05050" stroke-width="1.5"/>
+  <text x="103" y="564.5" font-size="9" font-weight="700" fill="#e05050" text-anchor="middle" letter-spacing="0.3">Termination</text>
+  <text x="150" y="564.5" font-size="8.5" fill="#000933" opacity="0.4">Sections 9.1–9.2</text>
+  <rect x="244" y="556" width="8" height="10" rx="1.5" fill="none" stroke="#000933" stroke-opacity="0.25" stroke-width="1"/>
+  <line x1="246.5" y1="559.5" x2="249.5" y2="559.5" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <line x1="246.5" y1="562" x2="249.5" y2="562" stroke="#000933" stroke-opacity="0.25" stroke-width="0.9"/>
+  <text x="658" y="564.5" font-size="10.5" font-weight="700" fill="#5bb21e" text-anchor="end">95%</text>
+  <text x="64" y="588" font-size="9.5" fill="#000933" opacity="0.75">Either party may terminate at end of any term with 30 days notice. Lessee may terminate</text>
+  <text x="64" y="603" font-size="9.5" fill="#000933" opacity="0.75">early subject to fee: remaining payments during initial term, or 1 month during renewal.</text>
 
 </svg>

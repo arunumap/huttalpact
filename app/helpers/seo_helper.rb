@@ -2,7 +2,7 @@
 
 module SeoHelper
   DEFAULT_SITE_NAME = "PactBadger"
-  DEFAULT_DESCRIPTION = "AI-powered contract tracking for SMBs. Upload contracts, auto-extract key dates and clauses, and never miss a renewal deadline again."
+  DEFAULT_DESCRIPTION = "PactBadger is the contract intelligence platform that extracts key terms with AI, surfaces hidden obligations, and alerts your team before deadlines slip."
   DEFAULT_OG_IMAGE = "og-image.png"
 
   # Renders all SEO meta tags in the <head>. Call from layouts.

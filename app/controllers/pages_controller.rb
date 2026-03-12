@@ -12,6 +12,7 @@ class PagesController < ApplicationController
 
   allow_unauthenticated_access
   prepend_before_action :resume_session
+  rescue_from ActionController::RoutingError, with: :render_not_found
 
   layout :marketing_layout
 
@@ -32,7 +33,12 @@ class PagesController < ApplicationController
   def privacy
   end
 
-  def leases
+  def solutions
+    @solutions = SolutionCatalog.public_solutions
+  end
+
+  def solution
+    @solution = SolutionCatalog.find_by_slug(params[:slug]) || raise(ActionController::RoutingError, "Not Found")
   end
 
   def terms
@@ -48,5 +54,9 @@ class PagesController < ApplicationController
     term = raw_term.to_s.tr("_", " ").squish
     term = term.gsub(/[^[:alnum:]\s&\/-]/, "").first(ADS_DMM_MAX_LENGTH)&.strip
     term.presence
+  end
+
+  def render_not_found
+    render file: Rails.public_path.join("404.html"), layout: false, status: :not_found
   end
 end

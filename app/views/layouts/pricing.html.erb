@@ -45,7 +45,10 @@
             <% if Current.user %>
               <%= link_to "← Dashboard", dashboard_path, class: "text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors" %>
             <% end %>
-            <%= link_to "Leases", leases_path, class: "text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors" %>
+            <%= link_to "Solutions", solutions_path, class: "text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors" %>
+            <% unless Current.user %>
+              <%= link_to "Pricing", pricing_path, class: "text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors" %>
+            <% end %>
             <%= link_to "Blog", blog_path, class: "text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors" %>
             <% unless Current.user %>
               <div class="h-4 w-px bg-gray-200"></div>
@@ -70,7 +73,10 @@
           <% if Current.user %>
             <%= link_to "← Dashboard", dashboard_path, class: "block rounded-lg px-3 py-2.5 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors" %>
           <% end %>
-          <%= link_to "Leases", leases_path, class: "block rounded-lg px-3 py-2.5 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors" %>
+          <%= link_to "Solutions", solutions_path, class: "block rounded-lg px-3 py-2.5 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors" %>
+          <% unless Current.user %>
+            <%= link_to "Pricing", pricing_path, class: "block rounded-lg px-3 py-2.5 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors" %>
+          <% end %>
           <%= link_to "Blog", blog_path, class: "block rounded-lg px-3 py-2.5 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors" %>
           <% unless Current.user %>
             <%= link_to "Sign In", new_session_path, class: "block rounded-lg px-3 py-2.5 text-base font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors" %>

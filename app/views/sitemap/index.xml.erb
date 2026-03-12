@@ -8,6 +8,14 @@
   </url>
   <% end %>
 
+  <% @solution_pages.each do |solution| %>
+  <url>
+    <loc><%= solution_url(solution.slug) %></loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <% end %>
+
   <% @blog_posts.each do |post| %>
   <url>
     <loc><%= blog_post_url(post.slug) %></loc>

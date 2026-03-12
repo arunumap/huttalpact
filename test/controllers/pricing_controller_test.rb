@@ -17,6 +17,9 @@ class PricingControllerTest < ActionDispatch::IntegrationTest
     get pricing_path
     assert_response :success
     assert_select "h1", text: /Simple, transparent pricing/
+    assert_select "a[href='#{pricing_path}']", text: "Pricing"
+    assert_select "a[href='#{solutions_path}']", text: "Solutions"
+    assert_select "a[href='#{blog_path}']", text: "Blog"
   end
 
   test "show displays a card for each visible pricing tier" do

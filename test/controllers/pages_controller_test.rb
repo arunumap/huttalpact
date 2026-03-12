@@ -17,7 +17,7 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
   test "landing page links to leases page" do
     get root_path
     assert_response :success
-    assert_select "a[href='#{leases_path}']", text: "Leases"
+    assert_select "a[href='#{solutions_path}']", text: "Solutions"
   end
 
   test "authenticated user is redirected to dashboard" do
@@ -85,8 +85,8 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
   test "ads landing page is accessible to unauthenticated users" do
     get ads_contracts_landing_path
     assert_response :success
-    assert_select "h1", /Never miss a lease or vendor contract deadline again/
-    assert_match "For Property Managers", response.body
+    assert_select "h1", /Never miss a critical contract deadline again/
+    assert_match "AI contract intelligence", response.body
   end
 
   test "ads landing page has inline signup form and noindex robots tag" do
@@ -108,8 +108,10 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     get ads_contracts_landing_path
     assert_response :success
 
-    assert_match "Real Scenario", response.body
-    assert_match "How a 12-property team got control of 87 contract deadlines", response.body
+    assert_match "Example Scenario", response.body
+    assert_match "The contracts are not the problem. The invisible deadlines are.", response.body
+    assert_match "Auto-renewals sneak through", response.body
+    assert_match "How one operations team got control of 87 contract deadlines", response.body
 
     assert_not_includes response.body, "Trusted by Property Teams"
     assert_not_includes response.body, "Placeholder testimonials"
@@ -119,8 +121,8 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     get ads_contracts_landing_path(utm_term: "lease renewals")
     assert_response :success
 
-    assert_select "h1", /Never miss critical lease renewals deadlines again/
-    assert_select "p", /stay ahead of lease renewals deadlines/i
+    assert_select "h1", /Stay ahead of lease renewals with AI contract intelligence/
+    assert_select "p", /stay ahead of lease renewals/i
     assert_select "input[name='utm_term'][value='lease renewals']", count: 1
   end
 
@@ -128,7 +130,7 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     get ads_contracts_landing_path(utm_term: "   ")
     assert_response :success
 
-    assert_select "h1", /Never miss a lease or vendor contract deadline again/
+    assert_select "h1", /Never miss a critical contract deadline again/
   end
 
   test "ads landing page preserves attribution params in inline signup form" do
@@ -151,17 +153,29 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_not_includes response.body, ads_contracts_landing_path
   end
 
-  test "leases page is accessible to unauthenticated users" do
-    get leases_path
+  test "solutions index is accessible to unauthenticated users" do
+    get solutions_path
     assert_response :success
-    assert_select "h1", /Stop chasing lease deadlines/
+    assert_select "h1", /Contract intelligence for every agreement type/
+    assert_select "a[href='#{solution_path('leases')}']"
   end
 
-  test "leases page highlights lease offerings and CTAs" do
-    get leases_path
+  test "lease solution page is accessible to unauthenticated users" do
+    get solution_path("leases")
     assert_response :success
+    assert_select "h1", /Track lease extractions and deadlines in one system/
     assert_select "h2", /Everything your lease team needs/
     assert_select "a[href='#{new_registration_path}']"
     assert_select "a[href='#{pricing_path}']"
+  end
+
+  test "legacy leases url redirects to lease solution page" do
+    get "/leases"
+    assert_redirected_to solution_path("leases")
+  end
+
+  test "unknown solution page returns not found" do
+    get solution_path("unknown-contract-type")
+    assert_response :not_found
   end
 end
