@@ -24,7 +24,7 @@ class SeoHelperTest < ActionView::TestCase
   test "seo_meta_tags includes description" do
     result = seo_meta_tags
     assert_match(/name="description"/, result)
-    assert_match(/AI-powered contract tracking/, result)
+    assert_match(/contract intelligence platform/, result)
   end
 
   test "seo_meta_tags includes robots directive" do
