@@ -1,0 +1,10 @@
+Hi <%= @user.first_name.presence || @user.full_name %>,
+
+Verify your email address:
+<%= @verification_url %>
+
+This link will expire in 24 hours.
+
+If you didn't create this account, you can safely ignore this email.
+
+— PactBadger

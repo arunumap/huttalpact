@@ -6,7 +6,8 @@ class OrphanedAccountsControllerTest < ActionDispatch::IntegrationTest
       email_address: "orphaned@example.com",
       password: "password123",
       first_name: "Orphaned",
-      terms_accepted: "1"
+      terms_accepted: "1",
+      email_verified_at: Time.current
     )
     @orphaned_user.update_column(:orphaned_at, Time.current)
   end

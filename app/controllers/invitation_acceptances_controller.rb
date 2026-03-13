@@ -1,5 +1,6 @@
 class InvitationAcceptancesController < ApplicationController
   allow_unauthenticated_access
+  allow_unverified_access
   skip_before_action :set_tenant
   skip_before_action :set_unread_alert_count
   skip_before_action :redirect_to_onboarding
@@ -49,6 +50,7 @@ class InvitationAcceptancesController < ApplicationController
     user.memberships.find_or_create_by!(organization: @invitation.organization) do |membership|
       membership.role = @invitation.role
     end
+    user.verify_email! unless user.email_verified?
   end
 
   def try_resume_session
