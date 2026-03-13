@@ -5,7 +5,7 @@ class EmailVerificationsController < ApplicationController
   skip_before_action :set_tenant
   skip_before_action :set_unread_alert_count
   skip_before_action :redirect_to_onboarding
-  before_action :redirect_if_verified, only: %i[show create]
+  before_action :redirect_if_verified, only: :create
   before_action :require_current_user, only: %i[show create]
   rate_limit to: 5, within: 1.minute, only: :create, with: -> { redirect_to email_verification_path, alert: "Too many verification attempts. Try again later." }
 
@@ -37,7 +37,7 @@ class EmailVerificationsController < ApplicationController
       return
     end
 
-    redirect_to root_path, notice: "Your email has been verified."
+    redirect_to email_verification_path, notice: "Your email has been verified. You can continue to the app."
   end
 
   private

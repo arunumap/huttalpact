@@ -34,10 +34,14 @@ class AuthFlowTest < ActionDispatch::IntegrationTest
     assert_redirected_to email_verification_path
 
     get verify_email_verification_path(token: user.generate_token_for(:email_verification))
-    assert_redirected_to root_path
+    assert_redirected_to email_verification_path
     assert user.reload.email_verified?
 
     follow_redirect!
+    assert_response :success
+    assert_match "Continue to PactBadger", response.body
+
+    get root_path
     assert_redirected_to onboarding_organization_path
     follow_redirect!
     assert_response :success

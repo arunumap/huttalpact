@@ -20,12 +20,14 @@ class EmailVerificationsControllerTest < ActionDispatch::IntegrationTest
     assert_match @user.email_address, response.body
   end
 
-  test "show redirects verified users to root" do
+  test "show renders success state for verified users" do
     sign_in_as(users(:two))
 
     get email_verification_path
 
-    assert_redirected_to root_path
+    assert_response :success
+    assert_match "Email verified", response.body
+    assert_match "Continue to PactBadger", response.body
   end
 
   test "create resends verification email for unverified users" do
@@ -43,9 +45,12 @@ class EmailVerificationsControllerTest < ActionDispatch::IntegrationTest
 
     get verify_email_verification_path(token: token)
 
-    assert_redirected_to root_path
+    assert_redirected_to email_verification_path
     assert @user.reload.email_verified?
     assert cookies[:session_id].present?
+    follow_redirect!
+    assert_response :success
+    assert_match "Continue to PactBadger", response.body
   end
 
   test "verify with invalid token redirects to sign in" do
