@@ -118,6 +118,14 @@ Rails.application.routes.draw do
       get :success
       delete :destroy_account
     end
+    resource :calendar, only: %i[show update], controller: "calendar" do
+      get :connect_google
+      get :connect_microsoft
+      get :google_callback
+      get :microsoft_callback
+      post :select_calendar
+      delete :disconnect
+    end
   end
   get "settings", to: redirect("/settings/profile")
 

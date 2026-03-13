@@ -56,6 +56,10 @@ gem "postmark-rails"
 gem "pay", "~> 11.4"
 gem "stripe", "~> 18.0"
 
+# Calendar integrations
+gem "google-apis-calendar_v3"
+gem "oauth2", "~> 2.0"
+
 # Error tracking
 gem "sentry-ruby"
 gem "sentry-rails"
