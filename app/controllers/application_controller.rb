@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include Authentication
+  include EmailVerification
   include Pagy::Backend
   include Auditable
   include PlanEnforcement
@@ -78,7 +79,7 @@ class ApplicationController < ActionController::Base
     return unless Current.organization
     return if Current.organization.onboarding_complete?
     return if controller_name == "onboarding"
-    return if controller_name.in?(%w[sessions registrations passwords pricing])
+    return if controller_name.in?(%w[sessions registrations passwords pricing email_verifications])
 
     case Current.organization.onboarding_step_index
     when 0

@@ -35,8 +35,9 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
 
     membership = user.memberships.first
     assert_equal "owner", membership.role
+    assert_nil user.email_verified_at
 
-    assert_redirected_to onboarding_organization_path
+    assert_redirected_to email_verification_path
   end
 
   test "should generate org name from first name when not provided" do
@@ -172,10 +173,11 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
     user = User.find_by(email_address: invitation.email)
     assert_not_nil user
     assert user.organizations.include?(organization)
+    assert user.email_verified?
     assert invitation.reload.accepted_at.present?
   end
 
-  test "welcome email is sent on successful registration" do
+  test "email verification email is sent on successful registration" do
     assert_enqueued_emails 1 do
       post registration_path, params: {
         user: {
@@ -271,7 +273,7 @@ class RegistrationsControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_redirected_to onboarding_organization_path
+    assert_redirected_to email_verification_path
     user = User.find_by(email_address: "paula.manager@example.com")
     assert_not_nil user
     assert_equal "Oak Property Management", user.organizations.first.name

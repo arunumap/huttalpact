@@ -80,4 +80,18 @@ class UserMailerTest < ActionMailer::TestCase
     assert_no_match "you've joined", email.html_part.body.to_s
     assert_no_match "you've joined", email.text_part.body.to_s
   end
+
+  test "email verification email sends to the correct user" do
+    email = UserMailer.email_verification(@user)
+    assert_equal [ @user.email_address ], email.to
+    assert_equal "Verify your email address", email.subject
+  end
+
+  test "email verification email includes verification link" do
+    @user.update!(email_verified_at: nil)
+    email = UserMailer.email_verification(@user)
+
+    assert_match "/email_verification/verify/", email.html_part.body.to_s
+    assert_match "/email_verification/verify/", email.text_part.body.to_s
+  end
 end

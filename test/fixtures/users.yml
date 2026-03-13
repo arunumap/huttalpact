@@ -5,21 +5,25 @@ one:
   password_digest: <%= password_digest %>
   first_name: Alice
   last_name: Johnson
+  email_verified_at: <%= 1.day.ago %>
 
 two:
   email_address: bob@example.com
   password_digest: <%= password_digest %>
   first_name: Bob
   last_name: Smith
+  email_verified_at: <%= 1.day.ago %>
 
 three:
   email_address: carol@example.com
   password_digest: <%= password_digest %>
   first_name: Carol
   last_name: Williams
+  email_verified_at: <%= 1.day.ago %>
 
 four:
   email_address: dave@example.com
   password_digest: <%= password_digest %>
   first_name: Dave
   last_name: Brown
+  email_verified_at: <%= 1.day.ago %>
