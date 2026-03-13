@@ -105,4 +105,54 @@ class UserTest < ActiveSupport::TestCase
     org = organizations(:two)
     assert_nil user.membership_in(org)
   end
+
+  test "email_verified? returns true when verified_at is present" do
+    user = users(:one)
+    assert user.email_verified?
+  end
+
+  test "email_verified? returns false when verified_at is missing" do
+    user = users(:one)
+    user.update!(email_verified_at: nil)
+    assert_not user.email_verified?
+  end
+
+  test "verify_email! sets email_verified_at" do
+    user = users(:one)
+    user.update!(email_verified_at: nil)
+
+    assert_changes -> { user.reload.email_verified_at } do
+      user.verify_email!
+    end
+  end
+
+  test "find_by_token_for returns user for valid email verification token" do
+    user = users(:one)
+    user.update!(email_verified_at: nil)
+
+    token = user.generate_token_for(:email_verification)
+
+    assert_equal user, User.find_by_token_for(:email_verification, token)
+  end
+
+  test "email verification token expires after 24 hours" do
+    user = users(:one)
+    user.update!(email_verified_at: nil)
+
+    token = user.generate_token_for(:email_verification)
+
+    travel 25.hours do
+      assert_nil User.find_by_token_for(:email_verification, token)
+    end
+  end
+
+  test "email verification token is invalid after verification" do
+    user = users(:one)
+    user.update!(email_verified_at: nil)
+
+    token = user.generate_token_for(:email_verification)
+    user.verify_email!
+
+    assert_nil User.find_by_token_for(:email_verification, token)
+  end
 end

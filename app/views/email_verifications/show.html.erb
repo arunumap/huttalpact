@@ -1,0 +1,47 @@
+<% email_verified = Current.user.email_verified? %>
+<% content_for :heading, email_verified ? "Email verified" : "Verify your email" %>
+<% content_for :subheading do %>
+  <% if email_verified %>
+    Your email address
+    <span class="font-semibold text-gray-900"><%= Current.user.email_address %></span>
+    is verified and ready to go.
+  <% else %>
+    We sent a verification link to
+    <span class="font-semibold text-gray-900"><%= Current.user.email_address %></span>
+  <% end %>
+<% end %>
+
+<div class="space-y-5">
+  <% if email_verified %>
+    <p class="text-sm text-gray-600">
+      Your email has been successfully verified. Continue to your workspace to start using PactBadger.
+    </p>
+
+    <div class="space-y-3">
+      <%= link_to "Continue to PactBadger",
+          root_path,
+          class: "flex w-full justify-center rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 cursor-pointer" %>
+
+      <%= button_to "Sign out",
+          session_path,
+          method: :delete,
+          class: "flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 cursor-pointer" %>
+    </div>
+  <% else %>
+    <p class="text-sm text-gray-600">
+      To continue using PactBadger, please verify your email address. If you don't see the message, check your spam folder or resend it below.
+    </p>
+
+    <div class="space-y-3">
+      <%= button_to "Resend verification email",
+          email_verification_path,
+          method: :post,
+          class: "flex w-full justify-center rounded-lg bg-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 cursor-pointer" %>
+
+      <%= button_to "Sign out",
+          session_path,
+          method: :delete,
+          class: "flex w-full justify-center rounded-lg bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 cursor-pointer" %>
+    </div>
+  <% end %>
+</div>

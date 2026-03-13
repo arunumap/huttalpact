@@ -88,8 +88,8 @@ If a logged-in user clicks an invite link, `redirect_if_authenticated` sends the
 
 ## Lower Priority — Missing SaaS Features
 
-### 14. No Email Verification
-User emails are never verified after registration.
+### 14. ~~No Email Verification~~ ✅ DONE
+Email verification is required for direct signups before they can access the app.
 
 ### 15. No 2FA/MFA
 Authentication is single-factor password only.

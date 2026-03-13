@@ -49,6 +49,9 @@ Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
   resource :registration, only: %i[new create]
   resource :orphaned_account, only: %i[show]
+  resource :email_verification, only: %i[show create] do
+    get "verify/:token", action: :verify, as: :verify
+  end
   resources :passwords, param: :token
   get "invitations/:token/accept", to: "invitation_acceptances#show", as: :accept_invitation
   post "switch_organization/:id", to: "organization_switches#create", as: :switch_organization

@@ -45,6 +45,7 @@ class RegistrationsController < ApplicationController
     end
 
     @user.terms_accepted_at = Time.current if @user.terms_accepted == "1"
+    @user.email_verified_at = Time.current if @invitation
 
     ActiveRecord::Base.transaction do
       @user.save!
@@ -57,16 +58,23 @@ class RegistrationsController < ApplicationController
       end
     end
 
-    UserMailer.welcome(@user).deliver_later
+    if @invitation
+      UserMailer.welcome(@user).deliver_later
+    else
+      UserMailer.email_verification(@user).deliver_later
+    end
     start_new_session_for @user
     track_analytics_event("sign_up", method: "email", source: params[:source].presence)
     track_conversion_event_signup
     destination = if @invitation&.organization&.onboarding_complete?
       root_path
-    else
+    elsif @invitation
       onboarding_organization_path
+    else
+      email_verification_path
     end
-    redirect_to destination, notice: "Welcome to PactBadger!"
+    notice = @invitation ? "Welcome to PactBadger!" : "Account created. Check your email to verify your address."
+    redirect_to destination, notice: notice
   rescue ActiveRecord::RecordInvalid
     render_registration_error(status: :unprocessable_entity)
   end

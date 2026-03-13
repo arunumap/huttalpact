@@ -15,6 +15,20 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
     assert cookies[:session_id]
   end
 
+  test "create with valid credentials redirects unverified users to email verification" do
+    user = User.create!(
+      email_address: "unverified-login@example.com",
+      password: "password123",
+      password_confirmation: "password123",
+      terms_accepted: "1"
+    )
+
+    post session_path, params: { email_address: user.email_address, password: "password123" }
+
+    assert_redirected_to email_verification_path
+    assert cookies[:session_id]
+  end
+
   test "create with invalid credentials" do
     post session_path, params: { email_address: @user.email_address, password: "wrong" }
 

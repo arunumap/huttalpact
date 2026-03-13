@@ -36,6 +36,7 @@ class InvitationAcceptancesControllerTest < ActionDispatch::IntegrationTest
     membership = existing_user.memberships.find_by(organization: @organization)
     assert_not_nil membership
     assert_equal @invitation.role, membership.role
+    assert existing_user.reload.email_verified?
     assert @invitation.reload.accepted_at.present?
   end
 
@@ -64,6 +65,7 @@ class InvitationAcceptancesControllerTest < ActionDispatch::IntegrationTest
     membership = user.memberships.find_by(organization: @organization)
     assert_not_nil membership
     assert_equal @invitation.role, membership.role
+    assert user.reload.email_verified?
     assert @invitation.reload.accepted_at.present?
   end
 
