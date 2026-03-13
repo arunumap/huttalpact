@@ -125,6 +125,7 @@ class ContractsController < ApplicationController
       else
         if date_fields_changed?
           GenerateContractAlertsJob.perform_later(@contract.id)
+          SyncContractCalendarEventsJob.perform_later(@contract.id)
         end
         log_audit("updated", contract: @contract, details: "Updated fields: #{@contract.previous_changes.keys.join(', ')}")
         redirect_to @contract, notice: "Contract was successfully updated."

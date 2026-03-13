@@ -1,0 +1,29 @@
+google_connection:
+  user: one
+  organization: one
+  provider: google
+  access_token: google_test_access_token
+  refresh_token: google_test_refresh_token
+  token_expires_at: <%= 1.hour.from_now.iso8601 %>
+  provider_uid: "google-uid-123"
+  provider_email: "user@gmail.com"
+  status: active
+
+microsoft_connection:
+  user: two
+  organization: two
+  provider: microsoft
+  access_token: microsoft_test_access_token
+  refresh_token: microsoft_test_refresh_token
+  token_expires_at: <%= 1.hour.from_now.iso8601 %>
+  provider_uid: "microsoft-uid-456"
+  provider_email: "user@outlook.com"
+  status: active
+
+expired_connection:
+  user: one
+  organization: one
+  provider: microsoft
+  access_token: expired_test_token
+  token_expires_at: <%= 1.hour.ago.iso8601 %>
+  status: expired

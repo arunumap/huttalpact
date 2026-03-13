@@ -14,6 +14,7 @@ class LeaseMilestonesController < ApplicationController
     @lease_milestone.organization = @contract.organization
     if @lease_milestone.save
       GenerateContractAlertsJob.perform_later(@contract.id)
+      SyncContractCalendarEventsJob.perform_later(@contract.id)
       log_audit("updated", contract: @contract, details: "Added #{@lease_milestone.milestone_type} milestone")
       redirect_to @contract, notice: "Lease milestone added."
     else
@@ -27,6 +28,7 @@ class LeaseMilestonesController < ApplicationController
   def update
     if @lease_milestone.update(lease_milestone_params)
       GenerateContractAlertsJob.perform_later(@contract.id)
+      SyncContractCalendarEventsJob.perform_later(@contract.id)
       log_audit("updated", contract: @contract, details: "Updated #{@lease_milestone.milestone_type} milestone")
       redirect_to @contract, notice: "Lease milestone updated."
     else
@@ -37,6 +39,7 @@ class LeaseMilestonesController < ApplicationController
   def destroy
     @lease_milestone.destroy!
     GenerateContractAlertsJob.perform_later(@contract.id)
+    SyncContractCalendarEventsJob.perform_later(@contract.id)
     log_audit("updated", contract: @contract, details: "Removed lease milestone")
     redirect_to @contract, notice: "Lease milestone removed.", status: :see_other
   end

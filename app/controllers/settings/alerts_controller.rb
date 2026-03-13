@@ -29,5 +29,9 @@ class Settings::AlertsController < ApplicationController
     Current.organization.contracts.where(status: Contract::ACTIVE_STATUSES).find_each do |contract|
       GenerateContractAlertsJob.perform_later(contract.id)
     end
+
+    Current.user.calendar_connections.where(organization: Current.organization).active.find_each do |connection|
+      SyncCalendarEventsJob.perform_later(connection.id)
+    end
   end
 end

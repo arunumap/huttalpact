@@ -218,6 +218,66 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_191440) do
     t.index ["user_id"], name: "index_bulk_delete_operations_on_user_id"
   end
 
+  create_table "calendar_connections", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.text "access_token", null: false
+    t.datetime "created_at", null: false
+    t.text "last_error"
+    t.datetime "last_synced_at"
+    t.uuid "organization_id", null: false
+    t.string "provider", null: false
+    t.string "provider_email"
+    t.string "provider_uid"
+    t.text "refresh_token"
+    t.string "status", default: "active", null: false
+    t.datetime "token_expires_at"
+    t.datetime "updated_at", null: false
+    t.uuid "user_id", null: false
+    t.index ["organization_id", "status"], name: "index_calendar_connections_on_organization_id_and_status"
+    t.index ["organization_id"], name: "index_calendar_connections_on_organization_id"
+    t.index ["user_id", "organization_id", "provider"], name: "idx_calendar_connections_user_org_provider", unique: true
+    t.index ["user_id"], name: "index_calendar_connections_on_user_id"
+  end
+
+  create_table "calendar_event_syncs", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "calendar_connection_id", null: false
+    t.datetime "created_at", null: false
+    t.string "event_category", null: false
+    t.text "last_error"
+    t.datetime "last_synced_at"
+    t.uuid "organization_id", null: false
+    t.string "payload_fingerprint"
+    t.string "remote_calendar_id", null: false
+    t.string "remote_event_id"
+    t.integer "retry_count", default: 0, null: false
+    t.uuid "source_id", null: false
+    t.string "source_type", null: false
+    t.string "sync_status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["calendar_connection_id", "source_type", "source_id", "event_category"], name: "idx_cal_event_syncs_connection_source", unique: true
+    t.index ["calendar_connection_id"], name: "index_calendar_event_syncs_on_calendar_connection_id"
+    t.index ["organization_id", "sync_status"], name: "index_calendar_event_syncs_on_organization_id_and_sync_status"
+    t.index ["organization_id"], name: "index_calendar_event_syncs_on_organization_id"
+    t.index ["source_type", "source_id"], name: "index_calendar_event_syncs_on_source_type_and_source_id"
+    t.index ["sync_status"], name: "index_calendar_event_syncs_on_sync_status"
+  end
+
+  create_table "calendar_preferences", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
+    t.uuid "calendar_connection_id", null: false
+    t.datetime "created_at", null: false
+    t.jsonb "enabled_categories", default: [], null: false
+    t.uuid "organization_id", null: false
+    t.string "remote_calendar_id", null: false
+    t.string "remote_calendar_name"
+    t.boolean "sync_enabled", default: true, null: false
+    t.datetime "updated_at", null: false
+    t.uuid "user_id", null: false
+    t.index ["calendar_connection_id"], name: "idx_calendar_prefs_connection", unique: true
+    t.index ["calendar_connection_id"], name: "index_calendar_preferences_on_calendar_connection_id"
+    t.index ["organization_id"], name: "index_calendar_preferences_on_organization_id"
+    t.index ["user_id", "organization_id"], name: "index_calendar_preferences_on_user_id_and_organization_id"
+    t.index ["user_id"], name: "index_calendar_preferences_on_user_id"
+  end
+
   create_table "contract_documents", id: :uuid, default: -> { "gen_random_uuid()" }, force: :cascade do |t|
     t.uuid "contract_id", null: false
     t.datetime "created_at", null: false
@@ -739,6 +799,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_13_191440) do
   add_foreign_key "blog_posts", "blog_categories"
   add_foreign_key "bulk_delete_operations", "organizations"
   add_foreign_key "bulk_delete_operations", "users"
+  add_foreign_key "calendar_connections", "organizations"
+  add_foreign_key "calendar_connections", "users"
+  add_foreign_key "calendar_event_syncs", "calendar_connections"
+  add_foreign_key "calendar_event_syncs", "organizations"
+  add_foreign_key "calendar_preferences", "calendar_connections"
+  add_foreign_key "calendar_preferences", "organizations"
+  add_foreign_key "calendar_preferences", "users"
   add_foreign_key "contract_documents", "contracts", on_delete: :cascade
   add_foreign_key "contract_review_fields", "contract_documents", column: "source_document_id"
   add_foreign_key "contract_review_fields", "contract_reviews"

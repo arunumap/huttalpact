@@ -1,5 +1,6 @@
 class RentEscalation < ApplicationRecord
   belongs_to :contract
+  has_many :calendar_event_syncs, as: :source, dependent: :destroy
 
   ESCALATION_TYPES = %w[fixed_percentage cpi fmv_reset stepped flat].freeze
 

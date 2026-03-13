@@ -45,3 +45,7 @@ production:
   cleanup_orphaned_users:
     class: CleanupOrphanedUsersJob
     schedule: at 3:30am every day
+
+  calendar_maintenance:
+    class: CalendarMaintenanceJob
+    schedule: every hour at minute 45

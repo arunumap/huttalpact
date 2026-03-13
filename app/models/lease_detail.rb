@@ -1,5 +1,6 @@
 class LeaseDetail < ApplicationRecord
   belongs_to :contract
+  has_many :calendar_event_syncs, as: :source, dependent: :destroy
 
   LEASE_TYPES = %w[gross modified_gross nnn percentage].freeze
   CAM_CAP_TYPES = %w[cumulative non_cumulative none].freeze

@@ -15,6 +15,7 @@ class Organization < ApplicationRecord
   has_many :review_learning_aggregates, dependent: :destroy
   has_many :extraction_overage_charges, dependent: :destroy
   has_many :bulk_delete_operations, dependent: :destroy
+  has_many :calendar_connections, dependent: :destroy
 
   validates :name, presence: true, length: { maximum: 255 }
   validates :slug, presence: true, uniqueness: true, length: { maximum: 100 },

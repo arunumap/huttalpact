@@ -3,6 +3,7 @@ class LeaseMilestone < ApplicationRecord
 
   belongs_to :contract
   belongs_to :organization
+  has_many :calendar_event_syncs, as: :source, dependent: :destroy
 
   MILESTONE_TYPES = %w[
     cam_reconciliation

@@ -50,4 +50,20 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # Allow reading unencrypted data (e.g. fixtures) alongside encrypted data
+  # CI does not decrypt credentials, so provide deterministic test keys here.
+  config.active_record.encryption.primary_key = ENV.fetch(
+    "ACTIVE_RECORD_ENCRYPTION_PRIMARY_KEY",
+    "0123456789abcdef0123456789abcdef"
+  )
+  config.active_record.encryption.deterministic_key = ENV.fetch(
+    "ACTIVE_RECORD_ENCRYPTION_DETERMINISTIC_KEY",
+    "abcdef0123456789abcdef0123456789"
+  )
+  config.active_record.encryption.key_derivation_salt = ENV.fetch(
+    "ACTIVE_RECORD_ENCRYPTION_KEY_DERIVATION_SALT",
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  )
+  config.active_record.encryption.support_unencrypted_data = true
 end
