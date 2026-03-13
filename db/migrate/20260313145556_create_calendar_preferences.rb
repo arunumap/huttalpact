@@ -11,8 +11,8 @@ class CreateCalendarPreferences < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :calendar_preferences, [:calendar_connection_id],
+    add_index :calendar_preferences, [ :calendar_connection_id ],
               unique: true, name: "idx_calendar_prefs_connection"
-    add_index :calendar_preferences, [:user_id, :organization_id]
+    add_index :calendar_preferences, [ :user_id, :organization_id ]
   end
 end

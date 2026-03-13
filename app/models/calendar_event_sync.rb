@@ -42,8 +42,13 @@ class CalendarEventSync < ApplicationRecord
   end
 
   def mark_failed!(error_message)
-    increment!(:retry_count)
-    update!(sync_status: "failed", last_error: error_message)
+    with_lock do
+      update!(
+        retry_count: retry_count + 1,
+        sync_status: "failed",
+        last_error: error_message
+      )
+    end
   end
 
   def mark_deleted!

@@ -80,4 +80,12 @@ class CalendarEventSyncTest < ActiveSupport::TestCase
     @sync.update!(sync_status: "pending")
     assert CalendarEventSync.pending.include?(@sync)
   end
+
+  test "destroying contract source removes sync records" do
+    sync_id = @sync.id
+
+    @contract.destroy!
+
+    assert_not CalendarEventSync.exists?(sync_id)
+  end
 end

@@ -1,4 +1,6 @@
 class Settings::CalendarController < ApplicationController
+  rescue_from CalendarProviders::BaseAdapter::MissingCredentialsError, with: :handle_missing_credentials
+
   def show
     @connection = current_calendar_connection
     @preference = @connection&.calendar_preference
@@ -121,6 +123,7 @@ class Settings::CalendarController < ApplicationController
     if connection
       provider_label = connection.provider.titleize
       provider_email = connection.provider_email
+      remote_cleanup_errors = remove_remote_events(connection)
       connection.calendar_event_syncs.update_all(sync_status: "deleted")
       connection.destroy!
 
@@ -131,7 +134,12 @@ class Settings::CalendarController < ApplicationController
         details: "Disconnected #{provider_label} Calendar (#{provider_email})"
       )
 
-      redirect_to settings_calendar_path, notice: "Calendar disconnected."
+      notice_message = if remote_cleanup_errors.positive?
+        "Calendar disconnected. Some remote events could not be deleted."
+      else
+        "Calendar disconnected."
+      end
+      redirect_to settings_calendar_path, notice: notice_message
     else
       redirect_to settings_calendar_path
     end
@@ -199,10 +207,7 @@ class Settings::CalendarController < ApplicationController
 
   def fetch_calendars
     connection = current_calendar_connection
-    adapter = case connection.provider
-    when "google" then CalendarProviders::GoogleAdapter.new(connection)
-    when "microsoft" then CalendarProviders::MicrosoftAdapter.new(connection)
-    end
+    adapter = provider_adapter(connection)
     adapter&.list_calendars || []
   rescue => e
     Rails.logger.error("Failed to list calendars: #{e.message}")
@@ -210,9 +215,12 @@ class Settings::CalendarController < ApplicationController
   end
 
   def google_oauth_client
+    client_id = credential!(:google, :client_id)
+    client_secret = credential!(:google, :client_secret)
+
     OAuth2::Client.new(
-      Rails.application.credentials.dig(:google, :client_id),
-      Rails.application.credentials.dig(:google, :client_secret),
+      client_id,
+      client_secret,
       site: "https://accounts.google.com",
       authorize_url: "https://accounts.google.com/o/oauth2/v2/auth",
       token_url: "https://oauth2.googleapis.com/token"
@@ -220,9 +228,12 @@ class Settings::CalendarController < ApplicationController
   end
 
   def microsoft_oauth_client
+    client_id = credential!(:microsoft, :client_id)
+    client_secret = credential!(:microsoft, :client_secret)
+
     OAuth2::Client.new(
-      Rails.application.credentials.dig(:microsoft, :client_id),
-      Rails.application.credentials.dig(:microsoft, :client_secret),
+      client_id,
+      client_secret,
       site: "https://login.microsoftonline.com",
       authorize_url: "/common/oauth2/v2.0/authorize",
       token_url: "/common/oauth2/v2.0/token"
@@ -235,5 +246,45 @@ class Settings::CalendarController < ApplicationController
 
   def calendar_update_params
     params.require(:calendar_preference).permit(:sync_enabled, enabled_categories: [])
+  end
+
+  def provider_adapter(connection)
+    return nil unless connection
+
+    case connection.provider
+    when "google" then CalendarProviders::GoogleAdapter.new(connection)
+    when "microsoft" then CalendarProviders::MicrosoftAdapter.new(connection)
+    end
+  end
+
+  def remove_remote_events(connection)
+    preference = connection.calendar_preference
+    return 0 unless preference&.remote_calendar_id.present?
+
+    adapter = provider_adapter(connection)
+    return 0 unless adapter
+
+    failed_deletes = 0
+    connection.calendar_event_syncs.where.not(sync_status: "deleted").where.not(remote_event_id: nil).find_each do |sync_record|
+      adapter.delete_event(preference.remote_calendar_id, sync_record.remote_event_id)
+    rescue => e
+      failed_deletes += 1
+      Rails.logger.error("Failed to delete remote event #{sync_record.id} during disconnect: #{e.message}")
+      Sentry.capture_exception(e) if Sentry.initialized?
+    end
+
+    failed_deletes
+  end
+
+  def credential!(provider, key)
+    value = Rails.application.credentials.dig(provider, key)
+    return value if value.present?
+
+    raise CalendarProviders::BaseAdapter::MissingCredentialsError,
+      "#{provider.to_s.titleize} Calendar is not configured. Missing #{provider}.#{key}."
+  end
+
+  def handle_missing_credentials(error)
+    redirect_to settings_calendar_path, alert: error.message
   end
 end

@@ -11,6 +11,7 @@ class Contract < ApplicationRecord
   has_many :audit_logs, dependent: :nullify
   has_many :ai_usage_logs, dependent: :nullify
   has_many :extraction_feedbacks, dependent: :destroy
+  has_many :calendar_event_syncs, as: :source, dependent: :destroy
   has_one :lease_detail, dependent: :destroy
   has_many :rent_escalations, dependent: :destroy
   has_many :lease_options, dependent: :destroy

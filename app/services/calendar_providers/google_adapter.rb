@@ -55,9 +55,15 @@ module CalendarProviders
     def refresh_token!
       return unless connection.refresh_token.present?
 
+      client_id = Rails.application.credentials.dig(:google, :client_id)
+      client_secret = Rails.application.credentials.dig(:google, :client_secret)
+      if client_id.blank? || client_secret.blank?
+        raise MissingCredentialsError, "Google Calendar credentials are missing. Configure google.client_id and google.client_secret."
+      end
+
       client = OAuth2::Client.new(
-        Rails.application.credentials.dig(:google, :client_id),
-        Rails.application.credentials.dig(:google, :client_secret),
+        client_id,
+        client_secret,
         site: "https://accounts.google.com",
         token_url: "https://oauth2.googleapis.com/token"
       )

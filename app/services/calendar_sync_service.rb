@@ -105,34 +105,26 @@ class CalendarSyncService
   end
 
   def create_remote_event(candidate)
-    remote_id = adapter.create_event(calendar_id, candidate, app_host: app_host)
+    sync_record = reserve_sync_record(candidate)
 
-    CalendarEventSync.create!(
-      calendar_connection: @connection,
-      organization: @organization,
-      source_type: candidate.source_type,
-      source_id: candidate.source_id,
-      event_category: candidate.event_category,
-      remote_event_id: remote_id,
-      remote_calendar_id: calendar_id,
-      payload_fingerprint: candidate.fingerprint,
-      sync_status: "synced",
-      last_synced_at: Time.current
-    )
+    if sync_record.remote_event_id.present?
+      update_if_changed(sync_record, candidate)
+      return
+    end
+
+    remote_id = adapter.create_event(calendar_id, candidate, app_host: app_host)
+    sync_record.mark_synced!(remote_event_id: remote_id, fingerprint: candidate.fingerprint)
   rescue => e
-    CalendarEventSync.create!(
-      calendar_connection: @connection,
-      organization: @organization,
-      source_type: candidate.source_type,
-      source_id: candidate.source_id,
-      event_category: candidate.event_category,
-      remote_calendar_id: calendar_id,
-      sync_status: "failed",
-      last_error: e.message
-    )
+    record_sync_failure(candidate, e, sync_record: sync_record)
   end
 
   def update_if_changed(sync_record, candidate)
+    if sync_record.remote_event_id.blank?
+      remote_id = adapter.create_event(calendar_id, candidate, app_host: app_host)
+      sync_record.mark_synced!(remote_event_id: remote_id, fingerprint: candidate.fingerprint)
+      return
+    end
+
     return unless sync_record.needs_update?(candidate.fingerprint)
 
     remote_id = adapter.update_event(calendar_id, sync_record.remote_event_id, candidate, app_host: app_host)
@@ -174,5 +166,40 @@ class CalendarSyncService
     ids << contract.lease_detail.id if contract.lease_detail
     ids.concat(contract.lease_milestones.pluck(:id))
     ids
+  end
+
+  def reserve_sync_record(candidate)
+    attributes = sync_lookup_attributes(candidate)
+
+    @connection.with_lock do
+      sync_record = @connection.calendar_event_syncs.lock("FOR UPDATE").find_or_initialize_by(attributes)
+      return sync_record unless sync_record.new_record?
+
+      sync_record.assign_attributes(
+        organization: @organization,
+        remote_calendar_id: calendar_id,
+        sync_status: "pending"
+      )
+      sync_record.save!
+      sync_record
+    end
+  rescue ActiveRecord::RecordNotUnique
+    @connection.calendar_event_syncs.find_by!(attributes)
+  end
+
+  def record_sync_failure(candidate, error, sync_record: nil)
+    failed_record = sync_record || reserve_sync_record(candidate)
+    failed_record.mark_failed!(error.message)
+  rescue => mark_error
+    Rails.logger.error("Unable to persist calendar sync failure for connection #{@connection.id}: #{mark_error.message}")
+    Sentry.capture_exception(mark_error) if Sentry.initialized?
+  end
+
+  def sync_lookup_attributes(candidate)
+    {
+      source_type: candidate.source_type,
+      source_id: candidate.source_id,
+      event_category: candidate.event_category
+    }
   end
 end

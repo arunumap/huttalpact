@@ -2,17 +2,17 @@
 title: "Introducing AI-Powered Contract Review"
 category: "Product Updates"
 slug: "contract-review-rollout"
-excerpt: "PactBadger’s new contract review workflow helps property management teams validate AI-extracted contract data faster with source excerpts, confidence-based triage, and structured editing for milestones and clauses."
-meta_description: "PactBadger’s AI contract review helps property management teams validate extracted contract data with source excerpts, confidence signals, and faster review workflows."
+excerpt: "PactBadger’s new contract review workflow helps teams validate AI-extracted contract data faster with source excerpts, confidence-based triage, and structured editing for milestones and clauses."
+meta_description: "PactBadger’s AI contract review helps teams validate extracted contract data with source excerpts, confidence signals, and faster review workflows."
 ---
 
 # Introducing AI-Powered Contract Review
 
-If you manage leases, vendor agreements, and renewal deadlines, you already know the problem: extracting data is only half the job. The real work is reviewing what the AI found, fixing what matters, and moving on without slowing your team down.
+If your team manages contracts with important dates, obligations, and renewal terms, you already know the problem: extracting data is only half the job. The real work is reviewing what the AI found, fixing what matters, and moving on without slowing your team down.
 
 That is why we rolled out **AI-powered contract review** in PactBadger.
 
-This new workflow gives property management teams a clearer way to validate AI-extracted contract data before it becomes part of the live contract record. Instead of treating AI output like a black box, PactBadger now shows reviewers what was found, why it was found, and where it came from in the document.
+This new workflow gives teams a clearer way to validate AI-extracted contract data before it becomes part of the live contract record. Instead of treating AI output like a black box, PactBadger now shows reviewers what was found, why it was found, and where it came from in the document.
 
 ## The problem we wanted to solve
 
@@ -55,7 +55,7 @@ The interface now helps teams triage immediately:
 
 That means your team can spend less time scanning everything with equal suspicion and more time focusing on the fields that actually need human judgment.
 
-For property managers reviewing rent dates, notice windows, obligations, and financial terms, knowing where to start saves real time.
+For teams reviewing dates, obligations, financial terms, and notice requirements, knowing where to start saves real time.
 
 ## Confidence that changes the workflow
 

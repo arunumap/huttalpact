@@ -15,8 +15,8 @@ class CreateCalendarConnections < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :calendar_connections, [:user_id, :organization_id, :provider],
+    add_index :calendar_connections, [ :user_id, :organization_id, :provider ],
               unique: true, name: "idx_calendar_connections_user_org_provider"
-    add_index :calendar_connections, [:organization_id, :status]
+    add_index :calendar_connections, [ :organization_id, :status ]
   end
 end

@@ -30,6 +30,33 @@ class Settings::CalendarControllerTest < ActionDispatch::IntegrationTest
     assert_not CalendarConnection.exists?(connection.id)
   end
 
+  test "disconnect attempts to delete remote events before removing connection" do
+    connection = calendar_connections(:google_connection)
+    contract = contracts(:commercial_lease)
+    CalendarEventSync.create!(
+      calendar_connection: connection,
+      organization: organizations(:one),
+      source: contract,
+      event_category: "expiry_warning",
+      remote_event_id: "google_event_1",
+      remote_calendar_id: "primary",
+      sync_status: "synced"
+    )
+
+    adapter = Struct.new(:deleted_calls) do
+      def delete_event(calendar_id, remote_event_id)
+        deleted_calls << [ calendar_id, remote_event_id ]
+      end
+    end.new([])
+
+    CalendarProviders::GoogleAdapter.stub(:new, adapter) do
+      delete disconnect_settings_calendar_path
+    end
+
+    assert_redirected_to settings_calendar_path
+    assert_equal [ [ "primary", "google_event_1" ] ], adapter.deleted_calls
+  end
+
   test "update preferences enqueues sync" do
     connection = calendar_connections(:google_connection)
 
@@ -49,5 +76,14 @@ class Settings::CalendarControllerTest < ActionDispatch::IntegrationTest
     sign_out
     get settings_calendar_path
     assert_response :redirect
+  end
+
+  test "connect google shows configuration error when credentials are missing" do
+    Rails.application.credentials.stub(:dig, nil) do
+      get connect_google_settings_calendar_path
+    end
+
+    assert_redirected_to settings_calendar_path
+    assert_includes flash[:alert], "Google Calendar is not configured"
   end
 end

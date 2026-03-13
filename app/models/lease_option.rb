@@ -1,5 +1,6 @@
 class LeaseOption < ApplicationRecord
   belongs_to :contract
+  has_many :calendar_event_syncs, as: :source, dependent: :destroy
 
   OPTION_TYPES = %w[renewal expansion termination purchase rofr rofo].freeze
 

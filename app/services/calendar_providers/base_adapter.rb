@@ -1,6 +1,8 @@
 # Base adapter defining the interface all calendar providers must implement.
 module CalendarProviders
   class BaseAdapter
+    class MissingCredentialsError < StandardError; end
+
     attr_reader :connection
 
     def initialize(connection)

@@ -17,10 +17,10 @@ class CreateCalendarEventSyncs < ActiveRecord::Migration[8.1]
     end
 
     add_index :calendar_event_syncs,
-              [:calendar_connection_id, :source_type, :source_id, :event_category],
+              [ :calendar_connection_id, :source_type, :source_id, :event_category ],
               unique: true, name: "idx_cal_event_syncs_connection_source"
-    add_index :calendar_event_syncs, [:source_type, :source_id]
-    add_index :calendar_event_syncs, [:sync_status]
-    add_index :calendar_event_syncs, [:organization_id, :sync_status]
+    add_index :calendar_event_syncs, [ :source_type, :source_id ]
+    add_index :calendar_event_syncs, [ :sync_status ]
+    add_index :calendar_event_syncs, [ :organization_id, :sync_status ]
   end
 end

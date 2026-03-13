@@ -23,11 +23,13 @@ class CalendarMaintenanceJob < ApplicationJob
   end
 
   def retry_failed_syncs
-    CalendarEventSync.retriable.includes(:calendar_connection).find_each do |sync_record|
-      next unless sync_record.calendar_connection.active?
+    connection_ids = CalendarEventSync.retriable
+      .joins(:calendar_connection)
+      .merge(CalendarConnection.active)
+      .distinct
+      .pluck(:calendar_connection_id)
 
-      SyncCalendarEventsJob.perform_later(sync_record.calendar_connection_id)
-    end
+    connection_ids.each { |connection_id| SyncCalendarEventsJob.perform_later(connection_id) }
   end
 
   def prune_deleted_syncs

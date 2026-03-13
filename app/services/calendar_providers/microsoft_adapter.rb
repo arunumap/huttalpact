@@ -39,9 +39,15 @@ module CalendarProviders
     def refresh_token!
       return unless connection.refresh_token.present?
 
+      client_id = Rails.application.credentials.dig(:microsoft, :client_id)
+      client_secret = Rails.application.credentials.dig(:microsoft, :client_secret)
+      if client_id.blank? || client_secret.blank?
+        raise MissingCredentialsError, "Microsoft Calendar credentials are missing. Configure microsoft.client_id and microsoft.client_secret."
+      end
+
       client = OAuth2::Client.new(
-        Rails.application.credentials.dig(:microsoft, :client_id),
-        Rails.application.credentials.dig(:microsoft, :client_secret),
+        client_id,
+        client_secret,
         site: "https://login.microsoftonline.com",
         token_url: "/common/oauth2/v2.0/token"
       )
