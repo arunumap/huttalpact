@@ -72,6 +72,22 @@ class Settings::CalendarControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to settings_calendar_path
   end
 
+  test "update preferences ignores blank categories from form submission" do
+    connection = calendar_connections(:google_connection)
+
+    assert_enqueued_with(job: SyncCalendarEventsJob, args: [ connection.id ]) do
+      patch settings_calendar_path, params: {
+        calendar_preference: {
+          sync_enabled: true,
+          enabled_categories: [ "", "expiry_warning", "renewal_upcoming" ]
+        }
+      }
+    end
+
+    assert_redirected_to settings_calendar_path
+    assert_equal [ "expiry_warning", "renewal_upcoming" ], connection.calendar_preference.reload.enabled_categories
+  end
+
   test "requires authentication" do
     sign_out
     get settings_calendar_path

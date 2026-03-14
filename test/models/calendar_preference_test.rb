@@ -47,6 +47,12 @@ class CalendarPreferenceTest < ActiveSupport::TestCase
     assert_includes @preference.errors[:enabled_categories].first, "invalid_type"
   end
 
+  test "strips blank categories before validation" do
+    @preference.enabled_categories = [ "", "expiry_warning", "  ", nil ]
+    assert @preference.valid?
+    assert_equal [ "expiry_warning" ], @preference.enabled_categories
+  end
+
   test "category_enabled?" do
     @preference.enabled_categories = [ "expiry_warning" ]
     assert @preference.category_enabled?("expiry_warning")

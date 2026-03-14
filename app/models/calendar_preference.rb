@@ -7,6 +7,8 @@ class CalendarPreference < ApplicationRecord
 
   ALL_CATEGORIES = Alert::ALERT_TYPES.freeze
 
+  before_validation :normalize_enabled_categories
+
   validates :remote_calendar_id, presence: true
   validates :calendar_connection_id, uniqueness: true
   validate :enabled_categories_must_be_valid
@@ -16,7 +18,7 @@ class CalendarPreference < ApplicationRecord
   end
 
   def category_enabled?(category)
-    enabled_categories.include?(category.to_s)
+    effective_categories.include?(category.to_s)
   end
 
   def effective_categories
@@ -25,6 +27,10 @@ class CalendarPreference < ApplicationRecord
   end
 
   private
+
+  def normalize_enabled_categories
+    self.enabled_categories = Array(enabled_categories).map { |category| category.to_s.strip }.reject(&:blank?).uniq
+  end
 
   def enabled_categories_must_be_valid
     return if enabled_categories.blank?
