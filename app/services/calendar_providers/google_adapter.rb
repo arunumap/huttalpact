@@ -2,7 +2,10 @@ require "google/apis/calendar_v3"
 
 module CalendarProviders
   class GoogleAdapter < BaseAdapter
-    SCOPE = "https://www.googleapis.com/auth/calendar".freeze
+    SCOPE = [
+      "https://www.googleapis.com/auth/calendar.events",
+      "https://www.googleapis.com/auth/calendar.calendarlist.readonly"
+    ].join(" ").freeze
 
     def list_calendars
       ensure_valid_token!
