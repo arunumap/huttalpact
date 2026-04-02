@@ -13,6 +13,7 @@ class LeaseOptionsController < ApplicationController
     @lease_option = @contract.lease_options.build(lease_option_params)
     if @lease_option.save
       GenerateContractAlertsJob.perform_later(@contract.id)
+      SyncContractCalendarEventsJob.perform_later(@contract.id)
       log_audit("updated", contract: @contract, details: "Added #{@lease_option.option_type} option")
       redirect_to @contract, notice: "Lease option added."
     else
@@ -26,6 +27,7 @@ class LeaseOptionsController < ApplicationController
   def update
     if @lease_option.update(lease_option_params)
       GenerateContractAlertsJob.perform_later(@contract.id)
+      SyncContractCalendarEventsJob.perform_later(@contract.id)
       log_audit("updated", contract: @contract, details: "Updated #{@lease_option.option_type} option")
       redirect_to @contract, notice: "Lease option updated."
     else
@@ -36,6 +38,7 @@ class LeaseOptionsController < ApplicationController
   def destroy
     @lease_option.destroy!
     GenerateContractAlertsJob.perform_later(@contract.id)
+    SyncContractCalendarEventsJob.perform_later(@contract.id)
     log_audit("updated", contract: @contract, details: "Removed lease option")
     redirect_to @contract, notice: "Lease option removed.", status: :see_other
   end

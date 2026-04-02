@@ -64,6 +64,8 @@ class ContractsController < ApplicationController
         # Text extraction + AI extraction will be chained automatically via after_create_commit
       end
 
+      GenerateContractAlertsJob.perform_later(@contract.id)
+      SyncContractCalendarEventsJob.perform_later(@contract.id)
       log_audit("created", contract: @contract, details: "Created contract: #{@contract.title}")
       track_analytics_event("contract_created", contract_type: @contract.contract_type)
       redirect_to @contract, notice: "Contract was successfully created."
@@ -120,6 +122,8 @@ class ContractsController < ApplicationController
 
     if @contract.update(contract_params)
       if was_draft
+        GenerateContractAlertsJob.perform_later(@contract.id)
+        SyncContractCalendarEventsJob.perform_later(@contract.id)
         log_audit("updated", contract: @contract, details: "Finalized draft contract: #{@contract.title}")
         redirect_to @contract, notice: "Contract was successfully created."
       else

@@ -30,6 +30,7 @@ class ContractReviewCompletionService
       create_audit_log
 
       GenerateContractAlertsJob.perform_later(@contract.id)
+      SyncContractCalendarEventsJob.perform_later(@contract.id)
     end
 
     @review

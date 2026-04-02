@@ -289,6 +289,15 @@ class ContractReviewCompletionServiceTest < ActiveSupport::TestCase
     end
   end
 
+  test "enqueues SyncContractCalendarEventsJob after completion" do
+    create_confirmed_field("title", "core", '"Sync Test"', confidence: 90)
+    finalize_review_fields!
+
+    assert_enqueued_with(job: SyncContractCalendarEventsJob, args: [ @contract.id ]) do
+      run_completion_service
+    end
+  end
+
   # --- Raises ReviewIncompleteError for pending required fields ---
 
   test "raises ReviewIncompleteError if required fields are still pending" do

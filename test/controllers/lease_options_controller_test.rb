@@ -48,6 +48,17 @@ class LeaseOptionsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "create enqueues calendar sync job" do
+    assert_enqueued_with(job: SyncContractCalendarEventsJob) do
+      post contract_lease_options_path(@contract), params: {
+        lease_option: {
+          option_type: "renewal",
+          exercise_deadline: "2031-01-01"
+        }
+      }
+    end
+  end
+
   test "create with invalid params renders new" do
     assert_no_difference "LeaseOption.count" do
       post contract_lease_options_path(@contract), params: {
@@ -95,6 +106,14 @@ class LeaseOptionsControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "update enqueues calendar sync job" do
+    assert_enqueued_with(job: SyncContractCalendarEventsJob) do
+      patch contract_lease_option_path(@contract, @option), params: {
+        lease_option: { term_length_months: 48 }
+      }
+    end
+  end
+
   test "update with invalid params renders edit" do
     patch contract_lease_option_path(@contract, @option), params: {
       lease_option: { option_type: "invalid" }
@@ -113,6 +132,12 @@ class LeaseOptionsControllerTest < ActionDispatch::IntegrationTest
 
   test "destroy enqueues alert generation job" do
     assert_enqueued_with(job: GenerateContractAlertsJob) do
+      delete contract_lease_option_path(@contract, @option)
+    end
+  end
+
+  test "destroy enqueues calendar sync job" do
+    assert_enqueued_with(job: SyncContractCalendarEventsJob) do
       delete contract_lease_option_path(@contract, @option)
     end
   end

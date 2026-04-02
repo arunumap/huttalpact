@@ -403,6 +403,22 @@ class ContractsControllerTest < ActionDispatch::IntegrationTest
     assert_equal 2, contract.contract_documents.count
   end
 
+  test "create enqueues calendar sync job" do
+    assert_enqueued_with(job: SyncContractCalendarEventsJob) do
+      post contracts_path, params: {
+        contract: { title: "Sync Test Contract", status: "active" }
+      }
+    end
+  end
+
+  test "update enqueues calendar sync job when date fields change" do
+    assert_enqueued_with(job: SyncContractCalendarEventsJob) do
+      patch contract_path(@contract), params: {
+        contract: { end_date: 2.years.from_now.to_date }
+      }
+    end
+  end
+
   # Update triggers GenerateContractAlertsJob when date fields change
   test "update enqueues alert job when end_date changes" do
     assert_enqueued_with(job: GenerateContractAlertsJob) do
